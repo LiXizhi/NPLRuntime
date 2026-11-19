@@ -1,6 +1,9 @@
 #pragma once
 #include <stdint.h>
 #include <vector>
+#include <array>
+#include <map>
+#include <unordered_map>
 #include <luabind/luabind.hpp>
 #include <luabind/object.hpp>
 #include <thread>
@@ -69,31 +72,31 @@ namespace ParaEngine
 		@param x,z:  range in [0,512), y range in [0,256)
 		@param bNeedUpdate: during loading from file, bNeedUpdate is false.
 		*/
-		void SetBlockTemplateByIndex(uint16_t x_rs, uint16_t y_rs, uint16_t z_rs, BlockTemplate* pTemplate);
+		void SetBlockTemplateByIndex(uint16_t x_rs, int32_t y_rs, uint16_t z_rs, BlockTemplate* pTemplate);
 
-		void RefreshBlockTemplateByIndex(uint16_t x_rs, uint16_t y_rs, uint16_t z_rs, BlockTemplate* pTemplate);
+		void RefreshBlockTemplateByIndex(uint16_t x_rs, int32_t y_rs, uint16_t z_rs, BlockTemplate* pTemplate);
 
-		uint32_t GetBlockTemplateIdByIndex(int16_t x, int16_t y, int16_t z);
+		uint32_t GetBlockTemplateIdByIndex(int16_t x, int32_t y, int16_t z);
 
-		BlockTemplate* GetBlockTemplateByIndex(int16_t x, int16_t y, int16_t z);
+		BlockTemplate* GetBlockTemplateByIndex(int16_t x, int32_t y, int16_t z);
 
 		//user date is a uint32 value,
 		//params are in region space,  x,z range in [0,512), y range in [0,256)
-		void SetBlockUserDataByIndex(int16_t x, int16_t y, int16_t z, uint32_t data);
+		void SetBlockUserDataByIndex(int16_t x, int32_t y, int16_t z, uint32_t data);
 
-		uint32_t GetBlockUserDataByIndex(int16_t x, int16_t y, int16_t z);
+		uint32_t GetBlockUserDataByIndex(int16_t x, int32_t y, int16_t z);
 
 		/** Remove a given block material from a block face.
 		* @param nFaceIndex: if -1, we will remove all materials from the block
 		* @param nMaterialID: global unique material id in CBlockMaterialManager
 		*/
-		bool SetBlockMaterial(uint16_t x, uint16_t y, uint16_t z, int16_t nFaceId, int32_t nMaterial);
+		bool SetBlockMaterial(uint16_t x, int32_t y, uint16_t z, int16_t nFaceId, int32_t nMaterial);
 
 		/** Remove a given block material from a block face.
 		* @param nFaceIndex: if -1, we will remove all materials from the block
 		* @return -1 if not found
 		*/
-		int32_t GetBlockMaterial(uint16_t x, uint16_t y, uint16_t z, int16_t nFaceId);
+		int32_t GetBlockMaterial(uint16_t x, int32_t y, uint16_t z, int16_t nFaceId);
 
 		/** set chunk column time stamp. usually 0 for non-generated. 1 for generated.
 		this is usually called by world generators, so that we will not generate again next time we load the world. */
@@ -103,7 +106,7 @@ namespace ParaEngine
 		0 means not available, 1 means loaded before*/
 		uint16_t GetChunkColumnTimeStamp(uint16_t x, uint16_t z);
 
-		bool IntersectBlock(int16_t blockX, int16_t blockY, int16_t blockZ, uint32_t filter);
+		bool IntersectBlock(int16_t blockX, int32_t blockY, int16_t blockZ, uint32_t filter);
 
 		//Get region x index
 		inline int16_t GetRegionX() { return m_regionX; }
@@ -121,7 +124,7 @@ namespace ParaEngine
 		//return null if block not exist
 		//note:do *not* hold a permanent reference of the return value,underlying
 		//block address may change after SetBlockTemplate()!
-		Block* GetBlock(uint16_t x_rs, uint16_t y_rs, uint16_t z_rs);
+		Block* GetBlock(uint16_t x_rs, int32_t y_rs, uint16_t z_rs);
 
 		void SaveToFile(const char* sFilename = NULL);
 
@@ -135,35 +138,35 @@ namespace ParaEngine
 
 		void DeleteAllBlocks();
 
-		void RefreshAllLightsInColumn(uint16_t chunkX_ws, uint16_t chunkZ_ws);
+		bool RefreshAllLightsInColumn(uint16_t chunkX_ws, uint16_t chunkZ_ws);
 
 		/** call this function when you make lots of changes to blocks when light is suspended. */
 		void RefreshLightChunkColumns(uint16_t chunkX_ws, uint16_t chunkZ_ws, uint16_t chunksLength = 1);
 
-		void GetBlocksInChunk(uint16_t chunkX_ws, uint16_t chunkZ_ws, uint16_t startChunkY, uint16_t endChunkY,
+		void GetBlocksInChunk(uint16_t chunkX_ws, uint16_t chunkZ_ws, int16_t startChunkY, int16_t endChunkY,
 			uint32_t matchtype, const luabind::adl::object& result, int32_t& blockCount);
 		void GetBlocksInChunk(uint16_t chunkX_ws, uint16_t chunkZ_ws, uint32_t verticalSectionFilter,
 			uint32_t matchtype, const luabind::adl::object& result, int32_t& blockCount);
 
-		const std::string& GetMapChunkData(uint32_t chunkX, uint32_t chunkZ, bool bIncludeInit, uint32_t verticalSectionFilter = 0xffff);
+		const std::string& GetMapChunkData(uint32_t chunkX, uint32_t chunkZ, bool bIncludeInit, uint32_t verticalSectionFilter = 0xffff, const std::vector<int16_t>* sections = nullptr);
 
-		void ApplyMapChunkData(uint32_t chunkX, uint32_t chunkZ, uint32_t verticalSectionFilter, const std::string& chunkData, const luabind::adl::object& output);
+		void ApplyMapChunkData(uint32_t chunkX, uint32_t chunkZ, uint32_t verticalSectionFilter, const std::string& chunkData, const luabind::adl::object& output, bool extended = false);
 
 		// call this function when this chunk is modified
-		void SetChunkDirty(uint16_t packedChunkID, bool isDirty);
+		void SetChunkDirty(int32_t packedChunkID, bool isDirty);
 		// this function is only called when neighbor block on the adjacent boundary to this chunk is dirty. 
 		// This chunk may or may not be modified. 
-		void SetChunkDirtyByNeighbor(uint16_t packedChunkID);
-		void SetChunkLightDirty(uint16_t packedChunkID);
+		void SetChunkDirtyByNeighbor(int32_t packedChunkID);
+		void SetChunkLightDirty(int32_t packedChunkID);
 
 		inline uint16_t GetPackedRegionIndex()
 		{
 			return m_regionX + (m_regionZ << 6);
 		}
 
-		Block* GetBlock(uint16_t chunkId, Uint16x3& blockID_r);
+		Block* GetBlock(int32_t chunkId, Uint16x3& blockID_r);
 
-		BlockChunk* GetChunk(uint16_t packedChunkID, bool createIfNotExist);
+		BlockChunk* GetChunk(int32_t packedChunkID, bool createIfNotExist);
 
 		/** whether modified. */
 		bool IsModified();
@@ -183,23 +186,40 @@ namespace ParaEngine
 		const Uint16x3& GetMaxBlockWs();
 
 
+		void SetSectionOccupied(const Uint16x3& local, bool occupied);
+		void GetOccupiedSections(int minX, int minY, int minZ, int maxX, int maxY, int maxZ, std::vector<Uint16x3>& out) const;
+		std::vector<int16_t> GetColumnSections(uint16_t chunkX, uint16_t chunkZ) const
+		{
+			std::lock_guard<std::mutex> guard(m_sectionsMutex);
+			return m_columnSections[(chunkX & 31) + ((chunkZ & 31) << 5)];
+		}
 		void ClearAllLight();
+	private:
+		// Reuse hashes for shared neighbors for the duration of one save or validation.
+		struct LightInputs {
+			std::unordered_map<BlockChunk*, uint64_t> geometry;
+			std::unordered_map<uint64_t, uint64_t> sky;
+		};
+		uint64_t GetLightInputHash(BlockChunk& chunk, LightInputs& inputs);
+		std::unordered_map<uint32_t, uint64_t> m_savedLightInputs;
+		void ValidateSavedLighting();
+	public:
 
 		/** refresh chunks include one type block*/
 		void SetChunksDirtyByBlockTemplate(uint16_t templateId);
 
 		/** this function is only valid, when the block region is locked. this function is extremely fast. and it does not do light calculation. */
-		void LoadBlockAsync(uint16_t x_rs, uint16_t y_rs, uint16_t z_rs, uint16_t blockId, uint32_t userData);
+		void LoadBlockAsync(uint16_t x_rs, int32_t y_rs, uint16_t z_rs, uint16_t blockId, uint32_t userData);
 	private:
 		Block* CreateBlock(Uint16x3& blockID_r);
 
 		//return false if block not exist
-		bool SetBlockToAir(uint16_t chunkId, Uint16x3& blockId_r);
+		bool SetBlockToAir(int32_t chunkId, Uint16x3& blockId_r);
 
 
-		BlockChunk* CreateNewChunk(uint16_t chunkIndex);
+		BlockChunk* CreateNewChunk(int32_t chunkIndex);
 
-		bool IsChunkDirty(int16_t packedChunkID);
+		bool IsChunkDirty(int32_t packedChunkID);
 
 		void CheckNeighborChunkDirty(Uint16x3& blockId_rs);
 
@@ -235,8 +255,11 @@ namespace ParaEngine
 
 		typedef BlockChunk* BlockChunkPtr;
 		// 32*32*16 chunks
-		BlockChunkPtr* m_chunks;
-		int GetChunksCount();
+		std::unordered_map<uint32_t, BlockChunkPtr> m_chunks;
+		mutable std::mutex m_sectionsMutex;
+		uint64_t m_sectionCacheGeneration;
+		std::map<int16_t, std::array<uint32_t, 32>> m_occupiedRows;
+		std::array<std::vector<int16_t>, 1024> m_columnSections;
 
 		/** 0 means not available, 1 means loaded before*/
 		std::vector<unsigned char> m_chunkTimestamp;
@@ -266,6 +289,7 @@ namespace ParaEngine
 
 		/* if locked, all block access functions takes no effect. Since it is either being loaded or saved asynchronously. */
 		bool m_bIsLocked;
+		bool m_extendedFormat = false;
 		/** read-write lock. */
 		BlockReadWriteLock m_readWriteLock;
 

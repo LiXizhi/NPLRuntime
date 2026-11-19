@@ -18,7 +18,7 @@ namespace ParaEngine
 {
 	int BlockChunk::s_total_chunks = 0;
 
-	BlockChunk::BlockChunk(uint16_t nPackedChunkId, BlockRegion* pRegion) : 
+	BlockChunk::BlockChunk(int32_t nPackedChunkId, BlockRegion* pRegion) :
 		m_blockIndices(BlockConfig::g_chunkBlockCount, -1), m_nDirty(1), m_emptyBlockSlotIndex(INVALID_BLOCK_INDEX),
 		m_ownerBlockRegion(pRegion), m_packedChunkID(nPackedChunkId), m_isBoundaryChunk(0),
 		m_uVisGraph(kVisGraphAllConnected), m_opaqueLayerMask(0), m_bVisGraphDirty(false)
@@ -34,7 +34,7 @@ namespace ParaEngine
 		if (pRegion)
 		{
 			m_minBlockId_ws.x = pRegion->m_minBlockId_ws.x + m_minBlockId_rs.x;
-			m_minBlockId_ws.y = pRegion->m_minBlockId_ws.y + m_minBlockId_rs.y;
+			m_minBlockId_ws.y = m_minBlockId_rs.y;
 			m_minBlockId_ws.z = pRegion->m_minBlockId_ws.z + m_minBlockId_rs.z;
 		}
 		else
@@ -42,22 +42,24 @@ namespace ParaEngine
 			m_minBlockId_ws = m_minBlockId_rs;
 		}
 
-		SetBoundaryChunk(m_chunkId_rs.x == 0 || m_chunkId_rs.y == 0 || m_chunkId_rs.z == 0
+		SetBoundaryChunk(m_chunkId_rs.x == 0 || m_chunkId_rs.y == BlockConfig::MinSectionY || m_chunkId_rs.z == 0
 			|| m_chunkId_rs.x == BlockConfig::g_regionChunkDimX - 1
-			|| m_chunkId_rs.y == BlockConfig::g_regionChunkDimY - 1
+			|| m_chunkId_rs.y == BlockConfig::MaxSectionY
 			|| m_chunkId_rs.z == BlockConfig::g_regionChunkDimZ - 1);
 
-#ifdef EMSCRIPTEN_SINGLE_THREAD		
-		m_lightmapArray.resize(BlockConfig::g_chunkBlockCount,LightData(0xf0));
-#else
 		m_lightmapArray.resize(BlockConfig::g_chunkBlockCount,LightData());
-#endif
+
 		s_total_chunks++;
 	}
 
 	BlockChunk::~BlockChunk()
 	{
 		s_total_chunks--;
+	}
+
+	void BlockChunk::AddOccupiedCell()
+	{
+		if (m_occupiedCells++ == 0 && m_ownerBlockRegion) m_ownerBlockRegion->SetSectionOccupied(m_chunkId_rs, true);
 	}
 
 	void BlockChunk::ReserveBlocks( int nCount )
@@ -69,6 +71,8 @@ namespace ParaEngine
 	{
 		std::fill(m_blockIndices.begin(),m_blockIndices.end(),-1);
 		m_blocks.clear();
+		if (m_occupiedCells && m_ownerBlockRegion) m_ownerBlockRegion->SetSectionOccupied(m_chunkId_rs, false);
+		m_occupiedCells = 0;
 		m_lightBlockIndices.clear();
 		SetDirty(false);
 		SetLightingInitialized(false);
@@ -76,26 +80,20 @@ namespace ParaEngine
 		m_uVisGraph = kVisGraphAllConnected;
 		m_opaqueLayerMask = 0;
 		m_bVisGraphDirty = false;
-#ifdef EMSCRIPTEN_SINGLE_THREAD		
-		std::fill(m_lightmapArray.begin(),m_lightmapArray.end(),LightData(0xf0));
-#else
 		std::fill(m_lightmapArray.begin(),m_lightmapArray.end(),LightData());
-#endif
+
 	}
 
 	void BlockChunk::ClearAllLight()
 	{
 		SetLightingInitialized(false);
-#ifdef EMSCRIPTEN_SINGLE_THREAD		
-		std::fill(m_lightmapArray.begin(), m_lightmapArray.end(), LightData(0xf0));
-#else
 		std::fill(m_lightmapArray.begin(), m_lightmapArray.end(), LightData());
-#endif
+
 	}
 
 	void BlockChunk::ClearLightMap()
 	{
-
+		ClearAllLight();
 	}
 
 	bool BlockChunk::HasBlockMaterial(Uint16x3& blockId_r)
@@ -271,6 +269,7 @@ namespace ParaEngine
 					SetBlockToAir(nPos);
 				}
 				pBlock->IncreaseInstanceCount();
+				AddOccupiedCell();
 				m_blockIndices[nBlockIndex] = nIndex;
 				
 				if (bIsLightBlock)
@@ -302,7 +301,8 @@ namespace ParaEngine
 		if (pTemplate)
 		{
 			int16 nIndex = FindBlock(pTemplate);
-			if (nIndex > 0){
+			if (nIndex >= 0){
+				AddOccupiedCell();
 				m_blockIndices[nBlockIndex] = nIndex;
 				m_blocks[nIndex].IncreaseInstanceCount();
 				return;
@@ -336,8 +336,9 @@ namespace ParaEngine
 				if (pTemplate)
 				{
 					int16 nIndex = FindBlock(pTemplate, nData);
-					if (nIndex > 0){
-						m_blockIndices[nBlockIndex] = nIndex;
+					if (nIndex >= 0){
+						AddOccupiedCell();
+				m_blockIndices[nBlockIndex] = nIndex;
 						m_blocks[nIndex].IncreaseInstanceCount();
 						return;
 					}
@@ -373,7 +374,8 @@ namespace ParaEngine
 		if (pTemplate)
 		{
 			int16 nIndex = FindBlock(pTemplate, nData);
-			if (nIndex > 0){
+			if (nIndex >= 0){
+				AddOccupiedCell();
 				m_blockIndices[nBlockIndex] = nIndex;
 				m_blocks[nIndex].IncreaseInstanceCount();
 				return;
@@ -426,6 +428,7 @@ namespace ParaEngine
 
 	Block* BlockChunk::CreateBlock(uint16_t nIndex)
 	{
+		AddOccupiedCell();
 		Block* pResult = NULL;
 		if (m_emptyBlockSlotIndex != INVALID_BLOCK_INDEX)
 		{
@@ -744,13 +747,13 @@ namespace ParaEngine
 					curBlockId_rs.x = blockId_rs.x + neighborOfsTable[i].x;
 					curBlockId_rs.y = blockId_rs.y + neighborOfsTable[i].y;
 					//curBlockId_rs.y = curBlockId_rs.y == 0xffff ? 0 : curBlockId_rs.y;
-					if(curBlockId_rs.y >= BlockConfig::g_regionBlockDimY)
+					if(!BlockConfig::IsBlockY(curBlockId_rs.y))
 					{
 						continue;
 					}
 					curBlockId_rs.z = blockId_rs.z + neighborOfsTable[i].z;
 
-					uint16_t packedChunkId_rs = CalcPackedChunkID(curBlockId_rs);
+					int32_t packedChunkId_rs = CalcPackedChunkID(curBlockId_rs);
 					BlockChunk* pChunk = m_ownerBlockRegion->GetChunk(packedChunkId_rs, false);
 					if(pChunk)
 					{
@@ -774,7 +777,7 @@ namespace ParaEngine
 					curBlockId_ws.x = blockId_ws.x + neighborOfsTable[i].x;
 					curBlockId_ws.y = blockId_ws.y + neighborOfsTable[i].y;
 					//curBlockId_ws.y = curBlockId_ws.y == 0xffff ? 0 : curBlockId_ws.y;
-					if(curBlockId_ws.y >= BlockConfig::g_regionBlockDimY)
+					if(!BlockConfig::IsBlockY(curBlockId_ws.y))
 					{
 						continue;
 					}
@@ -826,7 +829,7 @@ namespace ParaEngine
 		uint16 rx, ry, rz;
 		UnpackBlockIndex(nBlockIndex, rx, ry, rz);
 		ChunkMaxHeight* pBlockHeight = m_ownerBlockRegion->GetHighestBlock(m_minBlockId_rs.x + rx, m_minBlockId_rs.z + rz);
-		uint16 rs_y = m_minBlockId_rs.y + ry;
+		int rs_y = m_minBlockId_rs.y + ry;
 		if (pBlockHeight)
 		{
 			pBlockHeight->AddBlockHeight(rs_y, isTransparent);
@@ -844,6 +847,7 @@ namespace ParaEngine
 		if (nIndex != -1)
 		{
 			m_bVisGraphDirty = true;
+			if (--m_occupiedCells == 0 && m_ownerBlockRegion) m_ownerBlockRegion->SetSectionOccupied(m_chunkId_rs, false);
 			m_blockIndices[nBlockIndex] = -1;
 			if (block.DecreaseInstanceCount() == 0)
 			{
@@ -919,23 +923,15 @@ namespace ParaEngine
 
 	void BlockChunk::SetLightingInitialized(bool bInitialized)
 	{
-		if (bInitialized)
-		{
-			if (m_nDirty >= 16)
-				m_nDirty = 1;
-		}
-		else
-		{
-			m_nDirty = 16;
-		}
+		m_lightingInitialized = bInitialized;
 	}
 
 	bool BlockChunk::IsLightingInitialized()
 	{
-		return m_nDirty < 16;
+		return m_lightingInitialized;
 	}
 
-	bool BlockChunk::CanBlockSeeTheSkyWS(uint16 x, uint16 y, uint16 z)
+	bool BlockChunk::CanBlockSeeTheSkyWS(uint16 x, int16_t y, uint16 z)
 	{
 		ChunkMaxHeight* pHeight = m_ownerBlockRegion->GetHighestBlock(x & 0x1ff, z & 0x1ff);
 		if (pHeight)
@@ -1012,7 +1008,9 @@ namespace ParaEngine
 
 	void BlockChunk::UpdateVisibilityGraph()
 	{
-		if (m_blocks.empty() || m_blockIndices.size() < 4096)
+		// Each pair of section faces has 256 disjoint paths between them.
+		// Fewer occupied cells cannot seal a face or form an opaque layer.
+		if (m_occupiedCells < 256 || m_blockIndices.size() < 4096)
 		{
 			m_uVisGraph = kVisGraphAllConnected;
 			m_opaqueLayerMask = 0;

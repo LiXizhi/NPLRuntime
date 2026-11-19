@@ -232,7 +232,8 @@ void CPhysicsBlock::Load(BlockModel& model, IParaPhysics* world)
 	ActorDesc.m_mass = 0.0f;
 	ActorDesc.m_pShape = pShape->m_shape;
 
-	uint16_t bx, by, bz;
+	uint16_t bx, bz;
+	int16_t by;
 	float offset_y = BlockWorldClient::GetInstance()->GetVerticalOffset();
 	UnPackID(GetID(), bx, by, bz);
 	if (pShape->IsStdCube())
@@ -751,13 +752,13 @@ void ParaEngine::CPhysicsWorld::LoadPhysicsBlock(CShapeAABB* aabb, int16_t frame
 	
 	// Use inverse multiplication instead of division for better performance
 	int16_t min_x = (int16_t)std::floor(min.x * inv_blockSize);
-	int16_t min_y = (int16_t)std::floor((min.y - offset_y) * inv_blockSize);
+	int min_y = (std::max<int>)(BlockConfig::MinBlockY, (int)std::floor((min.y - offset_y) * inv_blockSize));
 	int16_t min_z = (int16_t)std::floor(min.z * inv_blockSize);
 	int16_t max_x = (int16_t)std::floor(max.x * inv_blockSize);
-	int16_t max_y = (int16_t)std::floor((max.y - offset_y) * inv_blockSize);
+	int max_y = (std::min<int>)(BlockConfig::MaxBlockY, (int)std::floor((max.y - offset_y) * inv_blockSize));
 	int16_t max_z = (int16_t)std::floor(max.z * inv_blockSize);
 	
-	if (min_x < 0 || min_y < 0 || min_z < 0) return;
+	if (min_x < 0 || min_z < 0) return;
 
 	for (int16_t bx = min_x; bx <= max_x; bx++)
 	{
@@ -775,7 +776,7 @@ void ParaEngine::CPhysicsWorld::LoadPhysicsBlock(CShapeAABB* aabb, int16_t frame
 	}
 }
 
-std::shared_ptr<CPhysicsBlock> ParaEngine::CPhysicsWorld::LoadPhysicsBlock(uint16_t bx, uint16_t by, uint16_t bz)
+std::shared_ptr<CPhysicsBlock> ParaEngine::CPhysicsWorld::LoadPhysicsBlock(uint16_t bx, int16_t by, uint16_t bz)
 {
 	CBlockWorld* pWorld = BlockWorldClient::GetInstance();
 	

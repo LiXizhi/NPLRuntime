@@ -342,7 +342,7 @@ namespace ParaEngine
 	class CSameIntegerDecoder
 	{
 	public:
-		static void DecodeSameIntegerOfCount(CParaFile& stream, std::vector<VALUE_TYPE>& list, int nIntegerCount = 0xfffffff)
+		static bool DecodeSameIntegerOfCount(CParaFile& stream, std::vector<VALUE_TYPE>& list, int nIntegerCount = 0xfffffff)
 		{
 			VALUE_TYPE last;
 			uint32_t size = 0;
@@ -350,18 +350,14 @@ namespace ParaEngine
 			int nByteRead = 0;
 			while (nIntegerRead < nIntegerCount && CIntegerEncoder::TryDecodeUInt32(stream, last, nByteRead))
 			{
-				list.push_back(last);
 				size = 0;
-				if (CIntegerEncoder::TryDecodeUInt32(stream, size, nByteRead))
-				{
-					for (uint32_t i = 0; i < size; i++) {
-						list.push_back(last);
-					}
-				}
+				if (!CIntegerEncoder::TryDecodeUInt32(stream, size, nByteRead) || size >= uint32_t(nIntegerCount - nIntegerRead)) return false;
+				list.insert(list.end(), size + 1, last);
 				nIntegerRead += (size+1);
 			}
+			return nIntegerRead == nIntegerCount;
 		}
-		static void SkipDecodeSameIntegerOfCount(CParaFile& stream, int nIntegerCount = 0xfffffff)
+		static bool SkipDecodeSameIntegerOfCount(CParaFile& stream, int nIntegerCount = 0xfffffff)
 		{
 			VALUE_TYPE last;
 			uint32_t size = 0;
@@ -370,9 +366,10 @@ namespace ParaEngine
 			while (nIntegerRead < nIntegerCount && CIntegerEncoder::TryDecodeUInt32(stream, last, nByteRead))
 			{
 				size = 0;
-				CIntegerEncoder::TryDecodeUInt32(stream, size, nByteRead);
+				if (!CIntegerEncoder::TryDecodeUInt32(stream, size, nByteRead) || size >= uint32_t(nIntegerCount - nIntegerRead)) return false;
 				nIntegerRead += (size + 1);
 			}
+			return nIntegerRead == nIntegerCount;
 		}
 	};
 }

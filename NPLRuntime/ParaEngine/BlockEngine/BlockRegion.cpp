@@ -8,6 +8,7 @@
 //-----------------------------------------------------------------------------
 #include "ParaEngine.h"
 #include "BlockRegion.h"
+#include <atomic>
 #include "BlockWorld.h"
 #include "util/StringBuilder.h"
 #include "BlockLightGridBase.h"
@@ -29,34 +30,42 @@ namespace ParaEngine
 	//////////////////////////////////////////////////////////////////////////
 	//BlockRegion
 	//////////////////////////////////////////////////////////////////////////
+	// A cached miss lasts until a section is published. Positive entries keep
+	// their region lifetime so unrelated insertions do not flush hot meshes.
+	static std::atomic<uint64_t> sectionInsertions{0};
+
+	static uint64_t NextSectionCacheGeneration()
+	{
+		static std::atomic<uint64_t> generation{1};
+		return generation.fetch_add(1, std::memory_order_relaxed);
+	}
+
 	BlockRegion::BlockRegion(int16_t regionX, int16_t regionZ, CBlockWorld* pBlockWorld)
 		:m_bIsModified(false), m_pBlockWorld(pBlockWorld), m_bIsLocked(false), m_nEventAsyncLoadWorldFinished(0), m_nChunksLoaded(0), m_nTotalBytes(0)
 	{
+		m_sectionCacheGeneration = NextSectionCacheGeneration();
 		m_regionX = regionX;
 		m_regionZ = regionZ;
 
 		m_minChunkId_ws.x = m_regionX * BlockConfig::g_regionChunkDimX;
-		m_minChunkId_ws.y = 0;
+		m_minChunkId_ws.y = BlockConfig::MinSectionY;
 		m_minChunkId_ws.z = m_regionZ * BlockConfig::g_regionChunkDimZ;
 
 		m_maxChunkId_ws.x = m_minChunkId_ws.x + BlockConfig::g_regionChunkDimX;
-		m_maxChunkId_ws.y = BlockConfig::g_regionChunkDimY;
+		m_maxChunkId_ws.y = BlockConfig::MaxSectionY + 1;
 		m_maxChunkId_ws.z = m_minChunkId_ws.z + BlockConfig::g_regionChunkDimX;
 
 		m_minBlockId_ws.x = m_regionX * BlockConfig::g_regionBlockDimX;
-		m_minBlockId_ws.y = 0;
+		m_minBlockId_ws.y = BlockConfig::MinBlockY;
 		m_minBlockId_ws.z = m_regionZ * BlockConfig::g_regionBlockDimZ;
 
-		m_maxBlockId_ws.x = m_minBlockId_ws.x + BlockConfig::g_regionChunkDimX;
-		m_maxBlockId_ws.y = BlockConfig::g_regionBlockDimY;
-		m_maxBlockId_ws.z = m_minBlockId_ws.z + BlockConfig::g_regionChunkDimZ;
+		m_maxBlockId_ws.x = m_minBlockId_ws.x + BlockConfig::g_regionBlockDimX;
+		m_maxBlockId_ws.y = BlockConfig::MaxBlockY + 1;
+		m_maxBlockId_ws.z = m_minBlockId_ws.z + BlockConfig::g_regionBlockDimZ;
 
 
-		int32_t chunkCount = GetChunksCount();
-		m_chunks = new BlockChunkPtr[chunkCount];
-		memset(m_chunks, 0, sizeof(BlockChunkPtr)*chunkCount);
 
-		m_blockHeightMap.resize(BlockConfig::g_regionBlockDimX * BlockConfig::g_regionBlockDimZ, ChunkMaxHeight(0, 0));
+		m_blockHeightMap.resize(BlockConfig::g_regionBlockDimX * BlockConfig::g_regionBlockDimZ, ChunkMaxHeight());
 
 		// TODO:
 		// m_biomes.resize(BlockConfig::g_regionBlockDimX * BlockConfig::g_regionBlockDimZ, 0);
@@ -64,48 +73,98 @@ namespace ParaEngine
 		m_chunkTimestamp.resize(BlockConfig::g_regionChunkDimX * BlockConfig::g_regionChunkDimZ, 0);
 	}
 
-	int BlockRegion::GetChunksCount()
-	{
-		return BlockConfig::g_regionChunkDimX * BlockConfig::g_regionChunkDimY *BlockConfig::g_regionChunkDimZ;
-	}
 
 	BlockRegion::~BlockRegion()
 	{
 		if (m_thread.joinable())
 			m_thread.join();
 
-		uint32_t nCount = GetChunksCount();
-		for (uint32_t i = 0; i < nCount; i++)
+		for (auto& entry : m_chunks)
 		{
-			SAFE_DELETE(m_chunks[i]);
+			delete entry.second;
 		}
-		SAFE_DELETE_ARRAY(m_chunks);
+
 	}
 
-	BlockChunk* BlockRegion::CreateNewChunk(uint16_t chunkID)
+	void BlockRegion::SetSectionOccupied(const Uint16x3& local, bool occupied)
 	{
-		BlockChunk* pChunk = m_chunks[chunkID];
-		if (!pChunk)
+		std::lock_guard<std::mutex> guard(m_sectionsMutex);
+		auto& rows = m_occupiedRows[local.y];
+		const uint32_t bit = 1u << local.x;
+		if (occupied) rows[local.z] |= bit;
+		else
 		{
-			pChunk = new BlockChunk(chunkID, this);
-			m_chunks[chunkID] = pChunk;
+			rows[local.z] &= ~bit;
+			if (std::none_of(rows.begin(), rows.end(), [](uint32_t row) { return row != 0; }))
+				m_occupiedRows.erase(local.y);
 		}
-		return pChunk;
 	}
 
-	BlockChunk* BlockRegion::GetChunk(uint16_t packedChunkID, bool createIfNotExist = true)
+	void BlockRegion::GetOccupiedSections(int minX, int minY, int minZ, int maxX, int maxY, int maxZ, std::vector<Uint16x3>& out) const
 	{
-		BlockChunk * pChunk = m_chunks[packedChunkID];
-		if (pChunk)
-			return pChunk;
-		else if (createIfNotExist)
-		{
-			pChunk = CreateNewChunk(packedChunkID);
-		}
-		return pChunk;
+		const int x0 = m_regionX * 32, z0 = m_regionZ * 32;
+		minX = (std::max)(0, minX - x0); maxX = (std::min)(31, maxX - x0);
+		minZ = (std::max)(0, minZ - z0); maxZ = (std::min)(31, maxZ - z0);
+		if (minX > maxX || minZ > maxZ) return;
+		const uint32_t mask = (~0u << minX) & (~0u >> (31 - maxX));
+		std::lock_guard<std::mutex> guard(m_sectionsMutex);
+		for (auto layer = m_occupiedRows.lower_bound(minY); layer != m_occupiedRows.end() && layer->first <= maxY; ++layer)
+			for (int z = minZ; z <= maxZ; ++z)
+			{
+				uint32_t row = layer->second[z] & mask;
+				for (int x = minX; row && x <= maxX; ++x)
+					if (row & (1u << x))
+					{
+						out.emplace_back(x0 + x, layer->first, z0 + z);
+						row &= ~(1u << x);
+					}
+			}
 	}
 
-	void BlockRegion::SetChunkDirty(uint16_t packedChunkID, bool isDirty)
+	BlockChunk* BlockRegion::CreateNewChunk(int32_t chunkID)
+	{
+		auto* chunk = new BlockChunk(chunkID, this);
+		if (!IsLocked() && m_pBlockWorld->GetLightGrid().CalculatesLight() && m_pBlockWorld->GetLightGrid().IsChunkColumnLoaded(
+			m_regionX * 32 + chunk->m_chunkId_rs.x, m_regionZ * 32 + chunk->m_chunkId_rs.z))
+			chunk->SetLightingInitialized(true);
+		m_chunks.emplace(chunkID, chunk);
+		sectionInsertions.fetch_add(1, std::memory_order_release);
+		auto& sections = m_columnSections[chunkID & 1023];
+		const int16_t section = static_cast<int16_t>(chunkID >> 10);
+		sections.insert(std::lower_bound(sections.begin(), sections.end(), section), section);
+		return chunk;
+	}
+
+	BlockChunk* BlockRegion::GetChunk(int32_t packedChunkID, bool createIfNotExist)
+	{
+		// Tessellation and lighting repeatedly sample the same neighboring sections.
+		// Published section pointers live until region unload or DeleteAllBlocks,
+		// both under the world writer lock. Misses must observe concurrent insertions.
+		struct Entry { uint64_t generation; int32_t key; BlockChunk* chunk; uint64_t insertions; };
+		static thread_local std::array<Entry, 64> cache{};
+		const uint32_t key = static_cast<uint32_t>(packedChunkID);
+		auto& cached = cache[(key ^ (key >> 5) ^ ((key >> 10) * 7u)) & 63];
+		if (cached.generation == m_sectionCacheGeneration && cached.key == packedChunkID)
+		{
+			if (cached.chunk) return cached.chunk;
+			if (!createIfNotExist && cached.insertions == sectionInsertions.load(std::memory_order_acquire)) return nullptr;
+		}
+		std::lock_guard<std::mutex> guard(m_sectionsMutex);
+		auto it = m_chunks.find(packedChunkID);
+		BlockChunk* chunk;
+		if (it != m_chunks.end()) chunk = it->second;
+		else if (createIfNotExist && BlockConfig::IsSectionY(static_cast<int16_t>(packedChunkID >> 10)))
+			chunk = CreateNewChunk(packedChunkID);
+		else
+		{
+			cached = {m_sectionCacheGeneration, packedChunkID, nullptr, sectionInsertions.load(std::memory_order_relaxed)};
+			return nullptr;
+		}
+		cached = {m_sectionCacheGeneration, packedChunkID, chunk, 0};
+		return chunk;
+	}
+
+	void BlockRegion::SetChunkDirty(int32_t packedChunkID, bool isDirty)
 	{
 		if (!IsLocked())
 		{
@@ -115,7 +174,7 @@ namespace ParaEngine
 		}
 	}
 
-	void BlockRegion::SetChunkDirtyByNeighbor(uint16_t packedChunkID)
+	void BlockRegion::SetChunkDirtyByNeighbor(int32_t packedChunkID)
 	{
 		if (!IsLocked())
 		{
@@ -125,32 +184,36 @@ namespace ParaEngine
 		}
 	}
 
-	void BlockRegion::SetChunkLightDirty(uint16_t packedChunkID)
+	void BlockRegion::SetChunkLightDirty(int32_t packedChunkID)
 	{
 		if (!IsLocked())
 		{
 			BlockChunk* pChunk = GetChunk(packedChunkID, false);
 			if (pChunk)
+			{
 				pChunk->SetLightDirty();
+				if (m_pBlockWorld->IsSaveLightMap()) SetModified(true);
+			}
 		}
 	}
 
-	Block* BlockRegion::GetBlock(uint16_t chunkId, Uint16x3& blockID_r)
+	Block* BlockRegion::GetBlock(int32_t chunkId, Uint16x3& blockID_r)
 	{
-		BlockChunk * pChunk = m_chunks[chunkId];
+		BlockChunk * pChunk = GetChunk(chunkId, false);
 		return (pChunk) ? pChunk->GetBlock(CalcPackedBlockID(blockID_r)) : NULL;
 	}
 
-	Block* BlockRegion::GetBlock(uint16_t x_rs, uint16_t y_rs, uint16_t z_rs)
+	Block* BlockRegion::GetBlock(uint16_t x_rs, int32_t y_rs, uint16_t z_rs)
 	{
+		if (!m_pBlockWorld->IsBuildableY(y_rs)) return nullptr;
 		Uint16x3 blockId_rs(x_rs, y_rs, z_rs);
-		uint16_t packedChunkId_rs = CalcPackedChunkID(x_rs, y_rs, z_rs);
+		int32_t packedChunkId_rs = CalcPackedChunkID(x_rs, y_rs, z_rs);
 		return GetBlock(packedChunkId_rs, blockId_rs);
 	}
 
-	bool BlockRegion::SetBlockToAir(uint16_t packedChunkId_rs, Uint16x3& blockId_r)
+	bool BlockRegion::SetBlockToAir(int32_t packedChunkId_rs, Uint16x3& blockId_r)
 	{
-		BlockChunk * pChunk = m_chunks[packedChunkId_rs];
+		BlockChunk * pChunk = GetChunk(packedChunkId_rs, false);
 		if (pChunk)
 		{
 			return pChunk->SetBlockToAir(blockId_r);
@@ -160,10 +223,9 @@ namespace ParaEngine
 
 	void BlockRegion::SetChunksDirtyByBlockTemplate(uint16_t templateId)
 	{
-		uint32_t nCount = GetChunksCount();
-		for (uint32_t i = 0; i < nCount; i++)
+		for (auto& entry : m_chunks)
 		{
-			BlockChunk* pChunk = m_chunks[i];
+			BlockChunk* pChunk = entry.second;
 			if (pChunk)
 			{
 				pChunk->refreshBlockVisible(templateId);
@@ -171,8 +233,9 @@ namespace ParaEngine
 		}
 	}
 
-	void BlockRegion::LoadBlockAsync(uint16_t x_rs, uint16_t y_rs, uint16_t z_rs, uint16_t blockId, uint32_t userData)
+	void BlockRegion::LoadBlockAsync(uint16_t x_rs, int32_t y_rs, uint16_t z_rs, uint16_t blockId, uint32_t userData)
 	{
+		if (!m_pBlockWorld->IsBuildableY(y_rs)) return;
 		if (IsLocked())
 		{
 			auto chunkId = CalcPackedChunkID(x_rs, y_rs, z_rs);
@@ -196,7 +259,7 @@ namespace ParaEngine
 		}
 	}
 
-	void BlockRegion::SetBlockTemplateByIndex(uint16_t blockX_rs, uint16_t blockY_rs, uint16_t blockZ_rs, BlockTemplate* pTemplate)
+	void BlockRegion::SetBlockTemplateByIndex(uint16_t blockX_rs, int32_t blockY_rs, uint16_t blockZ_rs, BlockTemplate* pTemplate)
 	{
 		if (IsLocked())
 			return;
@@ -207,7 +270,7 @@ namespace ParaEngine
 			return;
 		}*/
 #endif
-		if (blockY_rs >= BlockConfig::g_regionBlockDimY)
+		if (!m_pBlockWorld->IsBuildableY(blockY_rs))
 		{
 			OUTPUT_LOG("warn: SetBlockTemplateByIndex y is %d which is too big.\n", blockY_rs);
 			return;
@@ -215,7 +278,7 @@ namespace ParaEngine
 
 		bool bLightSuspended = m_pBlockWorld->IsLightUpdateSuspended();
 
-		uint16_t packedChunkId_rs = CalcPackedChunkID(blockX_rs, blockY_rs, blockZ_rs);
+		int32_t packedChunkId_rs = CalcPackedChunkID(blockX_rs, blockY_rs, blockZ_rs);
 		Uint16x3 blockId_rs(blockX_rs, blockY_rs, blockZ_rs);
 		if (pTemplate == nullptr)
 		{
@@ -256,7 +319,7 @@ namespace ParaEngine
 					SetModified();
 					SetChunkDirty(packedChunkId_rs, true);
 					CheckNeighborChunkDirty(blockId_rs);
-					UpdateBlockHeightMap(blockId_rs, false, pTemplate->IsTransparent());
+					UpdateBlockHeightMap(blockId_rs, pPrevBlockTemplate && !pPrevBlockTemplate->IsTransparent() && pTemplate->IsTransparent(), pTemplate->IsTransparent());
 
 					//add/remove to/from light table.
 					if (prevIsLight && !curIsLight)
@@ -292,12 +355,12 @@ namespace ParaEngine
 		}
 	}
 
-	void BlockRegion::RefreshBlockTemplateByIndex(uint16_t blockX_rs, uint16_t blockY_rs, uint16_t blockZ_rs, BlockTemplate* pTemplate)
+	void BlockRegion::RefreshBlockTemplateByIndex(uint16_t blockX_rs, int32_t blockY_rs, uint16_t blockZ_rs, BlockTemplate* pTemplate)
 	{
 		if (IsLocked())
 			return;
 
-		if (blockY_rs >= BlockConfig::g_regionBlockDimY)
+		if (!m_pBlockWorld->IsBuildableY(blockY_rs))
 		{
 			OUTPUT_LOG("warn: SetBlockTemplateByIndex y is %d which is too big.\n", blockY_rs);
 			return;
@@ -305,7 +368,7 @@ namespace ParaEngine
 
 		bool bLightSuspended = m_pBlockWorld->IsLightUpdateSuspended();
 
-		uint16_t packedChunkId_rs = CalcPackedChunkID(blockX_rs, blockY_rs, blockZ_rs);
+		int32_t packedChunkId_rs = CalcPackedChunkID(blockX_rs, blockY_rs, blockZ_rs);
 		Uint16x3 blockId_rs(blockX_rs, blockY_rs, blockZ_rs);
 
 		//on remove
@@ -340,7 +403,7 @@ namespace ParaEngine
 			SetModified();
 			SetChunkDirty(packedChunkId_rs, true);
 			CheckNeighborChunkDirty(blockId_rs);
-			UpdateBlockHeightMap(blockId_rs, false, pTemplate->IsTransparent());
+			UpdateBlockHeightMap(blockId_rs, pPrevBlockTemplate && !pPrevBlockTemplate->IsTransparent() && pTemplate->IsTransparent(), pTemplate->IsTransparent());
 
 			//add/remove to/from light table.
 			if (prevIsLight && !curIsLight)
@@ -374,12 +437,13 @@ namespace ParaEngine
 		}
 	}
 
-	bool BlockRegion::IntersectBlock(int16_t x, int16_t y, int16_t z, uint32_t filter)
+	bool BlockRegion::IntersectBlock(int16_t x, int32_t y, int16_t z, uint32_t filter)
 	{
+		if (!m_pBlockWorld->IsBuildableY(y)) return false;
 		if (!IsLocked())
 		{
 			Uint16x3 blockId(x, y, z);
-			uint16_t chunkId = CalcPackedChunkID(x, y, z);
+			int32_t chunkId = CalcPackedChunkID(x, y, z);
 			Block* pBlock = GetBlock(chunkId, blockId);
 
 			if (pBlock)
@@ -395,12 +459,13 @@ namespace ParaEngine
 		return false;
 	}
 
-	uint32_t BlockRegion::GetBlockTemplateIdByIndex(int16_t x, int16_t y, int16_t z)
+	uint32_t BlockRegion::GetBlockTemplateIdByIndex(int16_t x, int32_t y, int16_t z)
 	{
+		if (!m_pBlockWorld->IsBuildableY(y)) return 0;
 		if (!IsLocked())
 		{
 			Uint16x3 blockId(x, y, z);
-			uint16_t chunkId = CalcPackedChunkID(x, y, z);
+			int32_t chunkId = CalcPackedChunkID(x, y, z);
 			Block* pBlock = GetBlock(chunkId, blockId);
 			return (pBlock == nullptr) ? 0 : pBlock->GetTemplate()->GetID();
 		}
@@ -408,7 +473,7 @@ namespace ParaEngine
 		{
 
 			Uint16x3 blockId(x, y, z);
-			uint16_t chunkId = CalcPackedChunkID(x, y, z);
+			int32_t chunkId = CalcPackedChunkID(x, y, z);
 			Block* pBlock = GetBlock(chunkId, blockId);
 			Block* pBlock1 = GetBlock(chunkId, blockId);
 			// This is safe in 99.99% times, we will fetch 2 times, just in case the other thread is assigning the integer
@@ -418,12 +483,13 @@ namespace ParaEngine
 		return 0;
 	}
 
-	BlockTemplate* BlockRegion::GetBlockTemplateByIndex(int16_t x, int16_t y, int16_t z)
+	BlockTemplate* BlockRegion::GetBlockTemplateByIndex(int16_t x, int32_t y, int16_t z)
 	{
+		if (!m_pBlockWorld->IsBuildableY(y)) return nullptr;
 		if (!IsLocked())
 		{
 			Uint16x3 blockId(x, y, z);
-			uint16_t chunkId = CalcPackedChunkID(x, y, z);
+			int32_t chunkId = CalcPackedChunkID(x, y, z);
 			Block* pBlock = GetBlock(chunkId, blockId);
 			if (pBlock)
 				return pBlock->GetTemplate();
@@ -431,7 +497,7 @@ namespace ParaEngine
 		else
 		{
 			Uint16x3 blockId(x, y, z);
-			uint16_t chunkId = CalcPackedChunkID(x, y, z);
+			int32_t chunkId = CalcPackedChunkID(x, y, z);
 			// This is safe in 99.99% times, we will fetch 2 times, just in case the other thread is assigning the integer
 			Block* pBlock = GetBlock(chunkId, blockId);
 			Block* pBlock1 = GetBlock(chunkId, blockId);
@@ -441,17 +507,19 @@ namespace ParaEngine
 		return nullptr;
 	}
 
-	void BlockRegion::SetBlockUserDataByIndex(int16_t x, int16_t y, int16_t z, uint32_t data)
+	void BlockRegion::SetBlockUserDataByIndex(int16_t x, int32_t y, int16_t z, uint32_t data)
 	{
+		if (!m_pBlockWorld->IsBuildableY(y)) return;
 		if (!IsLocked())
 		{
 			Uint16x3 blockId(x, y, z);
-			uint16_t chunkId = CalcPackedChunkID(x, y, z);
+			int32_t chunkId = CalcPackedChunkID(x, y, z);
 			BlockChunk* pChunk = GetChunk(chunkId, false);
 			if (pChunk)
 			{
 				uint16 nBlockIndex = CalcPackedBlockID(x, y, z);
 				pChunk->SetBlockData(nBlockIndex, data);
+				if (data > UINT16_MAX) m_extendedFormat = true;
 				SetModified();
 				BlockTemplate* pTemplate = pChunk->GetBlockTemplate(nBlockIndex);
 				if (pTemplate && pTemplate->IsMatchAttribute(BlockTemplate::batt_cubeModel))
@@ -460,12 +528,13 @@ namespace ParaEngine
 		}
 	}
 
-	uint32_t BlockRegion::GetBlockUserDataByIndex(int16_t x, int16_t y, int16_t z)
+	uint32_t BlockRegion::GetBlockUserDataByIndex(int16_t x, int32_t y, int16_t z)
 	{
+		if (!m_pBlockWorld->IsBuildableY(y)) return 0;
 		if (!IsLocked())
 		{
 			Uint16x3 blockId(x, y, z);
-			uint16_t chunkId = CalcPackedChunkID(x, y, z);
+			int32_t chunkId = CalcPackedChunkID(x, y, z);
 			Block* pBlock = GetBlock(chunkId, blockId);
 			if (pBlock != nullptr)
 				return pBlock->GetUserData();
@@ -473,12 +542,13 @@ namespace ParaEngine
 		return 0;
 	}
 
-	bool BlockRegion::SetBlockMaterial(uint16_t x, uint16_t y, uint16_t z, int16_t nFaceId, int32_t nMaterial)
+	bool BlockRegion::SetBlockMaterial(uint16_t x, int32_t y, uint16_t z, int16_t nFaceId, int32_t nMaterial)
 	{
+		if (!m_pBlockWorld->IsBuildableY(y)) return false;
 		if (!IsLocked())
 		{
 			Uint16x3 blockId(x, y, z);
-			uint16_t chunkId = CalcPackedChunkID(x, y, z);
+			int32_t chunkId = CalcPackedChunkID(x, y, z);
 			BlockChunk* pChunk = GetChunk(chunkId, false);
 			if (pChunk)
 			{
@@ -492,12 +562,13 @@ namespace ParaEngine
 	}
 
 
-	int32_t BlockRegion::GetBlockMaterial(uint16_t x, uint16_t y, uint16_t z, int16_t nFaceId)
+	int32_t BlockRegion::GetBlockMaterial(uint16_t x, int32_t y, uint16_t z, int16_t nFaceId)
 	{
+		if (!m_pBlockWorld->IsBuildableY(y)) return -1;
 		if (!IsLocked())
 		{
 			Uint16x3 blockId(x, y, z);
-			uint16_t chunkId = CalcPackedChunkID(x, y, z);
+			int32_t chunkId = CalcPackedChunkID(x, y, z);
 			BlockChunk* pChunk = GetChunk(chunkId, false);
 			if (pChunk)
 			{
@@ -530,13 +601,13 @@ namespace ParaEngine
 		uint16_t startBlockIdX_ws = chunkX_ws << 4;
 		uint16_t startBlockIdZ_ws = chunkZ_ws << 4;
 
-		for (uint16_t y = 0; y <= 16; y++)
+		for (uint16_t y = 0; y < 16; y++)
 		{
 			if ((verticalSectionFilter & (1 << y)) != 0)
 			{
 				uint16_t startBlockIdY_ws = y << 4;
-				uint16_t packedChunkId_rs = PackChunkIndex(chunkX_rs, y, chunkZ_rs);
-				BlockChunk * pChunk = m_chunks[packedChunkId_rs];
+				int32_t packedChunkId_rs = PackChunkIndex(chunkX_rs, y, chunkZ_rs);
+				BlockChunk * pChunk = GetChunk(packedChunkId_rs, false);
 				if (pChunk)
 				{
 					uint32_t nCount = pChunk->m_blockIndices.size();
@@ -564,7 +635,7 @@ namespace ParaEngine
 		}
 	}
 
-	void BlockRegion::GetBlocksInChunk(uint16_t chunkX_ws, uint16_t chunkZ_ws, uint16_t startChunkY, uint16_t endChunkY,
+	void BlockRegion::GetBlocksInChunk(uint16_t chunkX_ws, uint16_t chunkZ_ws, int16_t startChunkY, int16_t endChunkY,
 		uint32_t matchtype, const luabind::adl::object& luaTable, int32_t& blockCount)
 	{
 		if (IsLocked())
@@ -581,11 +652,12 @@ namespace ParaEngine
 		uint16_t startBlockIdX_ws = chunkX_ws << 4;
 		uint16_t startBlockIdZ_ws = chunkZ_ws << 4;
 
-		for (uint16_t y = startChunkY; y <= endChunkY; y++)
+		for (int y : GetColumnSections(chunkX_rs, chunkZ_rs))
 		{
-			uint16_t startBlockIdY_ws = y << 4;
-			uint16_t packedChunkId_rs = PackChunkIndex(chunkX_rs, y, chunkZ_rs);
-			BlockChunk * pChunk = m_chunks[packedChunkId_rs];
+			if (y < startChunkY || y > endChunkY) continue;
+			int startBlockIdY_ws = y * 16;
+			int32_t packedChunkId_rs = PackChunkIndex(chunkX_rs, y, chunkZ_rs);
+			BlockChunk * pChunk = GetChunk(packedChunkId_rs, false);
 			if (pChunk)
 			{
 				uint32_t nCount = pChunk->m_blockIndices.size();
@@ -613,22 +685,34 @@ namespace ParaEngine
 	}
 
 
-	void BlockRegion::RefreshAllLightsInColumn(uint16_t chunkX_ws, uint16_t chunkZ_ws)
+	bool BlockRegion::RefreshAllLightsInColumn(uint16_t chunkX_ws, uint16_t chunkZ_ws)
 	{
 		if (IsLocked())
-			return;
+			return false;
 		uint16_t chunkX_rs = chunkX_ws - m_minChunkId_ws.x;
 		uint16_t chunkZ_rs = chunkZ_ws - m_minChunkId_ws.z;
 
+		bool needsLighting = false;
+		LightInputs inputs;
 		Uint16x3 curBlock;
-		for (int y = 0; y < BlockConfig::g_regionChunkDimY; y++)
+		for (int y : GetColumnSections(chunkX_rs, chunkZ_rs))
 		{
-			uint16_t packedChunkId_rs = PackChunkIndex(chunkX_rs, y, chunkZ_rs);
-			BlockChunk* pChunk = m_chunks[packedChunkId_rs];
-			if (pChunk)
+			int32_t packedChunkId_rs = PackChunkIndex(chunkX_rs, y, chunkZ_rs);
+			BlockChunk* pChunk = GetChunk(packedChunkId_rs, false);
+			auto saved = m_savedLightInputs.find(packedChunkId_rs);
+			if (saved != m_savedLightInputs.end() && m_pBlockWorld->GetLightGrid().CalculatesLight())
 			{
+				// The scheduler has now loaded the neighboring columns needed to
+				// verify the border section, independent of region arrival order.
+				if (pChunk && GetLightInputHash(*pChunk, inputs) != saved->second)
+					pChunk->ClearAllLight();
+				m_savedLightInputs.erase(saved);
+			}
+			if (pChunk && !pChunk->IsLightingInitialized())
+			{
+				needsLighting = true;
 				uint16_t cx_min = chunkX_rs << 4;
-				uint16_t cy_min = y << 4;
+				int cy_min = y * 16;
 				uint16_t cz_min = chunkZ_rs << 4;
 
 				std::set<uint16_t>::iterator itCur, itEnd = pChunk->m_lightBlockIndices.end();
@@ -649,6 +733,7 @@ namespace ParaEngine
 				}
 			}
 		}
+		return needsLighting;
 	}
 
 	void BlockRegion::CheckNeighborChunkDirty(Uint16x3& blockId_rs)
@@ -666,7 +751,7 @@ namespace ParaEngine
 			&& blockZ_cs != 0 && blockZ_cs != maxChunkBlockId)
 			return;
 		int32_t BlockX_ws = blockId_rs.x + m_minBlockId_ws.x;
-		int32_t BlockY_ws = blockId_rs.y + m_minBlockId_ws.y;
+		int32_t BlockY_ws = blockId_rs.y;
 		int32_t BlockZ_ws = blockId_rs.z + m_minBlockId_ws.z;
 		Uint16x3 ChunkId_ws(BlockX_ws >> 4, BlockY_ws >> 4, BlockZ_ws >> 4);
 
@@ -744,10 +829,10 @@ namespace ParaEngine
 		if (blockY_cs == maxChunkBlockId)
 			neighborChunkY_ws += 1;
 
-		if (neighborChunkY_ws < 0)
-			neighborChunkY_ws = 0;
-		if (neighborChunkY_ws > (BlockConfig::g_regionChunkDimY - 1))
-			neighborChunkY_ws = BlockConfig::g_regionChunkDimY - 1;
+		if (neighborChunkY_ws < BlockConfig::MinSectionY)
+			neighborChunkY_ws = BlockConfig::MinSectionY;
+		if (neighborChunkY_ws > BlockConfig::MaxSectionY)
+			neighborChunkY_ws = BlockConfig::MaxSectionY;
 
 		Uint16x3 curNeighbor_ws;
 
@@ -881,7 +966,7 @@ namespace ParaEngine
 			chunkId_rs.y = neighborChunkId_ws.y;
 			chunkId_rs.z = neighborChunkId_ws.z & 0x1f;
 
-			uint16_t packChunkId_rs = PackChunkIndex(chunkId_rs);
+			int32_t packChunkId_rs = PackChunkIndex(chunkId_rs);
 			SetChunkDirtyByNeighbor(packChunkId_rs);
 		}
 		else
@@ -900,7 +985,7 @@ namespace ParaEngine
 			if (blockId_rs.y >= blockHeight.GetMaxSolidHeight())
 			{
 				uint16_t chunkX_rs = blockId_rs.x >> 4;
-				uint16_t chunkY_rs = blockId_rs.y >> 4;
+				const auto& sections = GetColumnSections(chunkX_rs, blockId_rs.z >> 4);
 				uint16_t chunkZ_rs = blockId_rs.z >> 4;
 
 				Uint16x3 curBlockId_cs;
@@ -909,10 +994,11 @@ namespace ParaEngine
 
 				blockHeight.ClearHeight();
 				//find highest block below current block
-				for (int y = chunkY_rs; y >= 0; y--)
+				for (auto it = sections.rbegin(); it != sections.rend(); ++it)
 				{
-					uint16_t packedChunkId_rs = PackChunkIndex(chunkX_rs, y, chunkZ_rs);
-					BlockChunk * pChunk = m_chunks[packedChunkId_rs];
+					const int y = *it;
+					int32_t packedChunkId_rs = PackChunkIndex(chunkX_rs, y, chunkZ_rs);
+					BlockChunk * pChunk = GetChunk(packedChunkId_rs, false);
 					if (pChunk)
 					{
 						for (int cy = BlockConfig::g_chunkBlockDim - 1; cy >= 0; cy--)
@@ -923,10 +1009,10 @@ namespace ParaEngine
 							if (blockIdx >= 0)
 							{
 								Block& block = pChunk->GetBlockByIndex(blockIdx);
-								uint16_t wy = y * BlockConfig::g_chunkBlockDim + cy;
+								int16_t wy = y * BlockConfig::g_chunkBlockDim + cy;
 								if (!(block.GetTemplate()->IsTransparent()))
 								{
-									blockHeight.SetHeight(wy, false);
+									blockHeight.AddBlockHeight(wy, false);
 									m_pBlockWorld->NotifyBlockHeightMapChanged(blockId_rs.x + m_minBlockId_ws.x, blockId_rs.z + m_minBlockId_ws.z, prevHeight);
 									return;
 								}
@@ -943,7 +1029,7 @@ namespace ParaEngine
 		}
 		else
 		{
-			if (blockId_rs.y < BlockConfig::g_regionBlockDimY)
+			if (BlockConfig::IsBlockY(blockId_rs.y))
 			{
 				blockHeight.AddBlockHeight(blockId_rs.y, isTransparent);
 				m_pBlockWorld->NotifyBlockHeightMapChanged(blockId_rs.x + m_minBlockId_ws.x, blockId_rs.z + m_minBlockId_ws.z, prevHeight);
@@ -951,6 +1037,79 @@ namespace ParaEngine
 		}
 	}
 
+
+	uint64_t BlockRegion::GetLightInputHash(BlockChunk& section, LightInputs& inputs)
+	{
+		constexpr uint64_t seed = 14695981039346656037ull;
+		auto mix = [](uint64_t hash, uint64_t value) { return (hash ^ value) * 1099511628211ull; };
+		uint64_t hash = mix(seed, m_pBlockWorld->GetLightGrid().GetSkyHeight());
+		const int sectionY = section.m_chunkId_rs.y;
+		for (int dz = -1; dz <= 1; ++dz)
+			for (int dx = -1; dx <= 1; ++dx)
+			{
+				const int x = m_regionX * 32 + section.m_chunkId_rs.x + dx;
+				const int z = m_regionZ * 32 + section.m_chunkId_rs.z + dz;
+				BlockRegion* region = x < 0 || z < 0 ? nullptr : ((x >> 5) == m_regionX && (z >> 5) == m_regionZ
+					? this : m_pBlockWorld->GetRegion(x >> 5, z >> 5));
+				if (!region || (region != this && region->IsLocked())) { hash = mix(hash, 0); continue; }
+				const uint64_t key = (uint64_t(uint16_t(sectionY)) << 32) | (uint32_t(x) << 16) | z;
+				auto sky = inputs.sky.emplace(key, seed);
+				if (sky.second)
+					for (int bz = 0; bz < 16; ++bz)
+						for (int bx = 0; bx < 16; ++bx)
+						{
+							const int top = region->GetHighestBlock((x & 31) * 16 + bx, (z & 31) * 16 + bz)->GetMaxSolidHeight();
+							// Heights outside the light's reach cast exactly the same shadow here.
+							sky.first->second = mix(sky.first->second, uint16_t((std::max)(sectionY * 16 - 16, (std::min)(sectionY * 16 + 30, top))));
+						}
+				hash = mix(hash, sky.first->second);
+				for (int y = sectionY - 1; y <= sectionY + 1; ++y)
+				{
+					auto* neighbor = region->GetChunk(PackChunkIndex(x & 31, y, z & 31), false);
+					if (!neighbor || !neighbor->HasBlocks()) { hash = mix(hash, 0); continue; }
+					auto geo = inputs.geometry.emplace(neighbor, seed);
+					if (geo.second)
+						for (int cell = 0; cell < 4096; ++cell)
+						{
+							auto* block = neighbor->GetBlockTemplate(cell);
+							if (block) geo.first->second = mix(geo.first->second, (uint64_t(cell) << 16) | (block->GetLightOpacity() << 8) | block->GetLightValue());
+						}
+					hash = mix(hash, geo.first->second);
+				}
+			}
+		return hash;
+	}
+
+	void BlockRegion::ValidateSavedLighting()
+	{
+		LightInputs inputs;
+		const bool calculates = m_pBlockWorld->GetLightGrid().CalculatesLight();
+		for (auto it = m_savedLightInputs.begin(); it != m_savedLightInputs.end();)
+		{
+			auto* chunk = GetChunk(it->first, false);
+			if (chunk)
+			{
+				const auto pos = chunk->m_chunkId_rs;
+				if (calculates && (pos.x == 0 || pos.x == 31 || pos.z == 0 || pos.z == 31)
+					&& !m_pBlockWorld->DoChunksNearChunkExist((m_regionX * 32 + pos.x) * 16 + 8, 0, (m_regionZ * 32 + pos.z) * 16 + 8, 16))
+				{
+					++it;
+					continue;
+				}
+				if (GetLightInputHash(*chunk, inputs) != it->second) chunk->ClearAllLight();
+			}
+			if (calculates) it = m_savedLightInputs.erase(it);
+			else ++it;
+		}
+		if (!calculates)
+		{
+			// Headless worlds do not run a solver. Keep the original inputs so a
+			// later edit cannot certify stale values when the server saves again.
+			for (const auto& entry : m_chunks)
+				if (entry.second->IsLightingInitialized() && !m_savedLightInputs.count(entry.first))
+					m_savedLightInputs[entry.first] = GetLightInputHash(*entry.second, inputs);
+		}
+	}
 
 	void BlockRegion::SaveToFile(const char* sFilename)
 	{
@@ -961,8 +1120,6 @@ namespace ParaEngine
 		if (!IsModified())
 			return;
 
-		SetModified(false);
-
 		std::string fileName = m_pBlockWorld->GetWorldInfo().GetBlockRegionFileName(m_regionX, m_regionZ, true);
 		if (sFilename != 0 && sFilename[0] != '\0')
 		{
@@ -971,14 +1128,18 @@ namespace ParaEngine
 
 		CParaFile cfile, memFile;
 
-		if (cfile.CreateNewFile(fileName.c_str(), true) && memFile.OpenFile("<memory>", false))
+		const std::string stagingFile = fileName + ".writing";
+		if (cfile.CreateNewFile(stagingFile.c_str(), true) && memFile.OpenFile("<memory>", false))
 		{
 			//'b'<<24 + 'l'<<16 + 'o'<<8 + 'c' + 1;
 			uint32_t fileTypeId = 0x626c6f63 + 1;
 			cfile.WriteDWORD(fileTypeId);
 
 			//version 1.00
-			uint16_t version = 0x0100;
+			const bool extended = m_extendedFormat || std::any_of(m_chunks.begin(), m_chunks.end(), [](const std::pair<const uint32_t, BlockChunk*>& entry) {
+				return entry.first >= (16u << 10);
+			});
+			uint16_t version = extended ? 0x0101 : 0x0100;
 			cfile.WriteWORD(version);
 
 			uint32_t regionId = (m_regionX << 16) + m_regionZ;
@@ -1023,17 +1184,18 @@ namespace ParaEngine
 				memFile.write(GetTag().c_str(), (int)GetTag().size());
 			}
 			{
-				memFile.WriteEncodedUInt(ChunkCustomDataType_Materials);
-				int chunksCount = GetChunksCount();
+				memFile.WriteEncodedUInt(extended ? ChunkCustomDataType_ExtendedMaterials : ChunkCustomDataType_Materials);
+				const size_t indexBytes = extended ? sizeof(uint32_t) : sizeof(uint16_t);
+
 				uint32_t totalSize = 0;
-				std::unordered_map<uint16_t, std::shared_ptr<std::unordered_map<uint32_t, std::shared_ptr<std::vector<uint16_t>>>>> chunkMaterialKeyMap;
-				for (int i = 0 ; i < chunksCount; i++)
+				std::unordered_map<uint32_t, std::shared_ptr<std::unordered_map<uint32_t, std::shared_ptr<std::vector<uint16_t>>>>> chunkMaterialKeyMap;
+				for (const auto& entry : m_chunks)
 				{
-					BlockChunk* pChunk = m_chunks[i];
-					if (!pChunk) continue;
+					BlockChunk* pChunk = entry.second;
+					if (pChunk->m_materialsKeyIdMap.empty()) continue;
 					std::shared_ptr<std::unordered_map<uint32_t, std::shared_ptr<std::vector<uint16_t>>>> materialKeyMap = std::make_shared<std::unordered_map<uint32_t, std::shared_ptr<std::vector<uint16_t>>>>();
-					chunkMaterialKeyMap.insert(std::make_pair(i, materialKeyMap));
-					totalSize += sizeof(uint16_t) + sizeof(uint32_t);  // chunk index size + chunk list length size
+					chunkMaterialKeyMap.insert(std::make_pair(entry.first, materialKeyMap));
+					totalSize += indexBytes + sizeof(uint32_t);  // chunk index size + chunk list length size
 					for (const auto& it : pChunk->m_materialsKeyIdMap)
 					{
 						uint16_t materialKey = (uint16_t)(it.first);
@@ -1057,10 +1219,11 @@ namespace ParaEngine
 				memFile.WriteEncodedUInt(totalSize);
 				for (const auto& chunkMaterialKeyIt : chunkMaterialKeyMap)
 				{
-					uint16_t chunkIndex = chunkMaterialKeyIt.first;
+					int32_t chunkIndex = chunkMaterialKeyIt.first;
 					const auto& materialKeyMap = chunkMaterialKeyIt.second;
 					uint32_t chunkSize = materialKeyMap->size();
-					memFile.write(&chunkIndex, sizeof(uint16_t));
+					if (extended) memFile.WriteDWORD(chunkIndex);
+					else memFile.WriteWORD(static_cast<uint16_t>(chunkIndex));
 					memFile.write(&chunkSize, sizeof(uint32_t));
 					for (const auto& materialKeyIt : (*materialKeyMap))
 					{
@@ -1073,22 +1236,39 @@ namespace ParaEngine
 					}
 				}
 			}
+			LightInputs lightInputs;
+			if (!extended && m_pBlockWorld->IsSaveLightMap())
+			{
+				// Legacy readers skip length-prefixed region records. Keep their
+				// original voxel and per-section lightmap representation intact.
+				std::vector<std::pair<uint32_t, uint64_t>> records;
+				for (const auto& entry : m_chunks)
+					if (entry.second->IsLightingInitialized())
+						records.emplace_back(entry.first, GetLightInputHash(*entry.second, lightInputs));
+				memFile.WriteEncodedUInt(ChunkCustomDataType_LightInputs);
+				memFile.WriteEncodedUInt(records.size() * 12);
+				for (const auto& record : records)
+				{
+					memFile.WriteDWORD(record.first);
+					memFile.WriteDWORD(static_cast<uint32_t>(record.second));
+					memFile.WriteDWORD(static_cast<uint32_t>(record.second >> 32));
+				}
+			}
 			memFile.WriteEncodedUInt(ChunkCustomDataType_ChunksData);
 
-			// saving for all 32*32*16 chunks
-			uint32_t nCount = GetChunksCount();
-			for (uint32_t i = 0; i < nCount; i++)
+			for (const auto& entry : m_chunks)
 			{
-				BlockChunk * pChunk = m_chunks[i];
+				BlockChunk * pChunk = entry.second;
 				if (!pChunk)
 					continue;
 				// first 32bits stores chunkid and data mask
-				DWORD dwChunkID = i;
+				DWORD dwChunkID = entry.first;
 				// any bitwise field of ChunkDataMask
 				DWORD dwChunkDataMask = 0;
 
 				blockIDToIndex.clear();
 				blockData.clear();
+				std::vector<std::pair<uint16_t, uint32_t>> wideData;
 				blockMetaData.clear();
 				blockLightMapData.clear();
 
@@ -1104,14 +1284,16 @@ namespace ParaEngine
 						auto& block_indices = blockIDToIndex[block.GetTemplateId()];
 						block_indices.push_back(j);
 
-						if (block.GetUserData() != 0)
+						if (extended && block.GetUserData() > 65535)
+							wideData.emplace_back(j, block.GetUserData());
+						else if (block.GetUserData() != 0)
 						{
 							blockMetaData.push_back(make_pair(j, (uint16_t)(block.GetUserData())));
 						}
 					}
 				}
 
-				int nCustomDataCount = 0;
+				int nCustomDataCount = wideData.empty() ? 0 : 1;
 				for (auto itCur = blockIDToIndex.begin(); itCur != blockIDToIndex.end(); ++itCur)
 				{
 					int nBlockCount = itCur->second.size();
@@ -1135,27 +1317,21 @@ namespace ParaEngine
 					}
 				}
 
-				// whether saving light map value
-				if (m_pBlockWorld->IsSaveLightMap() && m_pBlockWorld->GetLightGrid().GetDirtyBlockCount() == 0)
+				auto original = m_savedLightInputs.find(dwChunkID);
+				const bool inputsMatch = original == m_savedLightInputs.end() || GetLightInputHash(*pChunk, lightInputs) == original->second;
+				if (m_pBlockWorld->IsSaveLightMap() && inputsMatch && pChunk->IsLightingInitialized() && !m_pBlockWorld->GetLightGrid().IsSectionLightPending(m_regionX * 32 + pChunk->m_chunkId_rs.x, pChunk->m_chunkId_rs.y, m_regionZ * 32 + pChunk->m_chunkId_rs.z))
 				{
 					uint32_t nCount = pChunk->m_lightmapArray.size();
-					bool isAllZero = false;
 					blockLightMapData.resize(nCount);
 					for (uint32_t i = 0; i < nCount; i++)
 					{
-						LightData& lightValue = pChunk->m_lightmapArray[i];
-						if (!isAllZero && !lightValue.IsZero())
-							isAllZero = false;
-						blockLightMapData[i] = lightValue.GetBrightness(false) | (lightValue.GetBrightness(true) << 4);
+						LightData& light = pChunk->m_lightmapArray[i];
+						blockLightMapData[i] = light.GetBrightness(false) | (light.GetBrightness(true) << 4);
 					}
-					if (!isAllZero)
-					{
-						nCustomDataCount++;
-					}
-					else
-					{
-						blockLightMapData.clear();
-					}
+					if (extended && nCount && std::all_of(blockLightMapData.begin(), blockLightMapData.end(),
+						[&](uint8_t value) { return value == blockLightMapData.front(); }))
+						blockLightMapData.resize(1);
+					if (!blockLightMapData.empty()) nCustomDataCount += extended ? 2 : 1;
 				}
 
 				if (nCustomDataCount > 0)
@@ -1221,10 +1397,23 @@ namespace ParaEngine
 						}
 					}
 
+					if (!wideData.empty())
+					{
+						memFile.WriteEncodedUInt(ChunkCustomDataType_WideBlockData);
+						memFile.WriteEncodedUInt(wideData.size());
+						for (const auto& cell : wideData) { memFile.WriteWORD(cell.first); memFile.WriteDWORD(cell.second); }
+					}
 					// write light map
 					if (!blockLightMapData.empty())
 					{
-						memFile.WriteEncodedUInt(ChunkCustomDataType_LightValues);
+						if (extended)
+						{
+							const uint64_t inputs = GetLightInputHash(*pChunk, lightInputs);
+							memFile.WriteEncodedUInt(ChunkCustomDataType_LightInputs);
+							memFile.WriteDWORD(uint32_t(inputs));
+							memFile.WriteDWORD(uint32_t(inputs >> 32));
+						}
+						memFile.WriteEncodedUInt(blockLightMapData.size() == 1 ? ChunkCustomDataType_UniformLight : ChunkCustomDataType_LightValues);
 						memFile.WriteDWORD(blockLightMapData.size());
 						memFile.write(&(blockLightMapData[0]), blockLightMapData.size());
 					}
@@ -1253,6 +1442,7 @@ namespace ParaEngine
 			}
 			auto pStringBuilder = static_cast<StringBuilder*>(memFile.GetHandlePtr());
 
+			bool written = false;
 			// save compressed data
 			do
 			{
@@ -1261,7 +1451,7 @@ namespace ParaEngine
 				// 
 				if (uncompressedSize > 1024)
 				{
-					char* compressedData = new char[uncompressedSize];
+					char* compressedData = new char[compressBound(uncompressedSize)];
 					size_t compressedSize = 0;
 
 					z_stream stream;
@@ -1269,7 +1459,7 @@ namespace ParaEngine
 					stream.avail_in = (uInt)uncompressedSize;
 
 					stream.next_out = (Bytef*)compressedData;
-					stream.avail_out = (uInt)uncompressedSize;
+					stream.avail_out = (uInt)compressBound(uncompressedSize);
 
 					stream.zalloc = (alloc_func)0;
 					stream.zfree = (free_func)0;
@@ -1297,7 +1487,7 @@ namespace ParaEngine
 
 					cfile.WriteDWORD(uncompressedSize); // uncompressedSize
 					cfile.WriteDWORD(compressedSize); // compressedSize;
-					cfile.write(compressedData, compressedSize);
+					written = cfile.write(compressedData, compressedSize) == compressedSize;
 
 					delete[] compressedData;
 				}
@@ -1305,7 +1495,7 @@ namespace ParaEngine
 				{
 					cfile.WriteDWORD(uncompressedSize); // uncompressedSize
 					cfile.WriteDWORD(0); // compressedSize;
-					cfile.write(pStringBuilder->str(), pStringBuilder->size());
+					written = cfile.write(pStringBuilder->str(), pStringBuilder->size()) == pStringBuilder->size();
 				}
 
 
@@ -1315,7 +1505,12 @@ namespace ParaEngine
 			cfile.close();
 			memFile.close();
 
-			GetBlockWorld()->OnSaveBlockRegion(m_regionX, m_regionZ);
+			if (written && CParaFile::MoveFile(stagingFile.c_str(), fileName.c_str()))
+			{
+				m_extendedFormat = extended;
+				SetModified(false);
+				GetBlockWorld()->OnSaveBlockRegion(m_regionX, m_regionZ);
+			}
 		}
 	}
 
@@ -1326,7 +1521,7 @@ namespace ParaEngine
 		uint32_t data_mask = pFile->ReadDWORD();
 		uint32_t dataItemSize = data_mask & 0xffff;
 
-		m_pBlockWorld->SuspendLightUpdate();
+		if (dataItemSize != sizeof(std::pair<uint16_t, uint16_t>)) return;
 
 		if ((data_mask & ChunkDataMask_HasCustomData) > 0)
 		{
@@ -1339,6 +1534,18 @@ namespace ParaEngine
 				case ChunkCustomDataType_Biomes:
 				case ChunkCustomDataType_Biomes_SameInteger:
 					break;
+				case ChunkCustomDataType_LightInputs:
+				{
+					const uint32_t bytes = pFile->ReadEncodedUInt();
+					if (bytes % 12 || bytes / 12 > 16384) return;
+					for (uint32_t i = 0; i < bytes / 12; ++i)
+					{
+						const uint32_t section = pFile->ReadDWORD();
+						const uint64_t low = pFile->ReadDWORD();
+						m_savedLightInputs[section] = low | (uint64_t(pFile->ReadDWORD()) << 32);
+					}
+					break;
+				}
 				case ChunkCustomDataType_TimeStamp:
 				case ChunkCustomDataType_TimeStamp_SameInteger:
 				{
@@ -1367,17 +1574,21 @@ namespace ParaEngine
 					}
 					break;
 				}
+				case ChunkCustomDataType_ExtendedMaterials:
 				case ChunkCustomDataType_Materials:
 				{
+					const size_t indexBytes = nCustomDataType == ChunkCustomDataType_ExtendedMaterials ? sizeof(uint32_t) : sizeof(uint16_t);
 					uint32_t nByteCount = pFile->ReadEncodedUInt();
 					while (nByteCount > 0)
 					{
-						uint16_t chunkIndex = 0;
+						int32_t chunkIndex = 0;
 						uint32_t materialKeyCount = 0;
-						pFile->read(&chunkIndex, sizeof(uint16_t));
+						if (nByteCount < indexBytes + sizeof(uint32_t)) return;
+						chunkIndex = indexBytes == 4 ? pFile->ReadDWORD() : pFile->ReadWORD();
 						pFile->read(&materialKeyCount, sizeof(uint32_t));
-						nByteCount = nByteCount - sizeof(uint16_t) - sizeof(uint32_t);
+						nByteCount = nByteCount - indexBytes - sizeof(uint32_t);
 						auto pChunk = GetChunk(chunkIndex, true);
+						if (!pChunk) return;
 						for (uint32_t i = 0; i < materialKeyCount; i++)
 						{
 							uint32_t materialId = 0;
@@ -1424,15 +1635,19 @@ namespace ParaEngine
 		while (!pFile->isEof())
 		{
 			uint32_t chunkId_and_dataMask = pFile->ReadDWORD();
-			uint32_t chunkId = chunkId_and_dataMask & (0x7fffffff);
+			uint32_t chunkId = chunkId_and_dataMask & 0x1fffffffu;
 
 			m_nChunksLoaded++;
 
-			uint16_t chunkX, chunkY, chunkZ;
+			uint16_t chunkX, chunkZ;
+			int16_t chunkY;
 			UnpackChunkIndex(chunkId, chunkX, chunkY, chunkZ);
+			const uint16_t cellLimit = chunkY == BlockConfig::MaxSectionY ? ((BlockConfig::MaxBlockY & 15) + 1) * 256 : 4096;
+			std::vector<std::pair<uint16_t, uint32_t>> wideData;
 			blockLightMap.clear();
+			if (!BlockConfig::IsSectionY(chunkY) || chunkId != PackChunkIndex(chunkX, chunkY, chunkZ)) return;
 			uint16_t offset_x = (chunkX << 4);
-			uint16_t offset_y = (chunkY << 4);
+			int offset_y = chunkY * 16;
 			uint16_t offset_z = (chunkZ << 4);
 
 			if ((chunkId_and_dataMask & ChunkDataMask_HasCustomData) > 0)
@@ -1443,10 +1658,33 @@ namespace ParaEngine
 					DWORD nCustomDataType = pFile->ReadEncodedUInt();
 					switch (nCustomDataType)
 					{
+					case ChunkCustomDataType_LightInputs:
+					{
+						uint64_t low = pFile->ReadDWORD();
+						m_savedLightInputs[chunkId] = low | (uint64_t(pFile->ReadDWORD()) << 32);
+						break;
+					}
+					case ChunkCustomDataType_WideBlockData:
+					{
+						const auto count = pFile->ReadEncodedUInt();
+						if (count > 4096) return;
+						for (uint32_t i = 0; i < count; ++i)
+						{
+							const auto cell = pFile->ReadWORD();
+							if (cell >= cellLimit) return;
+							wideData.emplace_back(cell, pFile->ReadDWORD());
+						}
+						break;
+					}
+					case ChunkCustomDataType_UniformLight:
+						if (pFile->ReadDWORD() != 1) return;
+						blockLightMap.assign(4096, pFile->ReadByte());
+						break;
 					case ChunkCustomDataType_LightValues:
 					{
 						uint32_t blockCount = pFile->ReadDWORD();
 
+						if (blockCount != 4096) return;
 						blockLightMap.resize(blockCount);
 						pFile->read(&blockLightMap[0], blockCount);
 						break;
@@ -1475,6 +1713,7 @@ namespace ParaEngine
 							blockIndices.resize(nBlockCount);
 							pFile->read(&blockIndices[0], nBlockCount * sizeof(uint16_t));
 						}
+						if (std::any_of(blockIndices.begin(), blockIndices.end(), [cellLimit](uint16_t cell) { return cell >= cellLimit; })) return;
 						if (nBlockCount > 0)
 						{
 							BlockTemplate *pTemplate = m_pBlockWorld->GetBlockTemplate(nBlockID);
@@ -1508,6 +1747,7 @@ namespace ParaEngine
 			{
 				uint32_t blockCount = pFile->ReadDWORD();
 
+				if (blockCount > cellLimit) return;
 				blockData.resize(blockCount);
 				if (blockData.size() > 0)
 				{
@@ -1522,6 +1762,7 @@ namespace ParaEngine
 					for (uint32_t i = 0; i < blockCount; i++)
 					{
 						std::pair<uint16_t, uint16_t>& curBlockData = blockData[i];
+						if (curBlockData.first >= cellLimit) return;
 						BlockTemplate *pTemplate = m_pBlockWorld->GetBlockTemplate(curBlockData.second);
 						if (pTemplate)
 						{
@@ -1535,19 +1776,26 @@ namespace ParaEngine
 			{
 				uint32_t blockCount = pFile->ReadDWORD();
 
+				if (blockCount > cellLimit) return;
 				blockData.resize(blockCount);
 				std::pair<uint16_t, uint16_t> *pData = &blockData[0];
 				pFile->read(pData, dataItemSize*blockCount);
 
-				BlockChunk* pChunk = GetChunk(chunkId);
+				BlockChunk* pChunk = GetChunk(chunkId, true);
 				if (pChunk)
 				{
 					for (uint32_t i = 0; i < blockCount; i++)
 					{
 						std::pair<uint16_t, uint16_t>& curBlockData = blockData[i];
+						if (curBlockData.first >= cellLimit) return;
 						pChunk->SetBlockData(curBlockData.first, curBlockData.second);
 					}
 				}
+			}
+			if (!wideData.empty())
+			{
+				auto* chunk = GetChunk(chunkId, true);
+				for (const auto& cell : wideData) chunk->SetBlockData(cell.first, cell.second);
 			}
 			if (!blockLightMap.empty())
 			{
@@ -1558,14 +1806,13 @@ namespace ParaEngine
 					uint8_t v = blockLightMap[i];
 					pChunk->m_lightmapArray[i].LoadBrightness((v & 0xf0) >> 4, v & 0xf);
 				}
-				m_pBlockWorld->GetLightGrid().SetColumnPreloaded((m_regionX << 5) + chunkX, (m_regionZ << 5) + chunkZ);
+				pChunk->SetLightingInitialized(true);
 			}
 		}
 
 		m_nEventAsyncLoadWorldFinished = 1;
 
-		// TODO: initialize sunlight on height map?  
-		m_pBlockWorld->ResumeLightUpdate();
+
 	}
 
 	void BlockRegion::ParserFile1_0(CParaFile* pFile)
@@ -1681,8 +1928,10 @@ namespace ParaEngine
 		else if (fileTypeId == 0x626c6f63 + 1)
 		{
 			uint16_t version = pFile->ReadWORD();
+			m_extendedFormat = version == 0x0101;
 			switch (version)
 			{
+			case 0x0101:
 			case 0x0100:
 				ParserFile1_0(pFile);
 				break;
@@ -1705,12 +1954,16 @@ namespace ParaEngine
 			SLEEP(10);
 		}
 				
-		uint32_t nCount = GetChunksCount();
-		for (uint32_t i = 0; i < nCount; i++)
+		for (auto& entry : m_chunks)
 		{
-			SAFE_DELETE(m_chunks[i]);
+			delete entry.second;
 		}
-		std::fill(m_blockHeightMap.begin(), m_blockHeightMap.end(), ChunkMaxHeight(0, 0));
+		m_sectionCacheGeneration = NextSectionCacheGeneration();
+		m_chunks.clear();
+		m_savedLightInputs.clear();
+		m_occupiedRows.clear();
+		for (auto& sections : m_columnSections) sections.clear();
+		std::fill(m_blockHeightMap.begin(), m_blockHeightMap.end(), ChunkMaxHeight());
 
 		std::fill(m_biomes.begin(), m_biomes.end(), 0);
 
@@ -1763,7 +2016,7 @@ namespace ParaEngine
 		return 0;
 	}
 
-	bool BlockRegion::IsChunkDirty(int16_t packedChunkID)
+	bool BlockRegion::IsChunkDirty(int32_t packedChunkID)
 	{
 		BlockChunk* pChunk = GetChunk(packedChunkID, false);
 		return pChunk && pChunk->IsDirty();
@@ -1784,7 +2037,7 @@ namespace ParaEngine
 		return m_pBlockWorld;
 	}
 
-	const std::string& BlockRegion::GetMapChunkData(uint32_t chunkX_ws, uint32_t chunkZ_ws, bool bIncludeInit, uint32_t verticalSectionFilter)
+	const std::string& BlockRegion::GetMapChunkData(uint32_t chunkX_ws, uint32_t chunkZ_ws, bool bIncludeInit, uint32_t verticalSectionFilter, const std::vector<int16_t>* sections)
 	{
 		uint16_t chunkX_rs = chunkX_ws & 0x1f;
 		uint16_t chunkZ_rs = chunkZ_ws & 0x1f;
@@ -1792,24 +2045,34 @@ namespace ParaEngine
 		static StringBuilder outputStream;
 		outputStream.clear();
 		// append version format
-		outputStream.append("chunkV1");
+		outputStream.append(sections ? "chunkV2" : "chunkV1");
 		uint32_t nChunkSize = 0;
 		int nChunkSizeLocation = outputStream.size();
 		outputStream.appendBinary((uint32)nChunkSize);
 
+		if (sections)
+		{
+			for (int z = 0; z < 16; ++z)
+				for (int x = 0; x < 16; ++x)
+				{
+					auto* h = GetHighestBlock(chunkX_rs * 16 + x, chunkZ_rs * 16 + z);
+					outputStream.appendBinary(static_cast<uint16_t>(h->m_nSolidHeight));
+					outputStream.appendBinary(static_cast<uint16_t>(h->m_nMaxHeight));
+				}
+		}
 		CSameIntegerEncoder<uint16_t> blockIdEncoder(&outputStream);
 		CSameIntegerEncoder<uint32_t> blockDataEncoder(&outputStream);
-		for (uint16_t y = 0; y < 16; y++)
+		for (size_t iSection = 0; iSection < (sections ? sections->size() : 16u); ++iSection)
 		{
-			if ((verticalSectionFilter & (1 << y)) != 0)
+			const int y = sections ? (*sections)[iSection] : int(iSection);
+			if (sections || (verticalSectionFilter & (1u << iSection)) != 0)
 			{
 				outputStream.appendBinary((uint32)y);
 				int32 nBlockCount = 0;
 				int nBlockCountIndex = outputStream.size();
 				outputStream.appendBinary((uint32)nBlockCount);
-				uint16_t startBlockIdY_ws = y << 4;
-				uint16_t packedChunkId_rs = PackChunkIndex(chunkX_rs, y, chunkZ_rs);
-				BlockChunk * pChunk = m_chunks[packedChunkId_rs];
+				int32_t packedChunkId_rs = PackChunkIndex(chunkX_rs, y, chunkZ_rs);
+				BlockChunk * pChunk = GetChunk(packedChunkId_rs, false);
 				if (pChunk)
 				{
 					blockIdEncoder.Reset();
@@ -1864,7 +2127,7 @@ namespace ParaEngine
 		return g_str;
 	}
 
-	void BlockRegion::ApplyMapChunkData(uint32_t chunkX, uint32_t chunkZ, uint32_t verticalSectionFilter, const std::string& chunkData, const luabind::adl::object& output)
+	void BlockRegion::ApplyMapChunkData(uint32_t chunkX, uint32_t chunkZ, uint32_t verticalSectionFilter, const std::string& chunkData, const luabind::adl::object& output, bool extended)
 	{
 		uint16_t chunkX_rs = chunkX & 0x1f;
 		uint16_t chunkZ_rs = chunkZ & 0x1f;
@@ -1875,8 +2138,9 @@ namespace ParaEngine
 		file.read(sVersion, 7);
 		sVersion[7] = '\0';
 		int nModifiedCount = 0;
+		std::array<ChunkMaxHeight, 256> sky;
 		bool bLightSuspended = false;
-		if (strcmp(sVersion, "chunkV1") == 0)
+		if (strcmp(sVersion, extended ? "chunkV2" : "chunkV1") == 0)
 		{
 			static std::vector<uint16_t> sBlockId(4096);
 			static std::vector<uint32_t> sBlockData(4096);
@@ -1891,6 +2155,18 @@ namespace ParaEngine
 			luabind::adl::object modDataQueue = luabind::newtable(L);
 			output["modData"] = modDataQueue;
 
+			const auto size = file.ReadDWORD();
+			if (chunkData.size() < 11 || size != chunkData.size() - 11) return;
+			if (extended)
+			{
+				if (size < 1024 || !m_pBlockWorld->IsBuildableY(BlockConfig::MinBlockY)) return;
+				for (auto& h : sky)
+				{
+					h.m_nSolidHeight = static_cast<int16_t>(file.ReadWORD());
+					h.m_nMaxHeight = static_cast<int16_t>(file.ReadWORD());
+					if (h.m_nSolidHeight < BlockConfig::MinBlockY - 1 || h.m_nMaxHeight > BlockConfig::MaxBlockY || h.m_nMaxHeight < h.m_nSolidHeight) return;
+				}
+			}
 			if (IsChunkColumnFirstLoaded)
 			{
 				if (!GetBlockWorld()->IsLightUpdateSuspended())
@@ -1900,30 +2176,31 @@ namespace ParaEngine
 				}
 			}
 
-			int nChunkSize = (int)file.ReadDWORD();
 			while (!file.isEof())
 			{
-				uint32_t chunkY_rs = (uint32_t)file.ReadDWORD();
-				if (chunkY_rs < 16)
+				int32_t chunkY_rs = static_cast<int32_t>(file.ReadDWORD());
+				if (!(extended ? BlockConfig::IsSectionY(chunkY_rs) : (chunkY_rs >= 0 && chunkY_rs < 16))) break;
+
 				{
 					uint32_t nBlockCount = (uint32_t)file.ReadDWORD();
 
 					if (nBlockCount > 0)
 					{
-						assert(nBlockCount <= 4096);
+						if (nBlockCount > 4096) break;
 						sBlockId.clear();
 						sBlockData.clear();
 						CSameIntegerDecoder<uint16_t>::DecodeSameIntegerOfCount(file, sBlockId, 4096);
 						CSameIntegerDecoder<uint32_t>::DecodeSameIntegerOfCount(file, sBlockData, 4096);
-						assert(sBlockId.size() == 4096 && sBlockData.size() == 4096);
+						if (sBlockId.size() != 4096 || sBlockData.size() != 4096) break;
+						if (chunkY_rs == BlockConfig::MaxSectionY && std::any_of(sBlockId.begin() + ((BlockConfig::MaxBlockY % 16) + 1) * 256, sBlockId.end(), [](uint16_t id) { return id != 0; })) break;
 
-						uint16_t packedChunkId_rs = PackChunkIndex(chunkX_rs, chunkY_rs, chunkZ_rs);
+						int32_t packedChunkId_rs = PackChunkIndex(chunkX_rs, chunkY_rs, chunkZ_rs);
 						BlockChunk * pChunk = GetChunk(packedChunkId_rs, false);
 						if (pChunk == NULL)
 						{
 							pChunk = GetChunk(packedChunkId_rs, true);
 						}
-						if (IsChunkColumnFirstLoaded && pChunk)
+						if (IsChunkColumnFirstLoaded && pChunk && !pChunk->HasBlocks())
 						{
 							uint32_t nCount = pChunk->m_blockIndices.size();
 							pChunk->ReserveBlocks(nBlockCount);
@@ -1932,6 +2209,7 @@ namespace ParaEngine
 								if (sBlockId[i] > 0)
 								{
 									BlockTemplate* pTemplate = GetBlockWorld()->GetBlockTemplate(sBlockId[i]);
+									if (!pTemplate) continue;
 									pChunk->LoadBlock(i, pTemplate);
 									pChunk->SetBlockData(i, sBlockData[i]);
 									nModifiedCount++;
@@ -1942,7 +2220,7 @@ namespace ParaEngine
 						{
 							uint32_t nCount = pChunk->m_blockIndices.size();
 							uint16_t chunkX_ws = (chunkX_rs << 4);
-							uint16_t chunkY_ws = (chunkY_rs << 4);
+							int16_t chunkY_ws = chunkY_rs * 16;
 							uint16_t chunkZ_ws = (chunkZ_rs << 4);
 							for (uint32_t i = 0; i < nCount; i++)
 							{
@@ -1955,13 +2233,13 @@ namespace ParaEngine
 										Block& curBlock = pChunk->GetBlockByIndex(blockIdx);
 										if (curBlock.GetTemplate() && curBlock.GetTemplate()->IsMatchAttribute(BlockTemplate::batt_onload))
 										{
-											removeQueue[i * 16 + chunkY_rs] = curBlock.GetTemplateId();
+											removeQueue[(extended ? chunkY_rs * 4096 + int(i) : int(i) * 16 + chunkY_rs)] = curBlock.GetTemplateId();
 										}
 
 										uint16_t blockX, blockY, blockZ;
 										UnpackBlockIndex(i, blockX, blockY, blockZ);
 										uint16_t regionBlockX = chunkX_ws + blockX;
-										uint16_t regionBlockY = chunkY_ws + blockY;
+										int16_t regionBlockY = chunkY_ws + blockY;
 										uint16_t regionBlockZ = chunkZ_ws + blockZ;
 										SetBlockTemplateByIndex(regionBlockX, regionBlockY, regionBlockZ, NULL);
 										nModifiedCount++;
@@ -1983,7 +2261,7 @@ namespace ParaEngine
 												uint16_t blockX, blockY, blockZ;
 												UnpackBlockIndex(i, blockX, blockY, blockZ);
 												uint16_t regionBlockX = chunkX_ws + blockX;
-												uint16_t regionBlockY = chunkY_ws + blockY;
+												int16_t regionBlockY = chunkY_ws + blockY;
 												uint16_t regionBlockZ = chunkZ_ws + blockZ;
 
 												if (!bSameBlockId)
@@ -1992,12 +2270,12 @@ namespace ParaEngine
 													{
 														if (curBlock.GetTemplate()->IsMatchAttribute(BlockTemplate::batt_onload))
 														{
-															removeQueue[i * 16 + chunkY_rs] = curBlock.GetTemplateId();
+															removeQueue[(extended ? chunkY_rs * 4096 + int(i) : int(i) * 16 + chunkY_rs)] = curBlock.GetTemplateId();
 															if (pTemplate->IsMatchAttribute(BlockTemplate::batt_onload))
 															{
-																addQueue[i * 16 + chunkY_rs] = sBlockId[i];
+																addQueue[(extended ? chunkY_rs * 4096 + int(i) : int(i) * 16 + chunkY_rs)] = sBlockId[i];
 																if (sBlockData[i] != 0)
-																	addDataQueue[i * 16 + chunkY_rs] = sBlockData[i];
+																	addDataQueue[(extended ? chunkY_rs * 4096 + int(i) : int(i) * 16 + chunkY_rs)] = sBlockData[i];
 															}
 														}
 													}
@@ -2012,7 +2290,7 @@ namespace ParaEngine
 												{
 													if (!bSameBlockData)
 													{
-														modDataQueue[i * 16 + chunkY_rs] = sBlockData[i];
+														modDataQueue[(extended ? chunkY_rs * 4096 + int(i) : int(i) * 16 + chunkY_rs)] = sBlockData[i];
 														SetBlockUserDataByIndex(regionBlockX, regionBlockY, regionBlockZ, sBlockData[i]);
 													}
 												}
@@ -2028,16 +2306,16 @@ namespace ParaEngine
 											nModifiedCount++;
 											if (pTemplate->IsMatchAttribute(BlockTemplate::batt_onload))
 											{
-												addQueue[i * 16 + chunkY_rs] = sBlockId[i];
+												addQueue[(extended ? chunkY_rs * 4096 + int(i) : int(i) * 16 + chunkY_rs)] = sBlockId[i];
 												if (sBlockData[i] != 0)
 												{
-													addDataQueue[i * 16 + chunkY_rs] = sBlockData[i];
+													addDataQueue[(extended ? chunkY_rs * 4096 + int(i) : int(i) * 16 + chunkY_rs)] = sBlockData[i];
 												}
 											}
 											uint16_t blockX, blockY, blockZ;
 											UnpackBlockIndex(i, blockX, blockY, blockZ);
 											uint16_t regionBlockX = chunkX_ws + blockX;
-											uint16_t regionBlockY = chunkY_ws + blockY;
+											int16_t regionBlockY = chunkY_ws + blockY;
 											uint16_t regionBlockZ = chunkZ_ws + blockZ;
 											SetBlockTemplateByIndex(regionBlockX, regionBlockY, regionBlockZ, pTemplate);
 											if (sBlockData[i] != 0)
@@ -2056,17 +2334,17 @@ namespace ParaEngine
 					}
 					else
 					{
-						CSameIntegerDecoder<uint16_t>::SkipDecodeSameIntegerOfCount(file, 4096);
-						CSameIntegerDecoder<uint32_t>::SkipDecodeSameIntegerOfCount(file, 4096);
+						if (!CSameIntegerDecoder<uint16_t>::SkipDecodeSameIntegerOfCount(file, 4096) ||
+							!CSameIntegerDecoder<uint32_t>::SkipDecodeSameIntegerOfCount(file, 4096)) break;
 
-						uint16_t packedChunkId_rs = PackChunkIndex(chunkX_rs, chunkY_rs, chunkZ_rs);
+						int32_t packedChunkId_rs = PackChunkIndex(chunkX_rs, chunkY_rs, chunkZ_rs);
 						BlockChunk * pChunk = GetChunk(packedChunkId_rs, false);
 						if (pChunk)
 						{
 							// clear this chunk if has any data
 							uint32_t nCount = pChunk->m_blockIndices.size();
 							uint16_t chunkX_ws = (chunkX_rs << 4);
-							uint16_t chunkY_ws = (chunkY_rs << 4);
+							int16_t chunkY_ws = chunkY_rs * 16;
 							uint16_t chunkZ_ws = (chunkZ_rs << 4);
 							for (uint32_t i = 0; i < nCount; i++)
 							{
@@ -2078,12 +2356,12 @@ namespace ParaEngine
 									Block& curBlock = pChunk->GetBlockByIndex(blockIdx);
 									if (curBlock.GetTemplate() && curBlock.GetTemplate()->IsMatchAttribute(BlockTemplate::batt_onload))
 									{
-										removeQueue[i * 16 + chunkY_rs] = curBlock.GetTemplateId();
+										removeQueue[(extended ? chunkY_rs * 4096 + int(i) : int(i) * 16 + chunkY_rs)] = curBlock.GetTemplateId();
 									}
 									uint16_t blockX, blockY, blockZ;
 									UnpackBlockIndex(i, blockX, blockY, blockZ);
 									uint16_t regionBlockX = chunkX_ws + blockX;
-									uint16_t regionBlockY = chunkY_ws + blockY;
+									int16_t regionBlockY = chunkY_ws + blockY;
 									uint16_t regionBlockZ = chunkZ_ws + blockZ;
 									SetBlockTemplateByIndex(regionBlockX, regionBlockY, regionBlockZ, NULL);
 								}
@@ -2113,6 +2391,21 @@ namespace ParaEngine
 		}
 		if (bLightSuspended)
 			GetBlockWorld()->ResumeLightUpdate();
+		if (extended && strcmp(sVersion, "chunkV2") == 0)
+		{
+			for (int z = 0; z < 16; ++z)
+				for (int x = 0; x < 16; ++x)
+				{
+					auto* height = GetHighestBlock(chunkX_rs * 16 + x, chunkZ_rs * 16 + z);
+					const auto previous = *height;
+					*height = sky[z * 16 + x];
+					if (previous.m_nSolidHeight != height->m_nSolidHeight)
+					{
+						auto oldHeight = previous;
+						m_pBlockWorld->NotifyBlockHeightMapChanged(chunkX * 16 + x, chunkZ * 16 + z, oldHeight);
+					}
+				}
+		}
 	}
 
 	void BlockRegion::Load()
@@ -2175,10 +2468,9 @@ namespace ParaEngine
 
 	void BlockRegion::ClearAllLight()
 	{
-		uint32_t nCount = GetChunksCount();
-		for (uint32_t i = 0; i < nCount; i++)
+		for (auto& entry : m_chunks)
 		{
-			BlockChunk * pChunk = m_chunks[i];
+			BlockChunk * pChunk = entry.second;
 			if (pChunk)
 			{
 				pChunk->ClearAllLight();
@@ -2207,10 +2499,10 @@ namespace ParaEngine
 				uint16 rz = chunkZ_ws - m_minChunkId_ws.z + z;
 				if (rx < 32 && rz < 32)
 				{
-					for (uint16 ry = 0; ry < 16; ry++)
+					for (int ry : GetColumnSections(rx, rz))
 					{
-						uint16_t nIndex = PackBlockIndex(rx, ry, rz);
-						BlockChunk * pChunk = m_chunks[nIndex];
+						auto nIndex = PackChunkIndex(rx, ry, rz);
+						BlockChunk * pChunk = GetChunk(nIndex, false);
 						if (pChunk)
 						{
 							pChunk->ClearLightMap();
@@ -2266,6 +2558,16 @@ namespace ParaEngine
 			}
 			m_nEventAsyncLoadWorldFinished = 0;
 
+			ValidateSavedLighting();
+			for (unsigned column = 0; column < m_columnSections.size(); ++column)
+			{
+				const auto& sections = m_columnSections[column];
+				if (!sections.empty() && std::all_of(sections.begin(), sections.end(), [&](int y) {
+					const auto key = PackChunkIndex(column & 31, y, column >> 5);
+					return GetChunk(key, false)->IsLightingInitialized() && !m_savedLightInputs.count(key);
+				}))
+					m_pBlockWorld->GetLightGrid().SetColumnPreloaded(m_regionX * 32 + (column & 31), m_regionZ * 32 + (column >> 5));
+			}
 			m_pBlockWorld->ResumeLightUpdate();
 
 			Int16x3 minChunkId = m_minChunkId_ws;
@@ -2275,7 +2577,7 @@ namespace ParaEngine
 			{
 				for (uint16 cz = m_minChunkId_ws.z; cz < m_maxChunkId_ws.z; cz++)
 				{
-					if (m_pBlockWorld->IsChunkColumnInActiveRange(cx, cz))
+					if (m_pBlockWorld->IsChunkColumnInActiveRange(cx, cz) && !m_pBlockWorld->GetLightGrid().IsChunkColumnLoaded(cx, cz))
 					{
 						m_pBlockWorld->GetLightGrid().AddDirtyColumn(cx, cz);
 						bHasDirtyColumns = true;
@@ -2340,10 +2642,9 @@ namespace ParaEngine
 	void BlockRegion::CalculateTotalBytes()
 	{
 		int nBytes = 0;
-		uint32_t nCount = GetChunksCount();
-		for (uint32_t i = 0; i < nCount; i++)
+		for (auto& entry : m_chunks)
 		{
-			BlockChunk * pChunk = m_chunks[i];
+			BlockChunk * pChunk = entry.second;
 			if (pChunk)
 			{
 				nBytes += pChunk->GetTotalBytes();
@@ -2351,7 +2652,7 @@ namespace ParaEngine
 		}
 		m_nTotalBytes = nBytes
 			+ sizeof(BlockRegion)
-			+ sizeof(BlockChunkPtr) * GetChunksCount()
+			+ sizeof(BlockChunkPtr) * m_chunks.size()
 			+ sizeof(unsigned char) * m_chunkTimestamp.size()
 			+ sizeof(unsigned char) * m_biomes.size()
 			+ sizeof(ChunkMaxHeight) * m_blockHeightMap.size()

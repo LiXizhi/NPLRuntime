@@ -12,7 +12,7 @@
 namespace ParaEngine
 {
 	CBlockLightGridBase::CBlockLightGridBase(CBlockWorld* pBlockWorld)
-		: m_nLightGridChunkSize(0), m_pBlockWorld(pBlockWorld), m_suspendLightUpdate(false), m_nLightCalculationStep(0), m_bIsAsyncLightCalculation(true), m_nSkyHeight(255)
+		: m_nLightGridChunkSize(0), m_pBlockWorld(pBlockWorld), m_suspendLightUpdate(false), m_nLightCalculationStep(0), m_bIsAsyncLightCalculation(true), m_nSkyHeight(BlockConfig::MaxBlockY + 1)
 	{
 	}
 
@@ -22,7 +22,7 @@ namespace ParaEngine
 
 	void CBlockLightGridBase::OnEnterWorld()
 	{
-		m_nSkyHeight = 255;
+		if (!m_pBlockWorld->IsInBlockWorld()) m_nSkyHeight = BlockConfig::MaxBlockY + 1;
 	}
 
 	void CBlockLightGridBase::OnLeaveWorld()
@@ -96,12 +96,12 @@ namespace ParaEngine
 		return NULL;
 	}
 
-	LightData* CBlockLightGridBase::GetLightData(uint16_t x, uint16_t y, uint16_t z, bool bCreateIfNotExist)
+	LightData* CBlockLightGridBase::GetLightData(uint16_t x, int16_t y, uint16_t z, bool bCreateIfNotExist)
 	{
 		return m_pBlockWorld->GetLightData(x, y, z, bCreateIfNotExist);
 	}
 
-	BlockChunk* CBlockLightGridBase::GetChunk(uint16_t x, uint16_t y, uint16_t z, bool bCreateIfNotExist)
+	BlockChunk* CBlockLightGridBase::GetChunk(uint16_t x, int16_t y, uint16_t z, bool bCreateIfNotExist)
 	{
 		return m_pBlockWorld->GetChunk(x, y, z, bCreateIfNotExist);
 	}
@@ -159,6 +159,7 @@ namespace ParaEngine
 	{
 		if (m_nSkyHeight != nHeight) {
 			m_nSkyHeight = nHeight;
+			if (m_pBlockWorld->IsInBlockWorld()) m_pBlockWorld->ResetAllLight();
 			m_pBlockWorld->ClearBlockRenderCache();
 		}
 	}

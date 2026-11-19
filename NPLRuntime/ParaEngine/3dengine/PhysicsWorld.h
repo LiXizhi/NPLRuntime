@@ -53,12 +53,12 @@ namespace ParaEngine
 		void SetKey(uint32_t key) { m_key = key; }
 		uint32_t GetKey() { return m_key; }
 
-		static uint64_t PackID(uint16_t bx, uint16_t by, uint16_t bz)
+		static uint64_t PackID(uint16_t bx, int16_t by, uint16_t bz)
 		{
-			return (((uint64)by)<<32) + (((uint64)bx) << 16)  + bz;
+			return (uint64_t(uint16_t(by)) << 32) + (((uint64)bx) << 16)  + bz;
 		}
 
-		static void UnPackID(uint64_t id, uint16_t& bx, uint16_t& by, uint16_t& bz)
+		static void UnPackID(uint64_t id, uint16_t& bx, int16_t& by, uint16_t& bz)
 		{	
 			bz = (uint16_t)(id & 0xffff);
 			bx = (uint16_t)((id >> 16) & 0xffff);
@@ -199,7 +199,7 @@ namespace ParaEngine
 		IParaPhysicsActor* CreateDynamicMesh(CBaseObject* obj);
 		IParaPhysicsActor* CreateDynamicShape(CBaseObject* obj);
 		
-		std::shared_ptr<CPhysicsBlock> LoadPhysicsBlock(uint16_t bx, uint16_t by, uint16_t bz);
+		std::shared_ptr<CPhysicsBlock> LoadPhysicsBlock(uint16_t bx, int16_t by, uint16_t bz);
 		void LoadPhysicsBlock(CShapeAABB* aabb, int16_t frameId = 0, float extend = 0.5f);
 
 		/** release an actor by calling this function. */

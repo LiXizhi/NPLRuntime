@@ -1,4 +1,5 @@
 #pragma once
+#include "BlockConfig.h"
 
 namespace ParaEngine
 {
@@ -10,7 +11,7 @@ namespace ParaEngine
 		int16_t m_nMaxHeight;
 
 	public:
-		ChunkMaxHeight(int16_t nSolidHeight=0, int16_t nMaxHeight=0);
+		ChunkMaxHeight(int16_t nSolidHeight=BlockConfig::MinBlockY - 1, int16_t nMaxHeight=BlockConfig::MinBlockY - 1);
 
 		// y pos of the highest block
 		int16_t GetMaxHeight();

@@ -1,7 +1,12 @@
 #include "ParaEngine.h"
+#include "Core/ParaEngineAppBase.h"
+#include "BlockEngine/BlockLightGridClient.h"
 #include "Framework/Interface/Render/RHITypes.h"
 #include "3dengine/SoftwareOcclusionBuffer.h"
 #include "BlockEngine/BlockChunk.h"
+#include "BlockEngine/BlockIndex.h"
+#include "BlockEngine/BlockRegion.h"
+#include "BlockEngine/BlockWorld.h"
 #include "BlockEngine/BlockTemplate.h"
 #include "BlockEngine/BlockDirection.h"
 #include "BlockEngine/BlockCommon.h"
@@ -25,6 +30,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cmath>
+#include <boost/filesystem.hpp>
 
 using namespace ParaEngine;
 
@@ -72,6 +78,267 @@ namespace
 			m._44 = 0.0f;
 		}
 		return m;
+	}
+
+	void TestBlockHeightRange()
+	{
+		CBlockWorld world;
+		BlockRegion region(0, 0, &world);
+		auto* stone = world.RegisterTemplate(1, BlockTemplate::batt_solid | BlockTemplate::batt_cubeModel, 0);
+		const int levels[] = {-256, -1, 0, 255, 256, 9000};
+		for (int y : levels)
+		{
+			region.SetBlockTemplateByIndex(2, y, 3, stone);
+			TEST_CHECK(region.GetBlockTemplateIdByIndex(2, y, 3) == 1);
+			region.SetBlockUserDataByIndex(2, y, 3, y + 257);
+		}
+		for (int y : levels)
+			TEST_CHECK(region.GetBlockUserDataByIndex(2, y, 3) == y + 257);
+		TEST_CHECK(region.GetColumnSections(0, 0).size() == 6);
+		region.SetBlockTemplateByIndex(2, 9001, 3, stone);
+		region.SetBlockTemplateByIndex(2, -257, 3, stone);
+		TEST_CHECK(region.GetBlock(2, 9001, 3) == nullptr);
+		TEST_CHECK(region.GetBlock(2, -257, 3) == nullptr);
+		TEST_CHECK(region.GetHighestBlock(2, 3)->GetMaxSolidHeight() == 9000);
+
+		world.SaveLightMap(true);
+		const auto file = boost::filesystem::temp_directory_path() / boost::filesystem::unique_path("block-height-%%%%-%%%%.raw");
+
+		region.SetBlockUserDataByIndex(2, 9000, 3, 0xaff0ff01u);
+		auto* bottom = region.GetChunk(CalcPackedChunkID(2, -256, 3), false);
+
+		bottom->SetLightingInitialized(true);
+		bottom->GetLightData(10)->LoadBrightness(6, 12);
+
+		region.SetBlockMaterial(2, 9000, 3, 0, 12345);
+		region.SaveToFile(file.generic_string().c_str());
+		TEST_CHECK(!region.IsModified());
+		{
+			BlockRegion restored(0, 0, &world);
+			BlockRegion::LoadFromFile_s(&restored, file.generic_string().c_str());
+
+			for (int y : levels) TEST_CHECK(restored.GetBlockTemplateIdByIndex(2, y, 3) == 1);
+			TEST_CHECK(restored.GetBlockUserDataByIndex(2, 9000, 3) == 0xaff0ff01u);
+			TEST_CHECK(restored.GetHighestBlock(2, 3)->GetMaxSolidHeight() == 9000);
+			TEST_CHECK(restored.GetBlockMaterial(2, 9000, 3, 0) == 12345);
+			auto* section = restored.GetChunk(CalcPackedChunkID(2, -256, 3), false);
+			TEST_CHECK(section && section->IsLightingInitialized() && section->GetLightData(10)->GetBrightness(false) == 12);
+			TEST_CHECK(restored.GetColumnSections(0, 0).size() == 6);
+		}
+		{
+			BlockRegion legacy(0, 0, &world);
+			legacy.SetBlockTemplateByIndex(2, 255, 3, stone);
+			legacy.SaveToFile(file.generic_string().c_str());
+			BlockRegion restored(0, 0, &world);
+			BlockRegion::LoadFromFile_s(&restored, file.generic_string().c_str());
+
+			TEST_CHECK(restored.GetBlockTemplateIdByIndex(2, 255, 3) == 1);
+			TEST_CHECK(restored.GetColumnSections(0, 0).size() == 1);
+		}
+		boost::filesystem::remove(file);
+		lua_State* L = luaL_newstate();
+		{
+			auto output = luabind::newtable(L);
+			BlockRegion replica(0, 0, &world);
+			std::vector<int16_t> sections{-16, 562};
+			replica.ApplyMapChunkData(0, 0, 0, region.GetMapChunkData(0, 0, true, 0, &sections), output, true);
+			TEST_CHECK(replica.GetBlockTemplateIdByIndex(2, -256, 3) == 1);
+			TEST_CHECK(replica.GetBlockUserDataByIndex(2, 9000, 3) == 0xaff0ff01u);
+			TEST_CHECK(replica.GetBlockTemplateIdByIndex(2, 255, 3) == 0);
+			BlockRegion partial(0, 0, &world);
+			sections.pop_back();
+			partial.ApplyMapChunkData(0, 0, 0, region.GetMapChunkData(0, 0, true, 0, &sections), output, true);
+			TEST_CHECK(partial.GetHighestBlock(2, 3)->GetMaxSolidHeight() == 9000);
+			TEST_CHECK(partial.GetColumnSections(0, 0).size() == 1);
+			BlockRegion legacyPeer(0, 0, &world);
+			legacyPeer.ApplyMapChunkData(0, 0, 0xffff, region.GetMapChunkData(0, 0, true, 0xffff), output);
+			TEST_CHECK(legacyPeer.GetBlockTemplateIdByIndex(2, 255, 3) == 1);
+			TEST_CHECK(legacyPeer.GetBlockTemplateIdByIndex(2, -256, 3) == 0);
+		}
+		lua_close(L);
+		region.SetBlockTemplateByIndex(2, 9000, 3, nullptr);
+		TEST_CHECK(region.GetHighestBlock(2, 3)->GetMaxSolidHeight() == 256);
+		for (int y = -256; y <= 9000; ++y)
+		{
+			uint16_t x, z;
+			int16_t section;
+			UnpackChunkIndex(CalcPackedChunkID(511, y, 510), x, section, z);
+			TEST_CHECK(x == 31 && z == 31 && section * 16 + (y & 15) == y);
+		}
+	}
+
+	class LightingTestWorld : public CBlockWorld
+	{
+	public:
+		LightingTestWorld() : region(0, 0, this)
+		{
+			delete m_pLightGrid;
+			m_pLightGrid = new CBlockLightGridClient(8, this);
+			m_pRegions[0] = &region;
+			m_isInWorld = true;
+			GetLightGrid().OnEnterWorld();
+		}
+		~LightingTestWorld() { m_isInWorld = false; m_pRegions[0] = nullptr; }
+		void CheckUnloadedRoof()
+		{
+			auto* roof = new BlockRegion(1, 0, this);
+			m_pRegions[roof->GetPackedRegionIndex()] = roof;
+			roof->SetBlockTemplateByIndex(24, 9000, 24, GetBlockTemplate(1));
+			SetIsRemote(true);
+			UnloadRegion(roof, true);
+			auto* summary = GetHighestBlock(536, 24);
+			TEST_CHECK(summary && summary->GetMaxSolidHeight() == 9000);
+			TEST_CHECK(!GetChunk(536, 9000, 24, false));
+			SetIsRemote(false);
+		}
+		BlockRegion region;
+	};
+
+	void TestSparseSkyLight()
+	{
+		size_t referenceSeeds = 0, referenceSections = 0;
+		uint64_t referenceVisits = 0;
+		// The first pair aligns section boundaries. The second leaves precisely 256 and 9,000 air cells.
+		for (int roof : {8, 9000, 1, 8745})
+		{
+			LightingTestWorld world;
+			auto& grid = static_cast<CBlockLightGridClient&>(world.GetLightGrid());
+			auto* stone = world.RegisterTemplate(1, BlockTemplate::batt_solid | BlockTemplate::batt_cubeModel, 0);
+			auto* torch = world.RegisterTemplate(2, BlockTemplate::batt_light | BlockTemplate::batt_transparent, 0);
+			torch->SetTorchLight(15);
+			torch->SetLightOpacity(1);
+			world.SetBlockId(24, -256, 24, 1);
+			grid.ProcessPendingLightCells(100000);
+			Uint16x3 sample(24, -255, 24);
+			uint8_t light[2] = {};
+			grid.GetBrightness(sample, light, 1, 2);
+			TEST_CHECK(light[1] == 15);
+			PickResult picked{};
+			TEST_CHECK(world.Pick(BlockCommon::ConvertToRealPosition(24, -254, 24), Vector3(0, -1, 0), 10, picked) && picked.BlockY == -256);
+			auto before = grid.GetLightCellsVisited();
+			world.SetBlockId(24, roof, 24, 1);
+			TEST_CHECK(world.Pick(BlockCommon::ConvertToRealPosition(24, roof + 2, 24), Vector3(0, -1, 0), 10, picked) && picked.BlockY == roof);
+			auto seeds = grid.GetPendingLightCellCount();
+			TEST_CHECK(seeds > 0 && seeds < 64);
+			grid.ProcessPendingLightCells(100000);
+			grid.GetBrightness(sample, light, 1, 2);
+			TEST_CHECK(light[1] == 14);
+			auto sections = world.region.GetColumnSections(1, 1);
+			for (int y : sections) TEST_CHECK(y <= -14 || y >= BlockConfig::SectionY(roof) - 2);
+			auto count = BlockChunk::GetTotalChunksInMemory();
+			for (int y = -220; y < roof - 20; y += 16)
+			{
+				Uint16x3 air(24, y, 24);
+				grid.GetBrightness(air, light, 1, 2);
+				TEST_CHECK(light[1] == 14);
+			}
+			TEST_CHECK(BlockChunk::GetTotalChunksInMemory() == count);
+			std::printf("roof Y %d: %zu seeds, %llu light queue visits, %zu stored sections in column\n", roof, seeds,
+				static_cast<unsigned long long>(grid.GetLightCellsVisited() - before), sections.size());
+			const auto visits = grid.GetLightCellsVisited() - before;
+			TEST_CHECK(visits < 128 && sections.size() <= 6);
+			if (roof == 9000)
+			{
+				world.CheckUnloadedRoof();
+				TEST_CHECK(seeds == referenceSeeds);
+				TEST_CHECK(visits == referenceVisits);
+				TEST_CHECK(sections.size() == referenceSections);
+			}
+			referenceSeeds = seeds;
+			referenceVisits = visits;
+			referenceSections = sections.size();
+			world.SetBlockId(24, roof, 24, 0);
+			grid.ProcessPendingLightCells(100000);
+			grid.GetBrightness(sample, light, 1, 2);
+			TEST_CHECK(light[1] == 15);
+			auto* glass = world.RegisterTemplate(3, BlockTemplate::batt_transparent, 0);
+			glass->SetLightOpacity(1);
+			auto* water = world.RegisterTemplate(4, BlockTemplate::batt_liquid, 0);
+			water->SetLightOpacity(3);
+			world.SetBlockId(24, roof, 24, 3);
+			grid.ProcessPendingLightCells(100000);
+			grid.GetBrightness(sample, light, 1, 2);
+			TEST_CHECK(light[1] == 15);
+			world.SetBlockId(24, roof, 24, 4);
+			grid.ProcessPendingLightCells(100000);
+			grid.GetBrightness(sample, light, 1, 2);
+			TEST_CHECK(light[1] == 14);
+			world.SetBlockId(24, -241, 24, 2);
+			world.SetBlockId(26, -239, 24, 2);
+			grid.ProcessPendingLightCells(100000);
+			Uint16x3 seam(24, -240, 24);
+			grid.GetBrightness(seam, light, 1, 2);
+			TEST_CHECK(light[0] == 14);
+			world.SetBlockId(24, -241, 24, 0);
+			grid.ProcessPendingLightCells(100000);
+			grid.GetBrightness(seam, light, 1, 2);
+			TEST_CHECK(light[0] == 12);
+			if (roof == 9000)
+			{
+				// Tessellation batches both channels across signed and partial sections.
+				world.SetBlockId(31, -1, 31, 2);
+				grid.ProcessPendingLightCells(100000);
+				for (int level : {-256, -241, -1, 0, 9000, 9001})
+				{
+					Uint16x3 center(31, level, 31);
+					uint8_t batch[81], single[3];
+					grid.GetBrightness(center, batch, 27, 3);
+					for (int i = 0; i < 27; ++i)
+					{
+						Uint16x3 neighbor = center + BlockCommon::NeighborOfsTable[i];
+						grid.GetBrightness(neighbor, single, 1, 3);
+						for (int channel = 0; channel < 3; ++channel)
+							TEST_CHECK(batch[27 * channel + i] == single[channel]);
+					}
+				}
+			}
+		}
+	}
+
+	void TestSavedSectionValidity()
+	{
+		const auto file = boost::filesystem::temp_directory_path() / boost::filesystem::unique_path("block-light-%%%%-%%%%.raw");
+		LightingTestWorld world;
+		world.SaveLightMap(true);
+		auto& grid = static_cast<CBlockLightGridClient&>(world.GetLightGrid());
+		world.RegisterTemplate(1, BlockTemplate::batt_solid | BlockTemplate::batt_cubeModel, 0);
+		grid.SetColumnPreloaded(1, 1);
+		world.SetBlockId(24, -256, 24, 1);
+		world.SetBlockId(24, 9000, 24, 1);
+		grid.ProcessPendingLightCells(100000);
+		world.region.SaveToFile(file.generic_string().c_str());
+		{
+			LightingTestWorld loaded;
+			loaded.RegisterTemplate(1, BlockTemplate::batt_solid | BlockTemplate::batt_cubeModel, 0);
+			BlockRegion::LoadFromFile_s(&loaded.region, file.generic_string().c_str());
+			loaded.region.OnLoadWorldFinished();
+			auto& warm = static_cast<CBlockLightGridClient&>(loaded.GetLightGrid());
+			TEST_CHECK(warm.IsChunkColumnLoaded(1, 1));
+			TEST_CHECK(warm.GetPendingLightCellCount() == 0);
+		}
+		world.SetBlockId(24, 8999, 24, 1);
+		TEST_CHECK(grid.IsSectionLightPending(1, 562, 1));
+		TEST_CHECK(!grid.IsSectionLightPending(1, -16, 1));
+		world.region.SaveToFile(file.generic_string().c_str());
+		LightingTestWorld restored;
+		restored.RegisterTemplate(1, BlockTemplate::batt_solid | BlockTemplate::batt_cubeModel, 0);
+		BlockRegion::LoadFromFile_s(&restored.region, file.generic_string().c_str());
+		restored.region.OnLoadWorldFinished();
+		TEST_CHECK(restored.GetBlockTemplateIdByIdx(24, 8999, 24) == 1);
+		TEST_CHECK(!restored.region.GetChunk(CalcPackedChunkID(24, 8999, 24), false)->IsLightingInitialized());
+		TEST_CHECK(!restored.GetLightGrid().IsChunkColumnLoaded(1, 1));
+		world.GetLightGrid().SetSkyHeight(-255);
+		uint8_t light[2]{};
+		Uint16x3 shadow(24, -255, 24);
+		grid.GetBrightness(shadow, light, 1, 2);
+		TEST_CHECK(grid.GetSkyHeight() == -255 && light[1] == 15);
+		CBlockWorld::SetLegacyHeightSession_s(&world, true);
+		world.SetBlockId(30, -256, 30, 1);
+		world.SetBlockId(30, 9000, 30, 1);
+		TEST_CHECK(!world.region.GetBlock(30, -256, 30) && !world.region.GetBlock(30, 9000, 30));
+		world.SetBlockId(30, 255, 30, 1);
+		TEST_CHECK(world.GetBlockId(30, 255, 30) == 1);
+		boost::filesystem::remove(file);
 	}
 
 	void TestLowEndAndSkinningCaps()
@@ -423,6 +690,10 @@ int main()
 {
 	std::printf("=== Running World & Block Rendering Optimization Unit Tests ===\n");
 
+	CParaEngineAppBase application;
+	TestBlockHeightRange();
+	TestSparseSkyLight();
+	TestSavedSectionValidity();
 	TestLowEndAndSkinningCaps();
 	TestBlockChunkVisibilityGraph();
 	TestSoftwareOcclusionBufferMode(true);   // D3D11 / D3D12 / Vulkan / Metal / WebGPU [0, 1] clip Z

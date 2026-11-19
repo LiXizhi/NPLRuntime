@@ -36,7 +36,7 @@ namespace ParaEngine
 		RenderableChunk();
 		~RenderableChunk();
 
-		void ReuseChunk(BlockRegion* m_ownerBlockRegion,int16_t chunkIndex);
+		void ReuseChunk(BlockRegion* m_ownerBlockRegion,int32_t chunkIndex);
 
 		void ClearChunkData();
 
@@ -69,7 +69,7 @@ namespace ParaEngine
 		void RendererRecreated();
 		bool IsEmptyChunk();
 
-		inline uint16_t GetChunkIndex(){return m_packedChunkID;}
+		inline int32_t GetChunkIndex(){return m_packedChunkID;}
 
 		/** chunk position in world space.  */
 		Int16x3 GetChunkPosWs();
@@ -140,8 +140,8 @@ namespace ParaEngine
 		void SetChunkViewDistance(int16 val);
 
 		/** each chunk has a unique view index, the smaller the closer to the current view center. */
-		int16 GetViewIndex() const;
-		void SetViewIndex(int16 val);
+		int GetViewIndex() const;
+		void SetViewIndex(int val);
 
 		/** when this chunk should be rendered last time. we will likely to remove old chunks when memory is small. */
 		int GetRenderFrameCount() const;
@@ -249,7 +249,7 @@ namespace ParaEngine
 		static int s_nTotalRenderableChunks;
 		CBlockWorld* m_pWorld;
 		int16_t m_regionX, m_regionZ;
-		int16_t m_packedChunkID;
+		int32_t m_packedChunkID;
 		bool m_isDirty;
 		int32 m_nRenderFrameCount;
 		int32 m_nLastVertexBufferBytes;
@@ -259,7 +259,7 @@ namespace ParaEngine
 		/** distance to current camera in chunk space. */
 		int16 m_nChunkViewDistance;
 		/** each chunk has a unique view index, the smaller the closer to the current view center. */
-		int16 m_nViewIndex;
+		int m_nViewIndex;
 		
 		ChunkBuildState m_chunkBuildState;
 		

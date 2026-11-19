@@ -362,6 +362,8 @@ namespace ParaEngine
 		IRHITexture* m_lastSkyTexture = nullptr;
 		Uint16x3 m_skyOrigin;
 		std::vector<BlockSkySpan> m_skySpans;
+		std::vector<Uint16x3> m_renderCandidates;
+		std::vector<std::vector<Uint16x3>> m_sectionsByDistance;
 		std::chrono::steady_clock::time_point m_nextSkyScan;
 		/** HDR render target */
 		asset_ptr<TextureEntity> m_render_target_color_hdr;
@@ -399,17 +401,7 @@ namespace ParaEngine
 		uint32_t m_lightSpherePrimCount = 0;
 		CMultiFrameBlockWorldRenderer* m_pMultiFrameRenderer;
 
-		struct BfsChunkNode
-		{
-			int16_t x;
-			int16_t y;
-			int16_t z;
-		};
 		CSoftwareOcclusionBuffer m_softwareOccluder;
-		std::vector<BfsChunkNode> m_bfsQueue;
-		std::vector<uint32_t> m_bfsVisitedGen;
-		std::vector<uint8_t> m_bfsEntryFaces;
-		uint32_t m_bfsGeneration = 0;
 		Matrix4 m_lastMainViewProj;
 		Vector3 m_lastMainEyePos;
 		bool m_bHasLastMainCameraState = false;

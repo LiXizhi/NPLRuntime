@@ -389,7 +389,7 @@ namespace ParaScripting
 			mgr->SetBlockTemplateId(x, y, z, templateId);
 	}
 
-	void ParaTerrain::SetBlockTemplateIdByIdx(uint16_t x, uint16_t y, uint16_t z, uint32_t templateId)
+	void ParaTerrain::SetBlockTemplateIdByIdx(uint16_t x, int32_t y, uint16_t z, uint32_t templateId)
 	{
 		BlockWorldClient* mgr = BlockWorldClient::GetInstance();
 		if (mgr)
@@ -404,7 +404,7 @@ namespace ParaScripting
 		return 0;
 	}
 
-	uint32_t ParaTerrain::GetBlockTemplateIdByIdx(uint16_t x, uint16_t y, uint16_t z)
+	uint32_t ParaTerrain::GetBlockTemplateIdByIdx(uint16_t x, int32_t y, uint16_t z)
 	{
 		BlockWorldClient* mgr = BlockWorldClient::GetInstance();
 		if (mgr)
@@ -419,7 +419,7 @@ namespace ParaScripting
 			mgr->SetBlockUserData(x, y, z, data);
 	}
 
-	void ParaTerrain::SetBlockUserDataByIdx(uint16_t x, uint16_t y, uint16_t z, uint32_t data)
+	void ParaTerrain::SetBlockUserDataByIdx(uint16_t x, int32_t y, uint16_t z, uint32_t data)
 	{
 		BlockWorldClient* mgr = BlockWorldClient::GetInstance();
 		if (mgr)
@@ -434,7 +434,7 @@ namespace ParaScripting
 		return 0;
 	}
 
-	uint32_t ParaTerrain::GetBlockUserDataByIdx(uint16_t x, uint16_t y, uint16_t z)
+	uint32_t ParaTerrain::GetBlockUserDataByIdx(uint16_t x, int32_t y, uint16_t z)
 	{
 		BlockWorldClient* mgr = BlockWorldClient::GetInstance();
 		if (mgr)
@@ -442,7 +442,7 @@ namespace ParaScripting
 		return 0;
 	}
 
-	bool ParaTerrain::SetBlockMaterial(uint16_t x, uint16_t y, uint16_t z, int16_t nFaceId, int32_t nMaterial)
+	bool ParaTerrain::SetBlockMaterial(uint16_t x, int32_t y, uint16_t z, int16_t nFaceId, int32_t nMaterial)
 	{
 		BlockWorldClient* mgr = BlockWorldClient::GetInstance();
 		if (mgr)
@@ -450,7 +450,7 @@ namespace ParaScripting
 		return false;
 	}
 
-	int32_t ParaTerrain::GetBlockMaterial(uint16_t x, uint16_t y, uint16_t z, int16_t nFaceId)
+	int32_t ParaTerrain::GetBlockMaterial(uint16_t x, int32_t y, uint16_t z, int16_t nFaceId)
 	{
 		BlockWorldClient* mgr = BlockWorldClient::GetInstance();
 		if (mgr)
@@ -510,21 +510,30 @@ namespace ParaScripting
 
 	object ParaTerrain::GetBlocksInRegion(int32_t startChunkX, int32_t startChunkY, int32_t startChunkZ, int32_t endChunkX, int32_t endChunkY, int32_t endChunkZ, uint32_t matchType, const object& result)
 	{
-		BlockWorldClient* mgr = BlockWorldClient::GetInstance();
+		return GetBlocksInWorldRegion(BlockWorldClient::GetInstance(), startChunkX, startChunkY, startChunkZ, endChunkX, endChunkY, endChunkZ, matchType, result);
+	}
+
+	object ParaTerrain::GetBlocksInWorldRegion(CBlockWorld* mgr, int32_t startChunkX, int32_t startChunkY, int32_t startChunkZ, int32_t endChunkX, int32_t endChunkY, int32_t endChunkZ, uint32_t matchType, const object& result)
+	{
 		if (mgr && mgr->IsInBlockWorld())
 		{
 			if (type(result) == LUA_TTABLE)
 			{
 				uint32 verticalSectionFilter = 0;
 				// just in case startChunkY is used as verticalSectionFilter
-				if (startChunkY < 0 && startChunkY == endChunkY)
+				if (startChunkY < 0 && startChunkY >= -65535 && startChunkY == endChunkY)
 					verticalSectionFilter = -startChunkY;
 				if (startChunkX < 0) startChunkX = 0;
-				if (startChunkY < 0) startChunkY = 0;
+				if (startChunkY < BlockConfig::MinSectionY) startChunkY = BlockConfig::MinSectionY;
 				if (startChunkZ < 0) startChunkZ = 0;
-				if (endChunkX >= 0xffff) endChunkX = 0xfffe;
-				if (endChunkY >= BlockConfig::g_regionChunkDimY) endChunkY = BlockConfig::g_regionChunkDimY - 1;
-				if (endChunkZ >= 0xffff) endChunkZ = 0xfffe;
+				if (endChunkX > 4095) endChunkX = 4095;
+				if (endChunkY > BlockConfig::MaxSectionY) endChunkY = BlockConfig::MaxSectionY;
+				if (endChunkZ > 4095) endChunkZ = 4095;
+				if (startChunkX > endChunkX || startChunkZ > endChunkZ || (!verticalSectionFilter && startChunkY > endChunkY))
+				{
+					result["count"] = 0;
+					return result;
+				}
 
 				Uint16x3 start(startChunkX, startChunkY, startChunkZ);
 				Uint16x3 end(endChunkX, endChunkY, endChunkZ);
@@ -582,11 +591,11 @@ namespace ParaScripting
 				;
 
 				if (minChunkId.x < 0) minChunkId.x = 0;
-				if (minChunkId.y < 0) minChunkId.y = 0;
+				if (minChunkId.y < BlockConfig::MinSectionY) minChunkId.y = BlockConfig::MinSectionY;
 				if (minChunkId.z < 0) minChunkId.z = 0;
 				if (maxChunkX > 0xffff) maxChunkX = 0xffff;
-				if (maxChunkY > BlockConfig::g_regionChunkDimY)
-					maxChunkY = BlockConfig::g_regionChunkDimY - 1;
+				if (maxChunkY > BlockConfig::MaxSectionY)
+					maxChunkY = BlockConfig::MaxSectionY;
 				if (maxChunkZ > 0xffff) maxChunkZ = 0xffff;
 
 				result["minX"] = minChunkId.x;
@@ -634,7 +643,7 @@ namespace ParaScripting
 	}
 
 
-	void ParaTerrain::SelectBlock1(uint16_t x, uint16_t y, uint16_t z, bool isSelect, int nGroupID)
+	void ParaTerrain::SelectBlock1(uint16_t x, int32_t y, uint16_t z, bool isSelect, int nGroupID)
 	{
 		BlockWorldClient* mgr = BlockWorldClient::GetInstance();
 		if (mgr)
@@ -646,7 +655,7 @@ namespace ParaScripting
 		}
 	}
 
-	void ParaTerrain::SelectBlock(uint16_t x, uint16_t y, uint16_t z, bool isSelect)
+	void ParaTerrain::SelectBlock(uint16_t x, int32_t y, uint16_t z, bool isSelect)
 	{
 		SelectBlock1(x, y, z, isSelect, 0);
 	}
@@ -663,7 +672,7 @@ namespace ParaScripting
 			mgr->DeselectAllBlock(nGroupID);
 	}
 
-	void ParaTerrain::SetDamagedBlock(uint16_t x, uint16_t y, uint16_t z)
+	void ParaTerrain::SetDamagedBlock(uint16_t x, int32_t y, uint16_t z)
 	{
 		BlockWorldClient* mgr = BlockWorldClient::GetInstance();
 		if (mgr)
@@ -684,7 +693,7 @@ namespace ParaScripting
 			mgr->SetSunIntensity(value);
 	}
 
-	int ParaTerrain::FindFirstBlock(uint16_t x, uint16_t y, uint16_t z, uint16_t nSide /*= 4*/, uint32_t max_dist /*= 32*/, uint32_t attrFilter /*= 0xffffffff*/, int nCategoryID /*= -1*/)
+	int ParaTerrain::FindFirstBlock(uint16_t x, int32_t y, uint16_t z, uint16_t nSide /*= 4*/, uint32_t max_dist /*= 32*/, uint32_t attrFilter /*= 0xffffffff*/, int nCategoryID /*= -1*/)
 	{
 		BlockWorldClient* mgr = BlockWorldClient::GetInstance();
 		if (mgr)
@@ -692,7 +701,7 @@ namespace ParaScripting
 		return -1;
 	}
 
-	int ParaTerrain::GetFirstBlock(uint16_t x, uint16_t y, uint16_t z, int nBlockId, uint16_t nSide /*= 4*/, uint32_t max_dist /*= 32*/)
+	int ParaTerrain::GetFirstBlock(uint16_t x, int32_t y, uint16_t z, int nBlockId, uint16_t nSide /*= 4*/, uint32_t max_dist /*= 32*/)
 	{
 		BlockWorldClient* mgr = BlockWorldClient::GetInstance();
 		if (mgr)
@@ -716,7 +725,92 @@ namespace ParaScripting
 			return mgr->SetChunkColumnTimeStamp((uint16_t)chunkX, (uint16_t)chunkZ, (uint16_t)nTimeStamp);
 	}
 
-	const std::string& ParaTerrain::GetMapChunkData(uint32_t chunkX, uint32_t chunkZ, bool bIncludeInit, uint32_t verticalSectionFilter)
+	static std::vector<int16_t> ReadSectionList(const object& sections)
+{
+	std::vector<int16_t> result;
+	if (type(sections) == LUA_TTABLE)
+	{
+		for (luabind::iterator it(sections), end; it != end; ++it)
+		{
+			int y = luabind::object_cast<int>(*it);
+			if (BlockConfig::IsSectionY(y)) result.push_back(static_cast<int16_t>(y));
+		}
+		std::sort(result.begin(), result.end());
+		result.erase(std::unique(result.begin(), result.end()), result.end());
+	}
+	return result;
+}
+
+object ParaTerrain::GetChunkSections(uint32_t x, uint32_t z, const object& result)
+{
+	if (x >= 4096 || z >= 4096) return result;
+	auto* region = BlockWorldClient::GetInstance()->GetRegion(x >> 5, z >> 5);
+	if (region && !region->IsLocked())
+	{
+		int index = 0;
+		for (int y : region->GetColumnSections(x, z))
+			result[++index] = y;
+	}
+	return result;
+}
+
+uint32_t ParaTerrain::GetColumnLightHeights(uint32_t x, uint32_t z)
+{
+	if (x > 65535 || z > 65535) return 0;
+	auto* height = BlockWorldClient::GetInstance()->GetHighestBlock(x, z);
+	if (!height) return 0;
+	const int first = BlockConfig::MinBlockY - 1;
+	return uint32_t(height->m_nMaxHeight - first) << 16 | uint32_t(height->m_nSolidHeight - first);
+}
+
+void ParaTerrain::ApplyColumnLightHeights(uint32_t x, uint32_t z, uint32_t heights)
+{
+	auto* world = BlockWorldClient::GetInstance();
+	if (x > 65535 || z > 65535 || !world->IsBuildableY(BlockConfig::MinBlockY)) return;
+	const int first = BlockConfig::MinBlockY - 1;
+	const int solid = first + (heights & 65535), top = first + (heights >> 16);
+	if (solid > top || top > BlockConfig::MaxBlockY) return;
+	Scoped_WriteLock<BlockReadWriteLock> lock(world->GetReadWriteLock());
+	auto* region = world->GetRegion(x >> 9, z >> 9);
+	if (!region || region->IsLocked()) return;
+	auto* height = region->GetHighestBlock(x & 511, z & 511);
+	auto previous = *height;
+	*height = ChunkMaxHeight(solid, top);
+	if (previous.m_nSolidHeight != solid) world->NotifyBlockHeightMapChanged(x, z, previous);
+}
+
+std::string ParaTerrain::GetMapSectionData(uint32_t x, uint32_t z, const object& sections)
+{
+	if (x >= 4096 || z >= 4096) return {};
+	auto* region = BlockWorldClient::GetInstance()->GetRegion(x >> 5, z >> 5);
+	if (!region || region->IsLocked()) return {};
+	auto list = ReadSectionList(sections);
+	return region->GetMapChunkData(x, z, true, 0, &list);
+}
+
+object ParaTerrain::ApplyMapSectionData(uint32_t x, uint32_t z, const std::string& data, const object& result)
+{
+	if (x >= 4096 || z >= 4096) return result;
+	auto* region = BlockWorldClient::GetInstance()->CreateGetRegion(x >> 5, z >> 5);
+	if (region) region->ApplyMapChunkData(x, z, 0, data, result, true);
+	return result;
+}
+
+object ParaTerrain::GetBlocksInSections(uint32_t x, uint32_t z, const object& sections, uint32_t matchType, const object& result)
+{
+	if (x >= 4096 || z >= 4096) return result;
+	auto* region = BlockWorldClient::GetInstance()->GetRegion(x >> 5, z >> 5);
+	for (const char* key : {"x", "y", "z", "tempId", "data"})
+		result[key] = newtable(result.interpreter());
+	int count = 0;
+	if (region)
+		for (int y : ReadSectionList(sections))
+			region->GetBlocksInChunk(x, z, y, y, matchType, result, count);
+	result["count"] = count;
+	return result;
+}
+
+const std::string& ParaTerrain::GetMapChunkData(uint32_t chunkX, uint32_t chunkZ, bool bIncludeInit, uint32_t verticalSectionFilter)
 	{
 		BlockWorldClient* mgr = BlockWorldClient::GetInstance();
 		if (mgr)
@@ -749,7 +843,7 @@ namespace ParaScripting
 	}
 
 
-	void ParaTerrain::GetBlockFullData(uint16_t x, uint16_t y, uint16_t z, uint16_t* pId, uint32_t* pUserData)
+	void ParaTerrain::GetBlockFullData(uint16_t x, int32_t y, uint16_t z, uint16_t* pId, uint32_t* pUserData)
 	{
 		BlockWorldClient* mgr = BlockWorldClient::GetInstance();
 
@@ -768,7 +862,7 @@ namespace ParaScripting
 
 	}
 
-	void ParaTerrain::LoadBlockAsync(uint16_t x, uint16_t y, uint16_t z, uint16_t blockId, uint32_t userData)
+	void ParaTerrain::LoadBlockAsync(uint16_t x, int32_t y, uint16_t z, uint16_t blockId, uint32_t userData)
 	{
 		BlockWorldClient* mgr = BlockWorldClient::GetInstance();
 		if (mgr)
@@ -782,7 +876,7 @@ namespace ParaScripting
 // for LuaJit, only for function that maybe called millions of time per second
 extern "C" {
 
-	PE_CORE_DECL void ParaTerrain_GetBlockFullData(uint16_t x, uint16_t y, uint16_t z, uint16_t* pId, uint32_t* pUserData)
+	PE_CORE_DECL void ParaTerrain_GetBlockFullData(uint16_t x, int32_t y, uint16_t z, uint16_t* pId, uint32_t* pUserData)
 	{
 		ParaScripting::ParaTerrain::GetBlockFullData(x, y, z, pId, pUserData);
 	}
@@ -793,7 +887,7 @@ extern "C" {
 		return ParaScripting::ParaTerrain::GetElevation(x, y);
 	}
 
-	PE_CORE_DECL void ParaTerrain_SelectBlock(uint16_t x, uint16_t y, uint16_t z, bool isSelect, int nGroupID)
+	PE_CORE_DECL void ParaTerrain_SelectBlock(uint16_t x, int32_t y, uint16_t z, bool isSelect, int nGroupID)
 	{
 		return ParaScripting::ParaTerrain::SelectBlock1(x, y, z, isSelect, nGroupID);
 	}
@@ -803,7 +897,7 @@ extern "C" {
 		ParaScripting::ParaTerrain::SetBlockTemplateId(x, y, z, templateId);
 	}
 
-	PE_CORE_DECL void ParaTerrain_SetBlockTemplateIdByIdx(uint16_t x, uint16_t y, uint16_t z, uint32_t templateId)
+	PE_CORE_DECL void ParaTerrain_SetBlockTemplateIdByIdx(uint16_t x, int32_t y, uint16_t z, uint32_t templateId)
 	{
 		ParaScripting::ParaTerrain::SetBlockTemplateIdByIdx(x, y, z, templateId);
 	}
@@ -813,7 +907,7 @@ extern "C" {
 		return ParaScripting::ParaTerrain::GetBlockTemplateId(x, y, z);
 	}
 
-	PE_CORE_DECL uint32_t ParaTerrain_GetBlockTemplateIdByIdx(uint16_t x, uint16_t y, uint16_t z)
+	PE_CORE_DECL uint32_t ParaTerrain_GetBlockTemplateIdByIdx(uint16_t x, int32_t y, uint16_t z)
 	{
 		return ParaScripting::ParaTerrain::GetBlockTemplateIdByIdx(x, y, z);
 	}
@@ -823,7 +917,7 @@ extern "C" {
 		ParaScripting::ParaTerrain::SetBlockUserData(x, y, z, data);
 	}
 
-	PE_CORE_DECL void ParaTerrain_SetBlockUserDataByIdx(uint16_t x, uint16_t y, uint16_t z, uint32_t data)
+	PE_CORE_DECL void ParaTerrain_SetBlockUserDataByIdx(uint16_t x, int32_t y, uint16_t z, uint32_t data)
 	{
 		ParaScripting::ParaTerrain::SetBlockUserDataByIdx(x, y, z, data);
 	}
@@ -833,7 +927,7 @@ extern "C" {
 		return ParaScripting::ParaTerrain::GetBlockUserData(x, y, z);
 	}
 
-	PE_CORE_DECL uint32_t ParaTerrain_GetBlockUserDataByIdx(uint16_t x, uint16_t y, uint16_t z)
+	PE_CORE_DECL uint32_t ParaTerrain_GetBlockUserDataByIdx(uint16_t x, int32_t y, uint16_t z)
 	{
 		return ParaScripting::ParaTerrain::GetBlockUserDataByIdx(x, y, z);
 	}
@@ -853,27 +947,27 @@ extern "C" {
 		ParaScripting::ParaTerrain::SetHole(x, y, bIsHold);
 	}
 
-	PE_CORE_DECL int ParaTerrain_FindFirstBlock(uint16_t x, uint16_t y, uint16_t z, uint16_t nSide /*= 4*/, uint32_t max_dist /*= 32*/, uint32_t attrFilter /*= 0xffffffff*/, int nCategoryID /*= -1*/)
+	PE_CORE_DECL int ParaTerrain_FindFirstBlock(uint16_t x, int32_t y, uint16_t z, uint16_t nSide /*= 4*/, uint32_t max_dist /*= 32*/, uint32_t attrFilter /*= 0xffffffff*/, int nCategoryID /*= -1*/)
 	{
 		return ParaScripting::ParaTerrain::FindFirstBlock(x, y, z, nSide, max_dist, attrFilter, nCategoryID);
 	}
 
-	PE_CORE_DECL int ParaTerrain_GetFirstBlock(uint16_t x, uint16_t y, uint16_t z, int nBlockId, uint16_t nSide /*= 4*/, uint32_t max_dist /*= 32*/)
+	PE_CORE_DECL int ParaTerrain_GetFirstBlock(uint16_t x, int32_t y, uint16_t z, int nBlockId, uint16_t nSide /*= 4*/, uint32_t max_dist /*= 32*/)
 	{
 		return ParaScripting::ParaTerrain::GetFirstBlock(x, y, z, nBlockId, nSide, max_dist);
 	}
 
-	PE_CORE_DECL void ParaTerrain_LoadBlockAsync(uint16_t x, uint16_t y, uint16_t z, uint16_t blockId, uint32_t userData)
+	PE_CORE_DECL void ParaTerrain_LoadBlockAsync(uint16_t x, int32_t y, uint16_t z, uint16_t blockId, uint32_t userData)
 	{
 		ParaScripting::ParaTerrain::LoadBlockAsync(x, y, z, blockId, userData);
 	}
 	
-	PE_CORE_DECL bool ParaTerrain_SetBlockMaterial(uint16_t x, uint16_t y, uint16_t z, int16_t nFaceId, int32_t nMaterial)
+	PE_CORE_DECL bool ParaTerrain_SetBlockMaterial(uint16_t x, int32_t y, uint16_t z, int16_t nFaceId, int32_t nMaterial)
 	{
 		return ParaScripting::ParaTerrain::SetBlockMaterial(x, y, z, nFaceId, nMaterial);
 	}
 
-	PE_CORE_DECL int32_t ParaTerrain_GetBlockMaterial(uint16_t x, uint16_t y, uint16_t z, int16_t nFaceId)
+	PE_CORE_DECL int32_t ParaTerrain_GetBlockMaterial(uint16_t x, int32_t y, uint16_t z, int16_t nFaceId)
 	{
 		return ParaScripting::ParaTerrain::GetBlockMaterial(x, y, z, nFaceId);
 	}

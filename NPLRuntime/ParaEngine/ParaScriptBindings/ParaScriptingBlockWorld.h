@@ -74,28 +74,28 @@ namespace ParaScripting
 		/** load region at the given position. current implementation will load entire region rather than just chunk. 
 		* one need to call load chunk before SetBlock/GetBlock api can be called in the region. 
 		*/
-		static void LoadRegion(const object& pWorld, uint16_t x, uint16_t y, uint16_t z);
+		static void LoadRegion(const object& pWorld, uint16_t x, int32_t y, uint16_t z);
 		/** unload data for a given region from memory */
-		static void UnloadRegion(const object& pWorld, uint16_t x, uint16_t y, uint16_t z);
+		static void UnloadRegion(const object& pWorld, uint16_t x, int32_t y, uint16_t z);
 
 		/** set block id set the given position. 
 		* @param x,y,z: should be positive value
 		* @param templateId: template id. specify 0 to delete a block.
 		*/
-		static void SetBlockId(const object& pWorld, uint16_t x, uint16_t y, uint16_t z, uint32_t templateId);
+		static void SetBlockId(const object& pWorld, uint16_t x, int32_t y, uint16_t z, uint32_t templateId);
 
 		/** get block id at the given block position. */
-		static uint32_t GetBlockId(const object& pWorld, uint16_t x, uint16_t y, uint16_t z);
+		static uint32_t GetBlockId(const object& pWorld, uint16_t x, int32_t y, uint16_t z);
 
 		/**
 		* set per block user data 
 		*/
-		static void SetBlockData(const object& pWorld, uint16_t x, uint16_t y, uint16_t z, uint32_t data);
+		static void SetBlockData(const object& pWorld, uint16_t x, int32_t y, uint16_t z, uint32_t data);
 
 		/**
 		* get per block user data 
 		*/
-		static uint32_t GetBlockData(const object& pWorld, uint16_t x, uint16_t y, uint16_t z);
+		static uint32_t GetBlockData(const object& pWorld, uint16_t x, int32_t y, uint16_t z);
 
 		
 		/** get block in [startChunk,endChunk]
@@ -116,11 +116,11 @@ namespace ParaScripting
 		* @param nCategoryID: -1 means any category_id.  default to -1
 		* @return -1 if not found. otherwise distance to the first block that match in the side direction is returned.
 		*/
-		static int FindFirstBlock(const object& pWorld, uint16_t x, uint16_t y, uint16_t z, uint16_t nSide = 4, uint32_t max_dist = 32, uint32_t attrFilter = 0xffffffff, int nCategoryID = -1);
+		static int FindFirstBlock(const object& pWorld, uint16_t x, int32_t y, uint16_t z, uint16_t nSide = 4, uint32_t max_dist = 32, uint32_t attrFilter = 0xffffffff, int nCategoryID = -1);
 
 		/** get the y pos of the first block of nBlockID, start searching from x, y, z in the side direction
 		*/
-		static int GetFirstBlock(const object& pWorld, uint16_t x, uint16_t y, uint16_t z, int nBlockId, uint16_t nSide = 4, uint32_t max_dist = 32);
+		static int GetFirstBlock(const object& pWorld, uint16_t x, int32_t y, uint16_t z, int nBlockId, uint16_t nSide = 4, uint32_t max_dist = 32);
 
 	// following are client only functions. 
 	public: 
@@ -168,8 +168,8 @@ namespace ParaScripting
 		* @param isSelect : true to select block, false to de-select block
 		* @param nGroupID: group id. 0 for highlight 1 for wireframe.
 		*/
-		static void SelectBlock(const object& pWorld, uint16_t x, uint16_t y, uint16_t z, bool isSelect);
-		static void SelectBlock1(const object& pWorld, uint16_t x, uint16_t y, uint16_t z, bool isSelect, int nGroupID);
+		static void SelectBlock(const object& pWorld, uint16_t x, int32_t y, uint16_t z, bool isSelect);
+		static void SelectBlock1(const object& pWorld, uint16_t x, int32_t y, uint16_t z, bool isSelect, int nGroupID);
 
 		/**
 		* @param nGroupID: 0 for animated selection, 1 for wire frame selection.  -1 for all
@@ -181,7 +181,7 @@ namespace ParaScripting
 		* only used on client side
 		* @param x,y,z :world space block id;
 		*/
-		static void SetDamagedBlock(const object& pWorld, uint16_t x, uint16_t y, uint16_t z);
+		static void SetDamagedBlock(const object& pWorld, uint16_t x, int32_t y, uint16_t z);
 
 		/** set damage block degree
 		* @param damageDegree: [0,1] 0 means undamaged block,1 full damaged block

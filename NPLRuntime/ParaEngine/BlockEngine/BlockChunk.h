@@ -60,7 +60,7 @@ namespace ParaEngine
 			m_pTemplate = pTemplate;
 		}
 		inline void SetUserData(uint32_t data){ 
-			m_blockData = (uint16)data; 
+			m_blockData = data;
 		}
 		void PushEmptySlotIndex(uint16 nIndex){
 			m_pTemplate = NULL;
@@ -69,7 +69,7 @@ namespace ParaEngine
 		}
 		/* return the next empty slot index. */
 		uint16 PopEmptySlot(){
-			uint16 nNextEmptySlotIndex = m_blockData;
+			uint16 nNextEmptySlotIndex = static_cast<uint16>(m_blockData);
 			m_blockData = 0;
 			return nNextEmptySlotIndex;
 		}
@@ -92,7 +92,7 @@ namespace ParaEngine
 		}
 	protected:
 		BlockTemplate* m_pTemplate;
-		uint16 m_blockData;
+		uint32_t m_blockData;
 		uint16 m_nInstanceCount;
 	};
 
@@ -121,6 +121,10 @@ namespace ParaEngine
 		ChunkCustomDataType_LightValues,
 		ChunkCustomDataType_Tag,
 		ChunkCustomDataType_Materials,
+		ChunkCustomDataType_ExtendedMaterials,
+		ChunkCustomDataType_UniformLight,
+		ChunkCustomDataType_WideBlockData,
+		ChunkCustomDataType_LightInputs,
 		// chunk data: following is 16*16*16 chunk data which may further contain custom data. 
 		// this is always the last parent custom data since it does not specify size, and we will write to end of file.  
 		ChunkCustomDataType_ChunksData = 100,
@@ -185,10 +189,13 @@ namespace ParaEngine
 		// blocks pool that grows automatically as new blocks are added, removed. 
 		std::vector<Block> m_blocks;
 		uint32 m_nDirty;
+		bool m_lightingInitialized = false;
 		uint16 m_isBoundaryChunk;
 		uint16 m_emptyBlockSlotIndex;
+		uint16_t m_occupiedCells = 0;
+		void AddOccupiedCell();
 		BlockRegion*  m_ownerBlockRegion;
-		int16_t m_packedChunkID;
+		int32_t m_packedChunkID;
 		uint16_t m_uVisGraph;
 		uint16_t m_opaqueLayerMask;
 		bool m_bVisGraphDirty;
@@ -202,7 +209,7 @@ namespace ParaEngine
 		bool RecycleBlock(uint16 nIndex, Block& block);
 		Block* CreateBlock(uint16_t nBlockIndex);
 	public:
-		BlockChunk(uint16_t nPackedChunkId, BlockRegion* pRegion);
+		BlockChunk(int32_t nPackedChunkId, BlockRegion* pRegion);
 		~BlockChunk();
 
 		static int GetTotalChunksInMemory();
@@ -216,9 +223,10 @@ namespace ParaEngine
 		/** blocks higher than the highest solid block in the height map can sky. Note, the top most opaque block can not see the sky. 
 		* @param x,y,z: in world space
 		*/
-		bool CanBlockSeeTheSkyWS(uint16 x, uint16 y, uint16 z);
+		bool CanBlockSeeTheSkyWS(uint16 x, int16_t y, uint16 z);
 
 		uint32 GetBlockCount();
+		bool HasBlocks() const { return m_occupiedCells != 0; }
 
 		inline bool IsDirty() const { return m_nDirty > 0; }
 		/** set dirty by block changes in this chunk */

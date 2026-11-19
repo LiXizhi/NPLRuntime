@@ -2910,7 +2910,8 @@ bool ParaEngine::CBipedObject::CheckBlockWorld(DVector3& vMovePos, Vector3& vMin
 		const float half_block_size = block_size * 0.5f;
 		const float quat_block_size = block_size * 0.25f;
 
-		uint16 block_x, block_y, block_z;
+		uint16 block_x, block_z;
+		int16_t block_y;
 		BlockCommon::ConvertToBlockIndex((float)m_vPos.x, (float)m_vPos.y + quat_block_size, (float)m_vPos.z, block_x, block_y, block_z);
 		int obstruction_matrix[3][4][3];
 
@@ -2943,12 +2944,12 @@ bool ParaEngine::CBipedObject::CheckBlockWorld(DVector3& vMovePos, Vector3& vMin
 					block_x_tmp = block_x + i - 1;
 					block_y_tmp = block_y + k - 1;
 					block_z_tmp = block_z + j - 1;
-					if (block_y_tmp < 0 || block_y_tmp>255)
-						obstruction_matrix[i][k][j] = 1;
+					if (!BlockConfig::IsBlockY(block_y_tmp))
+						obstruction_matrix[i][k][j] = BLOCK_WALKSTATE_FREE;
 					else
 					{
 						int result = BLOCK_WALKSTATE_FREE;
-						uint16_t templateId = pBlockWorldClient->GetBlockTemplateIdByIdx((uint16)block_x_tmp, (uint16)block_y_tmp, (uint16)block_z_tmp);
+						uint16_t templateId = pBlockWorldClient->GetBlockTemplateIdByIdx((uint16)block_x_tmp, block_y_tmp, (uint16)block_z_tmp);
 						if (templateId > 0)
 						{
 							BlockTemplate* temp = pBlockWorldClient->GetBlockTemplate(templateId);
@@ -2967,7 +2968,7 @@ bool ParaEngine::CBipedObject::CheckBlockWorld(DVector3& vMovePos, Vector3& vMin
 										result = BLOCK_WALKSTATE_OBSTRUCTION;
 										if (k <= 1)
 										{
-											float fPhysicalHeight = temp->GetPhysicalHeight(pBlockWorldClient, (uint16)block_x_tmp, (uint16)block_y_tmp, (uint16)block_z_tmp);
+											float fPhysicalHeight = temp->GetPhysicalHeight(pBlockWorldClient, (uint16)block_x_tmp, block_y_tmp, (uint16)block_z_tmp);
 											if (fPhysicalHeight > 0.01f && fPhysicalHeight < 0.6f)
 											{
 												// such as walking on slab that is only half the size of block.
@@ -3034,7 +3035,7 @@ bool ParaEngine::CBipedObject::CheckBlockWorld(DVector3& vMovePos, Vector3& vMin
 				block_z_tmp = block_z;
 
 				// if climbable, but not obstruction. 
-				uint32_t nData = pBlockWorldClient->GetBlockUserDataByIdx((uint16)block_x_tmp, (uint16)block_y_tmp, (uint16)block_z_tmp);
+				uint32_t nData = pBlockWorldClient->GetBlockUserDataByIdx((uint16)block_x_tmp, block_y_tmp, (uint16)block_z_tmp);
 				if (nData == 1)
 				{
 					obstruction_matrix[1][k][0] = BLOCK_WALKSTATE_CLIMBABLE;

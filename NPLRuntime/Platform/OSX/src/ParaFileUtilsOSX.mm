@@ -188,6 +188,11 @@ bool ParaEngine::CParaFileUtilsOSX::Move(const std::string& src, const std::stri
     {
         fs::path sSrc(GetFullPathForFilename(src));
         fs::path sDest(GetFullPathForFilename(dest));
+        if (sSrc.parent_path() == sDest.parent_path())
+        {
+            fs::rename(sSrc, sDest);
+            return true;
+        }
         fs::copy_file(sSrc,sDest, fs::copy_options::overwrite_existing);
         return fs::remove(sSrc);
     }

@@ -172,10 +172,10 @@ namespace ParaEngine
 		/** get model by block position.
 		* @param neighborBlocks: 27 neighbor blocks
 		*/
-		BlockModel& GetBlockModel(CBlockWorld* pBlockManager, uint16_t bx, uint16_t by, uint16_t bz, uint16_t nBlockData = 0, Block** neighborBlocks = NULL);
+		BlockModel& GetBlockModel(CBlockWorld* pBlockManager, uint16_t bx, int16_t by, uint16_t bz, uint16_t nBlockData = 0, Block** neighborBlocks = NULL);
 
 		/** get AABB in local space */
-		void GetAABB(CBlockWorld* pBlockManager, uint16_t bx, uint16_t by, uint16_t bz, CShapeAABB* pOutAABB);
+		void GetAABB(CBlockWorld* pBlockManager, uint16_t bx, int16_t by, uint16_t bz, CShapeAABB* pOutAABB);
 
 		/** get bounding box vertices */
 		void GetBoundingBoxVertices(Vector3 * pVertices, int* pNumber);
@@ -196,7 +196,7 @@ namespace ParaEngine
 		/** physical height of this block. for non-obstruction block, this will always return -1.f.
 		for obstruction block, this usually returns 1.0f. for slabs, it will return 0.5. for lily pad, it will return 0. */
 		float GetPhysicalHeight();
-		float GetPhysicalHeight(CBlockWorld* pBlockManager, uint16_t bx, uint16_t by, uint16_t bz);
+		float GetPhysicalHeight(CBlockWorld* pBlockManager, uint16_t bx, int16_t by, uint16_t bz);
 		void SetPhysicalHeight(float fHeight);
 
 		//transparent object will always be renderer after solid object.

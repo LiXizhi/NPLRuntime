@@ -1,4 +1,7 @@
 #pragma once
+#include "BlockConfig.h"
+#include "ChunkMaxHeight.h"
+#include <unordered_map>
 #include <vector>
 #include <array>
 #include <map>
@@ -71,6 +74,12 @@ namespace ParaEngine
 
 		ATTRIBUTE_METHOD3(CBlockWorld, SetChunkColumnTimeStamp_s, float) { cls->SetChunkColumnTimeStamp((uint16_t)p1, (uint16_t)p2, (uint16_t)p3); return S_OK; }
 
+		ATTRIBUTE_METHOD1(CBlockWorld, GetMinBlockY_s, int*) { *p1 = cls->m_legacyHeightSession ? 0 : BlockConfig::MinBlockY; return S_OK; }
+		ATTRIBUTE_METHOD1(CBlockWorld, GetMaxBlockY_s, int*) { *p1 = cls->m_legacyHeightSession ? 255 : BlockConfig::MaxBlockY; return S_OK; }
+		bool IsBuildableY(int y) const { return m_legacyHeightSession ? (y >= 0 && y <= 255) : BlockConfig::IsBlockY(y); }
+		ATTRIBUTE_METHOD1(CBlockWorld, GetLegacyHeightSession_s, bool*) { *p1 = cls->m_legacyHeightSession; return S_OK; }
+		ATTRIBUTE_METHOD1(CBlockWorld, SetLegacyHeightSession_s, bool) { cls->m_legacyHeightSession = p1; return S_OK; }
+		ATTRIBUTE_METHOD1(CBlockWorld, RequiresExtendedHeight_s, bool*) { *p1 = cls->m_requiresExtendedHeight; return S_OK; }
 		ATTRIBUTE_METHOD1(CBlockWorld, GetRenderDist_s, int*) { *p1 = cls->GetRenderDist(); return S_OK; }
 		ATTRIBUTE_METHOD1(CBlockWorld, SetRenderDist_s, int) { cls->SetRenderDist(p1); return S_OK; }
 
@@ -194,7 +203,7 @@ namespace ParaEngine
 		* @param x,y,z: in world space
 		* @param rs_x,rs_y,rs_z: out: converted to region space.
 		*/
-		BlockRegion* GetRegion(uint16_t x, uint16_t y, uint16_t z, uint16_t& rs_x, uint16_t& rs_y, uint16_t& rs_z);
+		BlockRegion* GetRegion(uint16_t x, int32_t y, uint16_t z, uint16_t& rs_x, int16_t& rs_y, uint16_t& rs_z);
 		BlockRegion* GetRegion(uint16_t region_x, uint16_t region_z);
 
 		static float GetVerticalOffset();
@@ -287,24 +296,24 @@ namespace ParaEngine
 		void RefreshBlockTemplate(uint16_t templateId);
 
 		//set/get block id/data
-		uint32_t SetBlockId(uint16_t x, uint16_t y, uint16_t z, uint32_t nBlockID);
-		uint32_t GetBlockId(uint16_t x, uint16_t y, uint16_t z);
-		uint32_t SetBlockData(uint16_t x, uint16_t y, uint16_t z, uint32_t nBlockData);
-		uint32_t GetBlockData(uint16_t x, uint16_t y, uint16_t z);
+		uint32_t SetBlockId(uint16_t x, int32_t y, uint16_t z, uint32_t nBlockID);
+		uint32_t GetBlockId(uint16_t x, int32_t y, uint16_t z);
+		uint32_t SetBlockData(uint16_t x, int32_t y, uint16_t z, uint32_t nBlockData);
+		uint32_t GetBlockData(uint16_t x, int32_t y, uint16_t z);
 
 		/** Remove a given block material from a block face.
 		* @param nFaceIndex: if -1, we will remove all materials from the block
 		* @param nMaterialID: global unique material id in CBlockMaterialManager
 		*/
-		bool SetBlockMaterial(uint16_t x, uint16_t y, uint16_t z, int16_t nFaceId, int32_t nMaterial);
+		bool SetBlockMaterial(uint16_t x, int32_t y, uint16_t z, int16_t nFaceId, int32_t nMaterial);
 
 		/** Remove a given block material from a block face.
 		* @param nFaceIndex: if -1, we will remove all materials from the block
 		* @return -1 if not found
 		*/
-		int32_t GetBlockMaterial(uint16_t x, uint16_t y, uint16_t z, int16_t nFaceId);
+		int32_t GetBlockMaterial(uint16_t x, int32_t y, uint16_t z, int16_t nFaceId);
 
-		void LoadBlockAsync(uint16_t x, uint16_t y, uint16_t z, uint16_t blockId, uint32_t userData);
+		void LoadBlockAsync(uint16_t x, int32_t y, uint16_t z, uint16_t blockId, uint32_t userData);
 
 		//do *not* hold a permanent reference of return value,underlying memory address may change
 		//@param id: template id;
@@ -312,7 +321,7 @@ namespace ParaEngine
 
 		//do *not* hold a permanent reference of return value,underlying memory address may change
 		//@param x,y,z: world space block id
-		BlockTemplate* GetBlockTemplate(uint16_t x, uint16_t y, uint16_t z);
+		BlockTemplate* GetBlockTemplate(uint16_t x, int32_t y, uint16_t z);
 
 		//do *not* hold a permanent reference of return value,underlying memory address may change
 		BlockTemplate* GetBlockTemplate(Uint16x3& blockId_ws);
@@ -335,43 +344,43 @@ namespace ParaEngine
 
 		//////////////////////////////////////////////////////////////////////////
 		//refresh all lights in chunk column,this function will recalc all point lights in a column
-		void RefreshAllLightsInColumn(uint16_t chunkX_ws, uint16_t chunkZ_ws);
+		bool RefreshAllLightsInColumn(uint16_t chunkX_ws, uint16_t chunkZ_ws);
 
 		//called when block height map changed.This function will recalc sun light of block column
 		void NotifyBlockHeightMapChanged(uint16_t blockIdX_ws, uint16_t blockIdZ_ws, ChunkMaxHeight& prevBlockHeight);
 
 		/** return the BlockChunk and the block index inside the chunk. */
-		BlockIndex GetBlockIndex(uint16_t x, uint16_t y, uint16_t z, bool bCreateIfNotExist = true);
+		BlockIndex GetBlockIndex(uint16_t x, int32_t y, uint16_t z, bool bCreateIfNotExist = true);
 
 		/** get chunk by world coordinates*/
-		BlockChunk* GetChunk(uint16_t x, uint16_t y, uint16_t z, bool bCreateIfNotExist = true);
+		BlockChunk* GetChunk(uint16_t x, int32_t y, uint16_t z, bool bCreateIfNotExist = true);
 
 		//////////////////////////////////////////////////////////////////////////
 		//block manipulation function
 		void SetBlockTemplateId(float x, float y, float z, uint16_t templateId);
 
-		void SetBlockTemplateIdByIdx(uint16_t x, uint16_t y, uint16_t z, uint16_t templateId);
+		void SetBlockTemplateIdByIdx(uint16_t x, int32_t y, uint16_t z, uint16_t templateId);
 
 		uint16_t GetBlockTemplateId(float x, float y, float z);
 
-		uint16_t GetBlockTemplateIdByIdx(uint16_t x, uint16_t y, uint16_t z);
+		uint16_t GetBlockTemplateIdByIdx(uint16_t x, int32_t y, uint16_t z);
 
 		void SetBlockUserData(float x, float y, float z, uint32_t data);
 
-		void SetBlockUserDataByIdx(uint16_t x, uint16_t y, uint16_t z, uint32_t data);
+		void SetBlockUserDataByIdx(uint16_t x, int32_t y, uint16_t z, uint32_t data);
 
 		uint32_t GetBlockUserData(float x, float y, float z);
 
-		uint32_t GetBlockUserDataByIdx(uint16_t x, uint16_t y, uint16_t z);
+		uint32_t GetBlockUserDataByIdx(uint16_t x, int32_t y, uint16_t z);
 
-		bool IsObstructionBlock(uint16_t x, uint16_t y, uint16_t z);
+		bool IsObstructionBlock(uint16_t x, int32_t y, uint16_t z);
 
 
 		//return null if block not exist
 		//note:do *not* hold a permanent reference of the return value,underlying
 		//block address may change after SetBlockTemplate()!
-		Block* GetBlock(uint16_t x, uint16_t y, uint16_t z);
-		Block* GetUnlockBlock(uint16_t x, uint16_t y, uint16_t z);
+		Block* GetBlock(uint16_t x, int32_t y, uint16_t z);
+		Block* GetUnlockBlock(uint16_t x, int32_t y, uint16_t z);
 
 		//set chunk dirty will rebuild vertex buffer of the chunk
 		void SetChunkDirty(Uint16x3& chunkId_ws, bool isDirty);
@@ -390,7 +399,7 @@ namespace ParaEngine
 		* @param x,y,z: center world block position
 		* @param radius: radius
 		*/
-		bool DoChunksNearChunkExist(uint16_t x, uint16_t y, uint16_t z, uint16_t radius);
+		bool DoChunksNearChunkExist(uint16_t x, int32_t y, uint16_t z, uint16_t radius);
 
 		/**
 		* Checks between a min and max all the chunks in between actually exist.
@@ -424,7 +433,7 @@ namespace ParaEngine
 		void SetCubeModePicking(bool bIsCubeModePicking);
 
 		/** picking in block world */
-		bool Pick(const Vector3& rayOrig, const Vector3& dir, float length, PickResult& result, uint32_t filter = 0xffffffff, const std::function<bool(uint32 bx, uint32 by, uint32 bz, const BlockTemplate* pBlock)>& blockFilterCallback = nullptr);
+		bool Pick(const Vector3& rayOrig, const Vector3& dir, float length, PickResult& result, uint32_t filter = 0xffffffff, const std::function<bool(uint32 bx, int32_t by, uint32 bz, const BlockTemplate* pBlock)>& blockFilterCallback = nullptr);
 
 		/** find a block in the side direction that matched filter from block(x,y,z)
 		* this function can be used to check for free space upward or download
@@ -433,12 +442,12 @@ namespace ParaEngine
 		* @param nCategoryID: -1 means any category_id.  default to -1
 		* @return -1 if not found. otherwise distance to the first block that match in the side direction is returned.
 		*/
-		int FindFirstBlock(uint16_t x, uint16_t y, uint16_t z, uint16_t nSide = 4, uint32_t max_dist = 32, uint32_t attrFilter = 0xffffffff, int nCategoryID = -1);
+		int FindFirstBlock(uint16_t x, int32_t y, uint16_t z, uint16_t nSide = 4, uint32_t max_dist = 32, uint32_t attrFilter = 0xffffffff, int nCategoryID = -1);
 
 		/** get the y pos of the first block of nBlockID, start searching from x, y, z in the side direction
 		* @param side: 4 is top.  5 is bottom. default to 5, which uses heightmap for first block(can be a little faster. )
 		*/
-		int GetFirstBlock(uint16_t x, uint16_t y, uint16_t z, int nBlockId, uint16_t nSide = 5, uint32_t max_dist = 32);
+		int GetFirstBlock(uint16_t x, int32_t y, uint16_t z, int nBlockId, uint16_t nSide = 5, uint32_t max_dist = 32);
 
 		/** this function is called, when the entire column is loaded
 		*/
@@ -478,7 +487,7 @@ namespace ParaEngine
 		void SetLightBlockDirty(Uint16x3& blockId_ws, bool isSunLight);
 
 		/** get block light data by world coordinates*/
-		LightData* GetLightData(uint16_t x, uint16_t y, uint16_t z, bool bCreateIfNotExist = true);
+		LightData* GetLightData(uint16_t x, int32_t y, uint16_t z, bool bCreateIfNotExist = true);
 
 		//call this function when loading blocks from file
 		void SuspendLightUpdate();
@@ -535,10 +544,10 @@ namespace ParaEngine
 		/**		hight light select block
 		@param nGroupID: 0 for animated selection, 1 for wire frame selection.
 		*/
-		void SelectBlock(uint16_t x, uint16_t y, uint16_t z, int nGroupID = 0);
-		void DeselectBlock(uint16_t x, uint16_t y, uint16_t z, int nGroupID = 0);
-		void UpdateSelectedBlockValue(uint16_t x, uint16_t y, uint16_t z, int nGroupID = 0);
-		void UpdateSelectedBlockNearbyValues(uint16_t x, uint16_t y, uint16_t z, int nGroupID = 0);
+		void SelectBlock(uint16_t x, int32_t y, uint16_t z, int nGroupID = 0);
+		void DeselectBlock(uint16_t x, int32_t y, uint16_t z, int nGroupID = 0);
+		void UpdateSelectedBlockValue(uint16_t x, int32_t y, uint16_t z, int nGroupID = 0);
+		void UpdateSelectedBlockNearbyValues(uint16_t x, int32_t y, uint16_t z, int nGroupID = 0);
 
 		//add render task to render queueGe
 		virtual void AddRenderTask(BlockRenderTask* pRenderTask);
@@ -550,7 +559,7 @@ namespace ParaEngine
 
 		/** load region at the given position. this function is usually called only on server side.
 		for client side, region is automatically loaded when camera moves. */
-		BlockRegion* CreateGetRegion(uint16_t block_x, uint16_t block_y, uint16_t block_z);
+		BlockRegion* CreateGetRegion(uint16_t block_x, int32_t block_y, uint16_t block_z);
 		BlockRegion* CreateGetRegion(uint16_t region_x, uint16_t region_z);
 
 		/** clear block render cache */
@@ -566,7 +575,7 @@ namespace ParaEngine
 		RenderableChunk* GetRenderableChunk(const Int16x3& chunkPos);
 
 		/** unload region from memory. return true if unloaded.*/
-		bool UnloadRegion(uint16_t block_x, uint16_t block_y, uint16_t block_z, bool bAutoSave = true);
+		bool UnloadRegion(uint16_t block_x, int32_t block_y, uint16_t block_z, bool bAutoSave = true);
 
 
 
@@ -578,7 +587,7 @@ namespace ParaEngine
 		/**
 		* @params : world chunk coordinates
 		*/
-		RenderableChunk& GetActiveChunk(uint16_t curChunkWX, uint16_t curChunkWY, uint16_t curChunkWZ);
+		RenderableChunk& GetActiveChunk(uint16_t curChunkWX, int16_t curChunkWY, uint16_t curChunkWZ);
 
 		/** force reusing active chunk
 		*/
@@ -641,6 +650,8 @@ namespace ParaEngine
 		//[x+1,y+1,z+1]~[nx+1,ny+1,nz+1] we keep all data from [x+1,y+1,z+1]~[nx,nz,ny]
 		//and fill new data in the obsolete grids to avoid full refresh
 		std::vector<RenderableChunk*> m_activeChunks;
+		std::vector<RenderableChunk*> m_freeRenderChunks;
+		std::unordered_map<int64_t, RenderableChunk*> m_renderChunksByPosition;
 
 		Int16x3 m_minActiveChunkId_ws;
 
@@ -714,6 +725,9 @@ namespace ParaEngine
 
 		/* directory information about the world. */
 		CWorldInfo m_worldInfo;
+		bool m_legacyHeightSession = false;
+		bool m_requiresExtendedHeight = false;
+		std::unordered_map<uint32_t, std::vector<ChunkMaxHeight>> m_unloadedColumnHeights;
 
 		/** Light to brightness conversion table. [0,1] float */
 		float m_lightBrightnessTableFloat[17];

@@ -62,6 +62,6 @@ void ChunkMaxHeight::SetHeight(int16_t nHeight, bool bIsTransparent /*= false*/)
 
 void ChunkMaxHeight::ClearHeight()
 {
-	m_nMaxHeight = 0;
-	m_nSolidHeight = 0;
+	m_nMaxHeight = BlockConfig::MinBlockY - 1;
+	m_nSolidHeight = BlockConfig::MinBlockY - 1;
 }

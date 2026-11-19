@@ -21,12 +21,12 @@ namespace ParaEngine
 		*/
 		virtual BlockModel& GetBlockModel(int nIndex = 0);
 		
-		virtual BlockModel& GetBlockModel(CBlockWorld* pBlockManager, uint16_t block_id, uint16_t bx, uint16_t by, uint16_t bz, uint16_t nBlockData = 0, Block** neighborBlocks = NULL);
+		virtual BlockModel& GetBlockModel(CBlockWorld* pBlockManager, uint16_t block_id, uint16_t bx, int16_t by, uint16_t bz, uint16_t nBlockData = 0, Block** neighborBlocks = NULL);
 		virtual BlockModel& GetBlockModelByData(uint32 nData);
 
 		/** get block model index 
 		*/
-		virtual int GetModelIndex(CBlockWorld* pBlockManager, uint16_t block_id, uint16_t bx, uint16_t by, uint16_t bz, uint16_t nBlockData = 0, Block** neighborBlocks=NULL){return 0;};
+		virtual int GetModelIndex(CBlockWorld* pBlockManager, uint16_t block_id, uint16_t bx, int16_t by, uint16_t bz, uint16_t nBlockData = 0, Block** neighborBlocks=NULL){return 0;};
 	protected:
 		BlockTemplate* m_pBlockTemplate;
 	};
@@ -41,7 +41,7 @@ namespace ParaEngine
 		
 		/** get block model index 
 		*/
-		virtual int GetModelIndex(CBlockWorld* pBlockManager, uint16_t block_id, uint16_t bx, uint16_t by, uint16_t bz, uint16_t nBlockData = 0, Block** neighborBlocks=NULL);
+		virtual int GetModelIndex(CBlockWorld* pBlockManager, uint16_t block_id, uint16_t bx, int16_t by, uint16_t bz, uint16_t nBlockData = 0, Block** neighborBlocks=NULL);
 	};
 
 	/** just return model linearly. */
@@ -55,7 +55,7 @@ namespace ParaEngine
 
 		/** get block model index 
 		*/
-		virtual int GetModelIndex(CBlockWorld* pBlockManager, uint16_t block_id, uint16_t bx, uint16_t by, uint16_t bz, uint16_t nBlockData = 0, Block** neighborBlocks=NULL);
+		virtual int GetModelIndex(CBlockWorld* pBlockManager, uint16_t block_id, uint16_t bx, int16_t by, uint16_t bz, uint16_t nBlockData = 0, Block** neighborBlocks=NULL);
 
 		int GetModelCount() const;
 	protected:

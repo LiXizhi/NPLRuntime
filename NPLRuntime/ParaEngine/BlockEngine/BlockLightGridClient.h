@@ -59,6 +59,12 @@ namespace ParaEngine
 
 		/** thread safe: get the number of remaining dirty column*/
 		virtual int GetDirtyColumnCount();
+		bool CalculatesLight() const override { return true; }
+		bool IsSectionLightPending(int x, int y, int z) override;
+		// The caller holds the world lock. Passing no lock processes synchronously.
+		bool ProcessPendingLightCells(int maxCells, Scoped_ReadLock<BlockReadWriteLock>* lock = nullptr, int* yields = nullptr);
+		size_t GetPendingLightCellCount() const { return m_dirtyCells.size(); }
+		uint64_t GetLightCellsVisited() const { return m_lightCellsVisited; }
 
 		/** get the number of remaining dirty blocks */
 		virtual int GetDirtyBlockCount();
@@ -105,6 +111,7 @@ namespace ParaEngine
 		void SetChunksDirtyInAABB(Int32x3& minDirtyBlockId_ws, Int32x3& maxDirtyBlockId_ws);
 
 		/** only used during load time */
+		void QueueSkyInterval(uint16_t x, uint16_t z, int low, int high, bool edit = false);
 		void EmitSunLight(uint16_t blockIdX_ws, uint16_t blockIdZ_ws, bool bInitialSet = false);
 
 		/** light thread proc */
@@ -123,20 +130,18 @@ namespace ParaEngine
 		*/
 		void StartLightThread();
 
-		/** quick update sunlight according to height map here(without emitting sunlight) */
-		void DoQuickSunLightValues(int chunkX, int chunkZ);
-		/** only do when it has not been done */
-		void CheckDoQuickSunLightValues(int chunkX, int chunkZ);
+
 
 		/* compute light value according to the nearby 6 blocks. */
-		int32 ComputeLightValue(uint16 x, uint16 y, uint16 z, bool isSunLight = false);
+		int32 ComputeLightValue(uint16 x, int16_t y, uint16 z, bool isSunLight = false);
 		/* Returns whether a block above this one can reach to the sky (by checking the height map) */
-		bool CanBlockSeeTheSky(uint16 x, uint16 y, uint16 z);
+		bool CanBlockSeeTheSky(uint16 x, int16_t y, uint16 z);
 		/** get brightness of the given block.*/
+		uint8_t SampleEmptySkyLight(const Uint16x3& pos);
 		int32 GetSavedLightValue(int32 x, int32 y, int32 z, bool isSunLight);
 		/** get opacity of the given block. */
 		int32 GetBlockOpacity(int32 x, int32 y, int32 z);
-		void SetLightValue(uint16_t x, uint16_t y, uint16_t z, int nLightValue, bool isSunLight);
+		void SetLightValue(uint16_t x, int16_t y, uint16_t z, int nLightValue, bool isSunLight);
 
 	public:
 		/** max number of cells(blocks) to calculate per frame. Smaller value gives better frame rate during frame load time. */
@@ -162,6 +167,8 @@ namespace ParaEngine
 		int32_t m_centerChunkIdZ_ws;
 		// dirty blocks since last frame's calculation
 		uint32  m_nDirtyBlocksCount;
+		uint64_t m_lightCellsVisited = 0;
+		uint64_t m_processingLightKey = UINT64_MAX;
 
 		// temporary array used by Relight function
 		std::vector<LightBlock> m_blocksNeedLightRecalcuation;
@@ -176,8 +183,8 @@ namespace ParaEngine
 		std::vector< ChunkLocation > m_forced_chunks;
 
 		std::set<uint32_t> m_loaded_columns;
-		/** whether DoQuickSunLightValues is called for this column */
-		ChunkLocationSet_type m_quick_loaded_columns;
+
+
 
 		/** whether light thread is working. */
 		bool m_bIsLightThreadStarted;

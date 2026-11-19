@@ -277,7 +277,7 @@ namespace ParaEngine
 			return (nIndex < (int)m_block_models.size()) ? m_block_models[nIndex] : m_block_models[0];
 	}
 
-	BlockModel& BlockTemplate::GetBlockModel(CBlockWorld* pBlockManager, uint16_t bx, uint16_t by, uint16_t bz, uint16_t nBlockData /*= 0*/, Block** neighborBlocks)
+	BlockModel& BlockTemplate::GetBlockModel(CBlockWorld* pBlockManager, uint16_t bx, int16_t by, uint16_t bz, uint16_t nBlockData /*= 0*/, Block** neighborBlocks)
 	{
 		if (m_pBlockModelFilter != 0)
 			return m_pBlockModelFilter->GetBlockModel(pBlockManager, GetID(), bx, by, bz, nBlockData, neighborBlocks);
@@ -469,7 +469,7 @@ namespace ParaEngine
 			m_nLightValue = value;
 	}
 
-	void BlockTemplate::GetAABB(CBlockWorld* pBlockManager, uint16_t bx, uint16_t by, uint16_t bz, CShapeAABB* pOutAABB)
+	void BlockTemplate::GetAABB(CBlockWorld* pBlockManager, uint16_t bx, int16_t by, uint16_t bz, CShapeAABB* pOutAABB)
 	{
 		if (GetBlockModel().IsCubeAABB())
 		{
@@ -518,7 +518,7 @@ namespace ParaEngine
 		return m_fPhysicalHeight;
 	}
 
-	float BlockTemplate::GetPhysicalHeight(CBlockWorld* pBlockManager, uint16_t bx, uint16_t by, uint16_t bz)
+	float BlockTemplate::GetPhysicalHeight(CBlockWorld* pBlockManager, uint16_t bx, int16_t by, uint16_t bz)
 	{
 		if (m_fPhysicalHeight > 0.f && IsMatchAttribute(BlockTemplate::batt_cubeModel) && (m_pBlockModelFilter || m_block_models.size() > 1))
 		{

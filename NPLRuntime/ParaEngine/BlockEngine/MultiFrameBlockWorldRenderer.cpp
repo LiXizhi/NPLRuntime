@@ -312,7 +312,7 @@ bool ParaEngine::CMultiFrameBlockWorldRenderer::GetChunkByProgress(int nProgress
 
 		int32 chunkX = GetEyeChunkId().x;
 		int32 chunkZ = GetEyeChunkId().z;
-		Vector3 vChunkColumnSize(BlockConfig::g_chunkSize, BlockConfig::g_chunkSize * BlockConfig::g_regionChunkDimY, BlockConfig::g_chunkSize);
+		Vector3 vChunkColumnSize(BlockConfig::g_chunkSize, BlockConfig::g_chunkSize * (BlockConfig::MaxSectionY - BlockConfig::MinSectionY + 1), BlockConfig::g_chunkSize);
 		if (!m_bCanResumeProgress)
 			bIsResuming = false;
 		if (!bIsResuming)
@@ -336,7 +336,7 @@ bool ParaEngine::CMultiFrameBlockWorldRenderer::GetChunkByProgress(int nProgress
 					uint16 z = (uint16)(chunkZ + m_dz);
 					if (x >= m_startIdx.x && x <= m_endIdx.x && z >= m_startIdx.z && z <= m_endIdx.z)
 					{
-						Vector3 vMin = BlockCommon::ConvertToRealPosition(x * 16, 0, z * 16, 7);
+						Vector3 vMin = BlockCommon::ConvertToRealPosition(x * 16, BlockConfig::MinBlockY, z * 16, 7);
 						vMin -= m_renderOrig;
 						Vector3 vMax = vMin + vChunkColumnSize;
 
@@ -445,11 +445,11 @@ void ParaEngine::CMultiFrameBlockWorldRenderer::UpdateViewParams()
 	m_startIdx.x = m_startIdx.x > 0 ? m_startIdx.x - 1 : 0;
 
 
-	m_startIdx.y = m_startIdx.y > 0 ? (m_startIdx.y <= 15 ? m_startIdx.y - 1 : 15) : 0;
+	m_startIdx.y = (std::max<int>)(BlockConfig::MinSectionY, m_startIdx.y - 1);
 	m_startIdx.z = m_startIdx.z > 0 ? m_startIdx.z - 1 : 0;
 	BlockCommon::ConvertToBlockIndex(camMax.x, camMax.y, camMax.z, m_endIdx.x, m_endIdx.y, m_endIdx.z);
 	m_endIdx.x /= 16; m_endIdx.y /= 16; m_endIdx.z /= 16;
-	m_endIdx.y = m_endIdx.y < 15 ? m_endIdx.y + 1 : 15;
+	m_endIdx.y = (std::min<int>)(BlockConfig::MaxSectionY, m_endIdx.y + 1);
 
 	float fRenderDist = GetRenderDistance() * BlockConfig::g_blockSize;
 	m_sEyeSphere = CShapeSphere(camWorldPos, fRenderDist);
@@ -465,7 +465,7 @@ void ParaEngine::CMultiFrameBlockWorldRenderer::SetEyeBlockId(const Uint16x3& ey
 {
 	m_curCamBlockId = eyePos;
 	m_curCamChunkId.x = m_curCamBlockId.x / 16;
-	m_curCamChunkId.y = m_curCamBlockId.y / 16;
+	m_curCamChunkId.y = BlockConfig::SectionY(m_curCamBlockId.y);
 	m_curCamChunkId.z = m_curCamBlockId.z / 16;
 }
 
@@ -512,9 +512,9 @@ RenderableChunk* ParaEngine::CMultiFrameBlockWorldRenderer::GetRenderableChunkBy
 		if (pRegion && !(pRegion->IsLocked()))
 		{
 			int16_t localChunkX = chunkPos.x & 0x1f;
-			int16_t localChunkY = chunkPos.y & 0xf;
+			int16_t localChunkY = chunkPos.y;
 			int16_t localChunkZ = chunkPos.z & 0x1f;
-			uint16_t chunkIndex = PackChunkIndex(localChunkX, localChunkY, localChunkZ);
+			int32_t chunkIndex = PackChunkIndex(localChunkX, localChunkY, localChunkZ);
 			pChunk = m_activeChunks[nBufferIndex];
 			pChunk->ReuseChunk(pRegion, chunkIndex);
 		}
@@ -569,9 +569,20 @@ bool ParaEngine::CMultiFrameBlockWorldRenderer::DrawInternal(int nMaxChunks)
 			{
 				m_nProgress++;
 				m_tempRenderTasks.clear();
-				for (int i = 0, j = 0; i < BlockConfig::g_regionChunkDimY && j < (int)m_activeChunks.size(); ++i)
+				auto* region = m_pWorld->GetRegion(chunkPos.x >> 5, chunkPos.z >> 5);
+				if (!region || region->IsLocked()) continue;
+				int j = 0;
+				std::vector<Uint16x3> occupied;
+				region->GetOccupiedSections(chunkPos.x, m_startIdx.y, chunkPos.z, chunkPos.x, m_endIdx.y, chunkPos.z, occupied);
+				for (const auto& pos : occupied)
 				{
-					chunkPos.y = (chunkPos.y & 0xfff0) + i;
+					const int section = pos.y;
+					if (j == (int)m_activeChunks.size())
+					{
+						DrawRenderTasks(BlockRenderPass_Opaque);
+						j = 0;
+					}
+					chunkPos.y = section;
 
 					bool bIsFromMainBuffer = false;
 					RenderableChunk* pChunk = GetRenderableChunkByPosition(chunkPos, j, &bIsFromMainBuffer);

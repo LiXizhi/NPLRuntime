@@ -73,7 +73,6 @@ namespace ParaEngine
 		m_dirtyColumns.clear();
 		m_loaded_columns.clear();
 		m_forced_chunks.clear();
-		m_quick_loaded_columns.clear();
 		m_blocksNeedLightRecalcuation.resize(32 * 32 * 32);
 	}
 
@@ -84,7 +83,6 @@ namespace ParaEngine
 			std::lock_guard<std::recursive_mutex> Lock_(m_mutex);
 			m_loaded_columns.clear();
 			m_forced_chunks.clear();
-			m_quick_loaded_columns.clear();
 			m_dirtyColumns.clear();
 			m_nDirtyBlocksCount = 0;
 		}
@@ -199,13 +197,14 @@ namespace ParaEngine
 		if (brightness == nullptr)
 			return false;
 
+		// A mesh asks for up to 27 neighbors of the same vertex. Most samples
+		// share one section, including the block and sky channels of each sample.
+		const BlockIndex center = CalcLightDataIndex(blockId_ws, false);
 		Uint16x3 curBlockId_ws;
 		for (int i = 0; i < nSize; i++)
 		{
 			curBlockId_ws.x = blockId_ws.x + BlockCommon::NeighborOfsTable[i].x;
 			curBlockId_ws.y = blockId_ws.y + BlockCommon::NeighborOfsTable[i].y;
-			// fix curBlockId_ws.y may be 65535, since it is unsigned and that 0 -1 = 65535, not used since will only check curBlockId_ws.y >= 256 immediately afterward. 
-			// curBlockId_ws.y = curBlockId_ws.y == 0xffff ? 0 : curBlockId_ws.y; 
 			curBlockId_ws.z = blockId_ws.z + BlockCommon::NeighborOfsTable[i].z;
 
 			if (nLightType == 0)
@@ -215,28 +214,32 @@ namespace ParaEngine
 			uint8 nSunLight = 0;
 			uint8 nBlockLight = 0;
 
-			BlockIndex blockIndex = CalcLightDataIndex(curBlockId_ws, false);
+			const int changedBits = (curBlockId_ws.x ^ blockId_ws.x) | (curBlockId_ws.y ^ blockId_ws.y) | (curBlockId_ws.z ^ blockId_ws.z);
+			const bool sameSection = (changedBits & ~15) == 0 && center.m_pChunk && BlockConfig::IsBlockY(curBlockId_ws.y);
+			const BlockIndex blockIndex = i == 0 ? center : sameSection
+				? BlockIndex(center.m_pChunk, CalcPackedBlockID(curBlockId_ws.x, curBlockId_ws.y, curBlockId_ws.z))
+				: CalcLightDataIndex(curBlockId_ws, false);
 			if (blockIndex.m_pChunk)
 			{
-				LightData* pLightData = GetLightData(blockIndex);
+				LightData* pLightData = blockIndex.m_pChunk->GetLightData(blockIndex.m_nChunkBlockIndex);
 				if (nLightType != 1)
 					nBlockLight = pLightData->GetBrightness(false);
 				if (nLightType != 0)
 				{
 					if (curBlockId_ws.y >= m_nSkyHeight || blockIndex.m_pChunk->CanBlockSeeTheSkyWS(curBlockId_ws.x, curBlockId_ws.y, curBlockId_ws.z))
 					{
-						if (pLightData->GetBrightness(true) != 15)
-							pLightData->SetBrightness(15, true);
 						nSunLight = 15;
 					}
-					else
+					else if (blockIndex.m_pChunk->HasBlocks())
 						nSunLight = pLightData->GetBrightness(true);
+					else
+						nSunLight = SampleEmptySkyLight(curBlockId_ws);
 				}
 			}
 			else
 			{
 				if (nLightType != 0)
-					nSunLight = CanBlockSeeTheSky(curBlockId_ws.x, curBlockId_ws.y, curBlockId_ws.z) ? 15 : 0;
+					nSunLight = SampleEmptySkyLight(curBlockId_ws);
 			}
 
 			if (nLightType == -1)
@@ -275,12 +278,12 @@ namespace ParaEngine
 
 		uint64_t key = (((uint64_t)chunk_ws_y) << 48) + (((uint64_t)chunk_ws_x) << 32) + (((uint64_t)chunk_ws_z) << 16) + packedBlockId_cs; // chuck y in higher bits. 
 
-		return (m_dirtyCells.find(key) != m_dirtyCells.end());
+		return key == m_processingLightKey || m_dirtyCells.find(key) != m_dirtyCells.end();
 	}
 
 	void CBlockLightGridClient::SetLightDirty(Uint16x3& blockId_ws, bool isSunLight, int8 nUpdateRange)
 	{
-		if (m_suspendLightUpdate)
+		if (m_suspendLightUpdate || !BlockConfig::IsBlockY(blockId_ws.y))
 			return;
 
 		// uint64_t key = ((uint64_t)blockId_ws.x<<32) + ((uint64_t)blockId_ws.y<<16) + blockId_ws.z;
@@ -326,41 +329,54 @@ namespace ParaEngine
 
 	void CBlockLightGridClient::NotifyBlockHeightChanged(uint16_t blockIdX_ws, uint16_t blockIdZ_ws, ChunkMaxHeight& prevBlockHeight)
 	{
-		if (IsChunkColumnLoadedWorldPos(blockIdX_ws, 0, blockIdZ_ws))
+		auto* region = m_pBlockWorld->GetRegion(blockIdX_ws >> 9, blockIdZ_ws >> 9);
+		if (!region) return;
+		const int oldTop = prevBlockHeight.GetMaxSolidHeight();
+		const int newTop = region->GetHighestBlock(blockIdX_ws & 511, blockIdZ_ws & 511)->GetMaxSolidHeight();
+		if (oldTop == newTop) return;
+		const int low = (std::min)(oldTop, newTop) + 1;
+		const int high = (std::max)(oldTop, newTop);
+		QueueSkyInterval(blockIdX_ws, blockIdZ_ws, low, high, true);
+	}
+
+	void CBlockLightGridClient::QueueSkyInterval(uint16_t x, uint16_t z, int low, int high, bool edit)
+	{
+		auto* region = m_pBlockWorld->GetRegion(x >> 9, z >> 9);
+		if (!region) return;
+		// Include the two air samples immediately outside a stored section.
+		// The existing two-pass solver propagates lateral light from these seeds.
+		int nextY = (std::max<int>)(low, BlockConfig::MinBlockY);
+		std::vector<Uint16x3> sections;
+		const int halo = edit ? 14 : 0;
+		const int x0 = (std::max)(0, x - halo) >> 4, x1 = (x + halo) >> 4;
+		const int z0 = (std::max)(0, z - halo) >> 4, z1 = (z + halo) >> 4;
+		for (int rz = z0 >> 5; rz <= (z1 >> 5); ++rz)
+			for (int rx = x0 >> 5; rx <= (x1 >> 5); ++rx)
+				if (auto* nearby = m_pBlockWorld->GetRegion(rx, rz))
+					nearby->GetOccupiedSections(x0, BlockConfig::SectionY(low - 1), z0, x1, BlockConfig::SectionY(high + 1), z1, sections);
+		if (edit) std::sort(sections.begin(), sections.end(), [](const Uint16x3& a, const Uint16x3& b) { return a.y < b.y; });
+		for (const auto& pos : sections)
 		{
-			ChunkMaxHeight heightMap[6];
-			m_pBlockWorld->GetMaxBlockHeightWatchingSky(blockIdX_ws, blockIdZ_ws, heightMap);
-
-			Uint16x3 curBlockId_ws(blockIdX_ws, 0, blockIdZ_ws);
-			if (heightMap[0].GetMaxHeight() > prevBlockHeight.GetMaxSolidHeight() && prevBlockHeight.GetMaxSolidHeight() > 0)
+			const int section = pos.y;
+			if (!edit)
 			{
-				for (int y = prevBlockHeight.GetMaxSolidHeight() + 1; y <= heightMap[0].GetMaxHeight(); y++)
-				{
-					curBlockId_ws.y = y;
-					SetLightDirty(curBlockId_ws, true, 1);
-				}
+				auto* cached = region->GetChunk(PackChunkIndex(pos.x & 31, section, pos.z & 31), false);
+				if (cached && cached->IsLightingInitialized()) continue;
 			}
-
-			int max = heightMap[0].GetMaxHeight();
-			for (int i = 1; i<5; i++)
+			const int begin = (std::max)(nextY, section * 16 - 1);
+			const int end = (std::min<int>)((std::min)(high, section * 16 + 16), BlockConfig::MaxBlockY);
+			if (begin <= end)
 			{
-				if (heightMap[i].GetMaxHeight() > max)
-					max = heightMap[i].GetMaxHeight();
+				Int32x3 minPos(x, begin, z), maxPos(x, end, z);
+				SetChunksDirtyInAABB(minPos, maxPos);
 			}
-
-			if (max >= heightMap[0].GetMaxSolidHeight())
+			for (int y = begin; y <= end; ++y)
 			{
-				EmitSunLight(blockIdX_ws, blockIdZ_ws);
-
-				if (IsChunkColumnLoadedWorldPos(blockIdX_ws - 1, 0, blockIdZ_ws))
-					EmitSunLight(blockIdX_ws - 1, blockIdZ_ws);
-				if (IsChunkColumnLoadedWorldPos(blockIdX_ws + 1, 0, blockIdZ_ws))
-					EmitSunLight(blockIdX_ws + 1, blockIdZ_ws);
-				if (IsChunkColumnLoadedWorldPos(blockIdX_ws, 0, blockIdZ_ws - 1))
-					EmitSunLight(blockIdX_ws, blockIdZ_ws - 1);
-				if (IsChunkColumnLoadedWorldPos(blockIdX_ws, 0, blockIdZ_ws + 1))
-					EmitSunLight(blockIdX_ws, blockIdZ_ws + 1);
+				Uint16x3 pos(x, y, z);
+				SetLightDirty(pos, true, 1);
 			}
+			if (end >= begin) nextY = end + 1;
+			if (nextY > high) break;
 		}
 	}
 
@@ -501,8 +517,11 @@ namespace ParaEngine
 					uint16_t chunkX_ws = curChunkId_ws.m_chunkX;
 					uint16_t chunkZ_ws = curChunkId_ws.m_chunkZ;
 
-					m_pBlockWorld->RefreshAllLightsInColumn(chunkX_ws, chunkZ_ws);
-
+					if (!m_pBlockWorld->RefreshAllLightsInColumn(chunkX_ws, chunkZ_ws))
+					{
+						SetColumnPreloaded(chunkX_ws, chunkZ_ws);
+						continue;
+					}
 					CHECK_YIELD_CPU_TO_WRITER;
 
 					uint16_t chunkBlockX = chunkX_ws * BlockConfig::g_chunkBlockDim;
@@ -534,31 +553,8 @@ namespace ParaEngine
 					nBlocksToCalculateThisFrame = nDirtyCellCount - max_cells_left_per_frame;
 				}
 
-				for (auto it = m_dirtyCells.begin(); it != m_dirtyCells.end() && nBlocksToCalculateThisFrame > 0;)
-				{
-					Light& light_data = it->second;
-					if (!IsLightUpdateSuspended())
-					{
-						--nBlocksToCalculateThisFrame;
-						if (light_data.sunlightUpdateRange >= 0){
-							if (!RefreshLight(light_data.blockId, true, light_data.sunlightUpdateRange, &lock_, &nYieldCPUTimes))
-							{
-								m_bIsLightThreadStarted = false;
-								goto exit_function;
-							}
-						}
-						if (light_data.pointLightUpdateRange >= 0){
-							if (!RefreshLight(light_data.blockId, false, light_data.pointLightUpdateRange, &lock_, &nYieldCPUTimes))
-							{
-								m_bIsLightThreadStarted = false;
-								goto exit_function;
-							}
-						}
-						it = m_dirtyCells.erase(it);
-					}
-					else
-						nBlocksToCalculateThisFrame = 0;
-				}
+				if (!ProcessPendingLightCells(nBlocksToCalculateThisFrame, &lock_, &nYieldCPUTimes))
+					goto exit_function;
 			}
 
 			unsigned int nFinishTime = GetTickCount();
@@ -623,6 +619,24 @@ exit_function:
 		m_bIsLightThreadStarted = false;
 	}
 
+	bool CBlockLightGridClient::ProcessPendingLightCells(int maxCells, Scoped_ReadLock<BlockReadWriteLock>* lock, int* yields)
+	{
+		while (!m_dirtyCells.empty() && maxCells-- > 0 && !IsLightUpdateSuspended())
+		{
+			auto it = m_dirtyCells.begin();
+			m_processingLightKey = it->first;
+			const auto seed = it->second;
+			m_dirtyCells.erase(it);
+			// A writer can edit this same cell while propagation yields. Leave its
+			// newly queued work intact and keep the active neighborhood unsaveable.
+			const bool completed = (seed.sunlightUpdateRange < 0 || RefreshLight(seed.blockId, true, seed.sunlightUpdateRange, lock, yields))
+				&& (seed.pointLightUpdateRange < 0 || RefreshLight(seed.blockId, false, seed.pointLightUpdateRange, lock, yields));
+			m_processingLightKey = UINT64_MAX;
+			if (!completed) return false;
+		}
+		return true;
+	}
+
 	void CBlockLightGridClient::UpdateLighting()
 	{
 		if (!(m_pBlockWorld->IsInBlockWorld()))
@@ -683,8 +697,6 @@ exit_function:
 					{
 						if (processedCount < maxColumnPerFrame)
 						{
-							SetColumnPreloaded(chunkX_ws, chunkZ_ws);
-
 							m_pBlockWorld->RefreshAllLightsInColumn(chunkX_ws, chunkZ_ws);
 
 							uint16_t chunkBlockX = chunkX_ws * BlockConfig::g_chunkBlockDim;
@@ -696,8 +708,10 @@ exit_function:
 									EmitSunLight(chunkBlockX + x, chunkBlockZ + z);
 								}
 							}
+							SetLightingInChunkColumnInitialized(chunkX_ws, chunkZ_ws);
 							processedCount++;
 							it = m_dirtyColumns.erase(it);
+							SetColumnPreloaded(chunkX_ws, chunkZ_ws);
 						}
 						else
 							it++;
@@ -796,7 +810,7 @@ exit_function:
 	}
 
 	// blocks higher than the highest solid block in the height map can sky. Note, the top most opaque block can not see the sky. 
-	bool CBlockLightGridClient::CanBlockSeeTheSky(uint16 x, uint16 y, uint16 z)
+	bool CBlockLightGridClient::CanBlockSeeTheSky(uint16 x, int16_t y, uint16 z)
 	{
 		ChunkMaxHeight* pHeight = m_pBlockWorld->GetHighestBlock(x, z);
 		if (pHeight)
@@ -805,13 +819,65 @@ exit_function:
 			return true;
 	}
 
+	// Trace only through implicit air. A stored cell supplies the two-pass solver's
+	// boundary value. Light loses one level per step, regardless of the world height.
+	uint8_t CBlockLightGridClient::SampleEmptySkyLight(const Uint16x3& pos)
+	{
+		if (pos.y < BlockConfig::MinBlockY) return 0;
+		if (CanBlockSeeTheSky(pos.x, pos.y, pos.z)) return 15;
+		constexpr int width = 29, plane = width * width, volume = plane * width;
+		struct Search {
+			std::array<uint16_t, volume> visited{};
+			uint16_t generation = 0;
+			std::vector<uint16_t> queue;
+		};
+		static thread_local Search search;
+		if (++search.generation == 0)
+		{
+			search.visited.fill(0);
+			++search.generation;
+		}
+		search.queue.clear();
+		const int center = 14 * (plane + width + 1);
+		search.queue.push_back(center);
+		search.visited[center] = search.generation;
+		int best = 0;
+		size_t head = 0;
+		for (int distance = 1; distance < 15 - best && head < search.queue.size(); ++distance)
+		{
+			const size_t end = search.queue.size();
+			while (head < end)
+			{
+				const int index = search.queue[head++];
+				for (int offset : {-1, 1, -width, width, -plane, plane})
+				{
+					const int next = index + offset;
+					if (search.visited[next] == search.generation) continue;
+					search.visited[next] = search.generation;
+					const int x = pos.x + next % width - 14;
+					const int z = pos.z + next / width % width - 14;
+					const int y = pos.y + next / plane - 14;
+					if (x < 0 || x > 65535 || z < 0 || z > 65535 || y < BlockConfig::MinBlockY) continue;
+					if (CanBlockSeeTheSky(x, y, z)) return 15 - distance;
+					Uint16x3 sample(x, y, z);
+					const auto cell = CalcLightDataIndex(sample, false);
+					if (cell.m_pChunk && cell.m_pChunk->HasBlocks())
+						best = (std::max)(best, int(cell.m_pChunk->GetLightData(cell.m_nChunkBlockIndex)->GetBrightness(true)) - distance);
+					else
+						search.queue.push_back(next);
+				}
+			}
+		}
+		return best;
+	}
+
 	int32 CBlockLightGridClient::GetSavedLightValue(int32 x, int32 y, int32 z, bool isSunLight)
 	{
-		if (y >= 0 && y < BlockConfig::g_regionBlockDimY && x >= 0 && z >= 0)
+		if (BlockConfig::IsBlockY(y) && x >= 0 && z >= 0)
 		{
-			Uint16x3 curBlockId_ws((uint16)x, (uint16)y, (uint16)z);
+			Uint16x3 curBlockId_ws((uint16)x, y, (uint16)z);
 
-			BlockIndex blockIndex = CalcLightDataIndex(curBlockId_ws);
+			BlockIndex blockIndex = CalcLightDataIndex(curBlockId_ws, false);
 			if (blockIndex.m_pChunk)
 			{
 				auto lightData = GetLightData(blockIndex);
@@ -819,8 +885,6 @@ exit_function:
 				{
 					if (curBlockId_ws.y >= m_nSkyHeight || blockIndex.m_pChunk->CanBlockSeeTheSkyWS(curBlockId_ws.x, curBlockId_ws.y, curBlockId_ws.z))
 					{
-						if (lightData->GetBrightness(true) != 15)
-							lightData->SetBrightness(15, true);
 						return 15;
 					}
 					else
@@ -841,25 +905,31 @@ exit_function:
 
 	int32 CBlockLightGridClient::GetBlockOpacity(int32 x, int32 y, int32 z)
 	{
-		if (y >= 0 && y < BlockConfig::g_regionBlockDimY && x >= 0 && z >= 0)
+		if (BlockConfig::IsBlockY(y) && x >= 0 && z >= 0)
 		{
-			BlockTemplate* pTemplate = m_pBlockWorld->GetBlockTemplate((uint16)x, (uint16)y, (uint16)z);
+			BlockTemplate* pTemplate = m_pBlockWorld->GetBlockTemplate((uint16)x, y, (uint16)z);
 			return pTemplate ? pTemplate->GetLightOpacity() : 1;
 		}
 		return 1;
 	}
 
-	void CBlockLightGridClient::SetLightValue(uint16_t x, uint16_t y, uint16_t z, int nLightValue, bool isSunLight)
+	void CBlockLightGridClient::SetLightValue(uint16_t x, int16_t y, uint16_t z, int nLightValue, bool isSunLight)
 	{
 		Uint16x3 neighborId(x, y, z);
-		auto lightIndex = CalcLightDataIndex(neighborId);
-		if (lightIndex.m_pChunk)
+		if (!BlockConfig::IsBlockY(y)) return;
+		auto lightIndex = CalcLightDataIndex(neighborId, false);
+		if (!lightIndex.m_pChunk)
 		{
-			GetLightData(lightIndex)->SetBrightness((uint8)nLightValue, isSunLight);
+			// Clearing a cell in the invalidation pass has no stored data to
+			// clear. Direct sunlight is supplied by the height index on every read.
+			if (nLightValue == 0 || (isSunLight && CanBlockSeeTheSky(x, y, z))) return;
+			lightIndex = CalcLightDataIndex(neighborId, true);
 		}
+		if (lightIndex.m_pChunk)
+			GetLightData(lightIndex)->SetBrightness((uint8)nLightValue, isSunLight);
 	}
 
-	int32 CBlockLightGridClient::ComputeLightValue(uint16 x, uint16 y, uint16 z, bool isSunLight /*= false*/)
+	int32 CBlockLightGridClient::ComputeLightValue(uint16 x, int16_t y, uint16 z, bool isSunLight /*= false*/)
 	{
 		if (isSunLight && CanBlockSeeTheSky(x, y, z))
 			return 15;
@@ -940,7 +1010,7 @@ exit_function:
 		}
 		else if (newLightValue == lastLightValue && nUpdateRange == 0)
 		{
-			// no need to update when light value is not changed and update range is 0. 
+			++m_lightCellsVisited;
 			REFRESH_LIGHT_CHECK_YIELD_CPU_TO_WRITER;
 			return true;
 		}
@@ -969,12 +1039,13 @@ exit_function:
 							int32 neighborY = curBlockPos.y + BlockFacing::offsetsYForSide[nFaceIndex];
 							int32 neighborZ = curBlockPos.z + BlockFacing::offsetsZForSide[nFaceIndex];
 
+							if (!BlockConfig::IsBlockY(neighborY) || neighborX < 0 || neighborZ < 0 || neighborX > 65535 || neighborZ > 65535) continue;
 							int32 blockOpacity = Math::Max((int32)1, GetBlockOpacity(neighborX, neighborY, neighborZ));
 							int32 lastLightValue = GetSavedLightValue(neighborX, neighborY, neighborZ, isSunLight);
 
 							if ((lastLightValue == (lightvalue - blockOpacity)) && !(lastLightValue == 0 && blockOpacity == 15) && nQueuedCount < (int)m_blocksNeedLightRecalcuation.size())
 							{
-								Uint16x3 neighborPos((uint16)neighborX, (uint16)neighborY, (uint16)neighborZ);
+								Uint16x3 neighborPos((uint16)neighborX, (int16_t)neighborY, (uint16)neighborZ);
 								if (!isSunLight || !IsLightDirty(neighborPos))
 									m_blocksNeedLightRecalcuation[nQueuedCount++] = LightBlock(neighborPos, (uint8)lastLightValue);
 							}
@@ -986,6 +1057,7 @@ exit_function:
 					current.brightness = (int8)lightvalue;
 				}
 			}
+			m_lightCellsVisited += nIndex;
 			REFRESH_LIGHT_CHECK_YIELD_CPU_TO_WRITER;
 		}
 
@@ -994,7 +1066,7 @@ exit_function:
 		// And if its neighbors needs update, also recalculate recursively. 
 
 		Int32x3 minDirtyBlockId_ws(0x7FFF);
-		Int32x3 maxDirtyBlockId_ws;
+		Int32x3 maxDirtyBlockId_ws(-32768);
 
 #ifdef PRINT_PERF_LOG
 		int64 nFromTime = GetTimeUS();
@@ -1039,10 +1111,11 @@ exit_function:
 					int32 neighborX = curBlockPos.x + BlockFacing::offsetsXForSide[nFaceIndex];
 					int32 neighborY = curBlockPos.y + BlockFacing::offsetsYForSide[nFaceIndex];
 					int32 neighborZ = curBlockPos.z + BlockFacing::offsetsZForSide[nFaceIndex];
+					if (!BlockConfig::IsBlockY(neighborY) || neighborX < 0 || neighborZ < 0 || neighborX > 65535 || neighborZ > 65535) continue;
 					int32 lastLightValue = GetSavedLightValue(neighborX, neighborY, neighborZ, isSunLight);
 					if (lastLightValue < newLightValue)
 					{
-						Uint16x3 neighborPos((uint16)neighborX, (uint16)neighborY, (uint16)neighborZ);
+						Uint16x3 neighborPos((uint16)neighborX, (int16_t)neighborY, (uint16)neighborZ);
 						if(!isSunLight || !IsLightDirty(neighborPos))
 							m_blocksNeedLightRecalcuation[nQueuedCount++] = LightBlock(neighborPos, (uint8)lastLightValue);
 					}
@@ -1050,6 +1123,7 @@ exit_function:
 			}
 			REFRESH_LIGHT_CHECK_YIELD_CPU_TO_WRITER;
 		}
+		m_lightCellsVisited += nQueuedCount;
 		SetChunksDirtyInAABB(minDirtyBlockId_ws, maxDirtyBlockId_ws);
 		REFRESH_LIGHT_CHECK_YIELD_CPU_TO_WRITER;
 		if (pnCpuYieldCount)
@@ -1068,142 +1142,18 @@ exit_function:
 
 	void CBlockLightGridClient::EmitSunLight(uint16_t blockIdX_ws, uint16_t blockIdZ_ws, bool bInitialSet)
 	{
-		ChunkMaxHeight heightMap[6];
-		m_pBlockWorld->GetMaxBlockHeightWatchingSky(blockIdX_ws, blockIdZ_ws, heightMap);
-
-		//no block exist
-		if (heightMap[5].GetMaxHeight() == 31)
+		if (bInitialSet) return; // Direct sky is sampled from the column height map.
+		ChunkMaxHeight heights[6];
+		m_pBlockWorld->GetMaxBlockHeightWatchingSky(blockIdX_ws, blockIdZ_ws, heights);
+		int high = heights[0].GetMaxHeight();
+		int low = heights[0].GetMaxSolidHeight();
+		for (int i = 1; i < 5; ++i)
 		{
-			/*
-			// if no block exists, all light values are set to max sunlight values.
-			Uint16x3 curBlockId_ws(blockIdX_ws, 0, blockIdZ_ws);
-			auto curLightIdx = CalcLightDataIndex(curBlockId_ws);
-			if(curLightIdx.m_pChunk != 0)
-			{
-			for(int y=0;y<BlockConfig::g_regionBlockDimY;y++)
-			{
-			curBlockId_ws.y = y;
-			curLightIdx = CalcLightDataIndex(curBlockId_ws);
-			if(curLightIdx.m_pChunk != 0)
-			{
-			GetLightData(curLightIdx)->SetBrightness(BlockConfig::g_sunLightValue,true);
-			}
-			}
-			}
-			*/
-			return;
+			high = (std::max<int>)(high, heights[i].GetMaxHeight());
+			low = (std::min<int>)(low, heights[i].GetMaxSolidHeight());
 		}
-
-		Uint16x3 curBlockId_ws(blockIdX_ws, 0, blockIdZ_ws);
-
-		int16 max_height = 0;
-		for (int i = 0; i<5; i++)
-		{
-			if (heightMap[i].GetMaxHeight() > max_height)
-				max_height = heightMap[i].GetMaxHeight();
-		}
-
-		// update all blocks vertically from the highest visible neighboring block to the current max solid block height. 
-		if (max_height > 0)
-		{
-			int16 min_height = heightMap[0].GetMaxSolidHeight();
-			if ((heightMap[5].GetMaxHeight() & 1) == 0){
-				min_height += 1;
-				max_height += 1;
-			}
-
-			if (max_height >= BlockConfig::g_regionBlockDimY)
-				max_height = BlockConfig::g_regionBlockDimY - 1;
-
-			if (!bInitialSet)
-			{
-				for (uint16 y = min_height; y <= max_height; y++)
-				{
-					curBlockId_ws.y = y;
-					SetLightDirty(curBlockId_ws, true, 1);
-				}
-			}
-			else
-			{
-				/*
-				// do we really need to add 16 to height?
-				max_height += BlockConfig::g_sunLightValue;
-				if (max_height >= BlockConfig::g_regionBlockDimY)
-				max_height = BlockConfig::g_regionBlockDimY-1;
-				else
-				max_height = ((max_height >> 4) << 4) + 0xf;
-				*/
-
-				for (uint16 y = min_height; y <= max_height; y++)
-				{
-					curBlockId_ws.y = y;
-					auto curLightIdx = CalcLightDataIndex(curBlockId_ws);
-					LightData* pData = GetLightData(curLightIdx);
-					if (pData)
-						pData->SetBrightness(BlockConfig::g_sunLightValue, true);
-				}
-			}
-		}
-		else
-		{
-			// if no block exists, all light values are set to max sunlight values. 
-			Uint16x3 curBlockId_ws(blockIdX_ws, 0, blockIdZ_ws);
-			int nMaxChunkY = BlockConfig::g_regionBlockDimY >> 4;
-			for (int y = 0; y < nMaxChunkY; y++)
-			{
-				curBlockId_ws.y = (y << 4);
-				auto curLightIdx = CalcLightDataIndex(curBlockId_ws, false);
-				if (curLightIdx.m_pChunk != 0)
-				{
-					GetLightData(curLightIdx)->SetBrightness(BlockConfig::g_sunLightValue, true);
-					for (int i = 1; i < 16; ++i)
-					{
-						curBlockId_ws.y++;
-						auto curLightIdx = CalcLightDataIndex(curBlockId_ws, false);
-						if (curLightIdx.m_pChunk != 0)
-							GetLightData(curLightIdx)->SetBrightness(BlockConfig::g_sunLightValue, true);
-					}
-				}
-			}
-		}
-	}
-
-	// obsoleted function, no pre-calculation required. 
-	void CBlockLightGridClient::CheckDoQuickSunLightValues(int chunkX_ws, int chunkZ_ws)
-	{
-		ChunkLocation chunkPos(chunkX_ws, chunkZ_ws);
-		std::unique_lock<std::recursive_mutex> Lock_(m_mutex);
-		if (m_quick_loaded_columns.find(chunkPos) == m_quick_loaded_columns.end())
-		{
-			Lock_.unlock();
-			if (m_pBlockWorld->ChunkColumnExists(chunkX_ws, chunkZ_ws))
-			{
-				if (chunkX_ws >= m_minChunkIdX_ws && chunkX_ws < m_maxChunkIdX_ws && chunkZ_ws >= m_minChunkIdZ_ws && chunkZ_ws < m_maxChunkIdZ_ws)
-				{
-					Lock_.lock();
-					m_quick_loaded_columns.insert(chunkPos);
-					Lock_.unlock();
-					DoQuickSunLightValues(chunkX_ws, chunkZ_ws);
-				}
-			}
-		}
-	}
-
-	void CBlockLightGridClient::DoQuickSunLightValues(int chunkX_ws, int chunkZ_ws)
-	{
-		uint16_t chunkBlockX = chunkX_ws * BlockConfig::g_chunkBlockDim;
-		uint16_t chunkBlockZ = chunkZ_ws * BlockConfig::g_chunkBlockDim;
-		for (int x = 0; x < BlockConfig::g_chunkBlockDim; x++)
-		{
-			for (int z = 0; z < BlockConfig::g_chunkBlockDim; z++)
-			{
-				uint16_t blockIdX_ws = chunkBlockX + x;
-				uint16_t blockIdZ_ws = chunkBlockZ + z;
-				Uint16x3 curBlockId_ws(blockIdX_ws, 0, blockIdZ_ws);
-
-				EmitSunLight(blockIdX_ws, blockIdZ_ws, true);
-			}
-		}
+		if (high >= BlockConfig::MinBlockY)
+			QueueSkyInterval(blockIdX_ws, blockIdZ_ws, low, high + 1);
 	}
 
 	void CBlockLightGridClient::AddDirtyColumn(uint16_t chunkX_ws, uint16_t chunkZ_ws)
@@ -1235,6 +1185,7 @@ exit_function:
 		{
 			std::lock_guard<std::recursive_mutex> Lock_(m_mutex);
 			m_loaded_columns.insert((chunkX_ws << 16) + chunkZ_ws);
+			m_dirtyColumns.erase(ChunkLocation(chunkX_ws, chunkZ_ws));
 		}
 	}
 
@@ -1250,13 +1201,6 @@ exit_function:
 		}
 		ChunkLocation chunkPos(chunkX_ws, chunkZ_ws);
 		{
-			auto iter = m_quick_loaded_columns.find(chunkPos);
-			if (iter != m_quick_loaded_columns.end())
-			{
-				m_quick_loaded_columns.erase(iter);
-			}
-		}
-		{
 			auto iter = m_dirtyColumns.find(chunkPos);
 			if (iter != m_dirtyColumns.end())
 			{
@@ -1267,7 +1211,9 @@ exit_function:
 
 	void CBlockLightGridClient::SetLightingInChunkColumnInitialized(uint16_t chunkX_ws, uint16_t chunkZ_ws)
 	{
-		for (int y = 0; y < BlockConfig::g_regionChunkDimY; y++)
+		auto* region = m_pBlockWorld->GetRegion(chunkX_ws >> 5, chunkZ_ws >> 5);
+		if (!region) return;
+		for (int y : region->GetColumnSections(chunkX_ws, chunkZ_ws))
 		{
 			BlockChunk* pChunk = m_pBlockWorld->GetChunk(chunkX_ws * 16, y * 16, chunkZ_ws * 16, false);
 			if (pChunk)
@@ -1313,6 +1259,28 @@ exit_function:
 		}
 	}
 
+	bool CBlockLightGridClient::IsSectionLightPending(int x, int y, int z)
+	{
+		// Saving holds the world's exclusive lock, including when the worker yields.
+		std::lock_guard<std::recursive_mutex> guard(m_mutex);
+		for (int dz = -1; dz <= 1; ++dz)
+			for (int dx = -1; dx <= 1; ++dx)
+			{
+				const ChunkLocation column(x + dx, z + dz);
+				if (m_dirtyColumns.count(column)) return true;
+				for (const auto& active : m_closest_chunks)
+					if (active.first.m_chunkX == column.m_chunkX && active.first.m_chunkZ == column.m_chunkZ) return true;
+				for (int dy = -1; dy <= 1; ++dy)
+				{
+					const uint64_t key = (uint64_t(uint16_t(y + dy)) << 48) | (uint64_t(uint16_t(x + dx)) << 32) | (uint64_t(uint16_t(z + dz)) << 16);
+					if ((m_processingLightKey & ~uint64_t(0xffff)) == key) return true;
+					auto it = m_dirtyCells.lower_bound(key | 0xffff);
+					if (it != m_dirtyCells.end() && it->first >= key) return true;
+				}
+			}
+		return false;
+	}
+
 	int CBlockLightGridClient::GetDirtyBlockCount()
 	{
 		return m_nDirtyBlocksCount;
@@ -1334,18 +1302,18 @@ exit_function:
 			minDirtyBlockId_ws.x = 0;
 		if (minDirtyBlockId_ws.z < 0)
 			minDirtyBlockId_ws.z = 0;
-		if (minDirtyBlockId_ws.y < 0)
-			minDirtyBlockId_ws.y = 0;
-		if (minDirtyBlockId_ws.y >= BlockConfig::g_regionBlockDimY)
-			minDirtyBlockId_ws.y = BlockConfig::g_regionBlockDimY - 1;
+		if (minDirtyBlockId_ws.y < BlockConfig::MinBlockY)
+			minDirtyBlockId_ws.y = BlockConfig::MinBlockY;
+		if (minDirtyBlockId_ws.y > BlockConfig::MaxBlockY)
+			minDirtyBlockId_ws.y = BlockConfig::MaxBlockY;
 		if (maxDirtyBlockId_ws.x >= 0xffff)
 			maxDirtyBlockId_ws.x = 0xffff - 1;
 		if (maxDirtyBlockId_ws.z >= 0xffff)
 			maxDirtyBlockId_ws.z = 0xffff - 1;
-		if (maxDirtyBlockId_ws.y < 0)
-			maxDirtyBlockId_ws.y = 0;
-		if (maxDirtyBlockId_ws.y >= BlockConfig::g_regionBlockDimY)
-			maxDirtyBlockId_ws.y = BlockConfig::g_regionBlockDimY - 1;
+		if (maxDirtyBlockId_ws.y < BlockConfig::MinBlockY)
+			maxDirtyBlockId_ws.y = BlockConfig::MinBlockY;
+		if (maxDirtyBlockId_ws.y > BlockConfig::MaxBlockY)
+			maxDirtyBlockId_ws.y = BlockConfig::MaxBlockY;
 
 		Uint16x3 startDirtyChunk_ws;
 		startDirtyChunk_ws.x = (uint16)(minDirtyBlockId_ws.x >> 4);
@@ -1360,7 +1328,7 @@ exit_function:
 		Uint16x3 curChunk_ws;
 		for (uint32_t x = startDirtyChunk_ws.x; x <= endDirtyChunk_ws.x; x++)
 		{
-			for (uint32_t y = startDirtyChunk_ws.y; y <= endDirtyChunk_ws.y; y++)
+			for (int y = startDirtyChunk_ws.y; y <= endDirtyChunk_ws.y; y++)
 			{
 				for (uint32_t z = startDirtyChunk_ws.z; z <= endDirtyChunk_ws.z; z++)
 				{

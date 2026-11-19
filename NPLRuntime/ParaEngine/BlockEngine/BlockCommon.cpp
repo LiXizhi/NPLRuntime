@@ -227,12 +227,12 @@ namespace ParaEngine
 		}
 	}
 
-	float BlockCommon::ConvertToRealY(uint16 y)
+	float BlockCommon::ConvertToRealY(int16_t y)
 	{
 		return (float)(y*BlockConfig::g_dBlockSize + CBlockWorld::GetVerticalOffset());
 	}
 
-	Vector3 BlockCommon::ConvertToRealPosition( uint16 x, uint16 y, uint16 z, int nSide /*= -1*/  )
+	Vector3 BlockCommon::ConvertToRealPosition( uint16 x, int16_t y, uint16 z, int nSide /*= -1*/  )
 	{
 #ifdef USE_DOUBLE_BLOCK_CONVERT
 		double real_x = x;
@@ -372,13 +372,13 @@ namespace ParaEngine
 #endif
 	}
 
-	void BlockCommon::ConvertToBlockIndex( float x,float y,float z, uint16& idx_x, uint16& idx_y, uint16& idx_z )
+	void BlockCommon::ConvertToBlockIndex( float x,float y,float z, uint16& idx_x, int16_t& idx_y, uint16& idx_z )
 	{
 #ifdef USE_DOUBLE_BLOCK_CONVERT
 		const double blocksize_inverse = BlockConfig::g_dBlockSizeInverse;
 		idx_x = (uint16)((x > 0) ? (x*blocksize_inverse) : 0);
 		y -= CBlockWorld::GetVerticalOffset();
-		idx_y = (uint16)((y > 0) ? (y*blocksize_inverse) : 0);
+		idx_y = static_cast<int16_t>((std::max)(-32768.0, (std::min)(32767.0, floor(y * blocksize_inverse))));
 		idx_z = (uint16)((z > 0) ? (z*blocksize_inverse) : 0);
 #else
 		const double blocksize = BlockConfig::g_blockSize;
@@ -386,7 +386,7 @@ namespace ParaEngine
 		double offset_y = CBlockWorld::GetVerticalOffset();
 
 		idx_x = (x>0) ? uint16(x / region_width) : 0;
-		idx_z = (y>0) ? uint16(z / region_width) : 0;
+		idx_z = (z>0) ? uint16(z / region_width) : 0;
 		double x_orgin = idx_x * region_width;
 		double z_orgin = idx_z * region_width;
 		// local index
@@ -396,7 +396,7 @@ namespace ParaEngine
 		idx_x = (idx_x<<9) + bx;
 
 		double ofsY = y - offset_y;
-		idx_y = (ofsY > 0) ? (uint16(ofsY/blocksize)) : 0;
+		idx_y = static_cast<int16_t>((std::max)(-32768.0, (std::min)(32767.0, floor(ofsY / blocksize))));
 
 		idx_z = (idx_z<<9) + bz;
 #endif

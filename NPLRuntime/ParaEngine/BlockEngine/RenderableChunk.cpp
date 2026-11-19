@@ -104,7 +104,7 @@ namespace ParaEngine
 		bool bGroupByChunk = m_pWorld->IsGroupByChunkBeforeTexture();
 		if (bGroupByChunk)
 		{
-			dist = (uint16_t)GetViewIndex();
+			dist = (uint16_t)(std::min<int>)(GetViewIndex(), maxDistValue);
 		}
 		else
 		{
@@ -113,7 +113,6 @@ namespace ParaEngine
 			UnpackChunkIndex(m_packedChunkID, curChunk.x, curChunk.y, curChunk.z);
 
 			curChunk.x += pOwnerBlockRegion->m_minChunkId_ws.x;
-			curChunk.y += pOwnerBlockRegion->m_minChunkId_ws.y;
 			curChunk.z += pOwnerBlockRegion->m_minChunkId_ws.z;
 
 			int16_t deltaX = (int16)eyeChunk.x - (int16)curChunk.x;
@@ -359,7 +358,7 @@ namespace ParaEngine
 		m_vertexBuffers.clear();
 	}
 
-	void RenderableChunk::ReuseChunk(BlockRegion* pOwnerBlockRegion, int16_t packedChunkId_rs)
+	void RenderableChunk::ReuseChunk(BlockRegion* pOwnerBlockRegion, int32_t packedChunkId_rs)
 	{
 		ClearChunkData();
 		m_nLastVertexBufferBytes = 0;
@@ -392,8 +391,7 @@ namespace ParaEngine
 		vMinWorld.x = minRegionBlockId.x * blockSize;
 		vMinWorld.x += chunkId_rs.x * BlockConfig::g_chunkSize;
 
-		vMinWorld.y = minRegionBlockId.y * blockSize;
-		vMinWorld.y += chunkId_rs.y * BlockConfig::g_chunkSize + pOwnerBlockRegion->GetBlockWorld()->GetVerticalOffset();
+		vMinWorld.y = chunkId_rs.y * BlockConfig::g_chunkSize + pOwnerBlockRegion->GetBlockWorld()->GetVerticalOffset();
 
 		vMinWorld.z = minRegionBlockId.z  * blockSize;
 		vMinWorld.z += chunkId_rs.z * BlockConfig::g_chunkSize;
@@ -987,12 +985,12 @@ namespace ParaEngine
 		m_nChunkViewDistance = val;
 	}
 
-	int16 RenderableChunk::GetViewIndex() const
+	int RenderableChunk::GetViewIndex() const
 	{
 		return m_nViewIndex;
 	}
 
-	void RenderableChunk::SetViewIndex(int16 val)
+	void RenderableChunk::SetViewIndex(int val)
 	{
 		m_nViewIndex = val;
 	}

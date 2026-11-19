@@ -115,6 +115,9 @@ void ParaEngine::CBlockWorld::EnterWorld(const string& sWorldDir, float x, float
 	else
 		m_worldInfo.ResetWorldName(CWorldInfo::GetSingleton().GetDefaultWorldConfigName());
 
+	m_requiresExtendedHeight = CParaFile::DoesFileExist((m_worldInfo.GetBlockGameSaveDir(true) + "extended-height.xml").c_str(), true)
+		|| CParaFile::DoesFileExist((m_worldInfo.GetBlockGameSaveDir(false) + "extended-height.xml").c_str(), true);
+
 	//init data
 	// only use more region cache on 64 bits system.
 	m_maxCacheRegionCount = (sizeof(void*) > 4) ? 16 : 9;
@@ -306,6 +309,12 @@ void CBlockWorld::SaveToFile(bool saveToTemp)
 {
 	// SaveBlockTemplateData();
 	SaveBlockMaterialData();
+	if (m_requiresExtendedHeight)
+	{
+		CParaFile marker;
+		if (marker.CreateNewFile((m_worldInfo.GetBlockGameSaveDir(true) + "extended-height.xml").c_str(), true))
+			marker.WriteString("<ExtendedHeight/>");
+	}
 	for (std::map<int, BlockRegion*>::iterator iter = m_regionCache.begin(); iter != m_regionCache.end(); iter++)
 	{
 		iter->second->SaveToFile();
@@ -335,7 +344,9 @@ void CBlockWorld::SaveToFile(bool saveToTemp)
 						{
 							std::string src = lastSaveDir + itemName;
 							std::string dst = gameSaveDir + itemName;
-							CParaFile::CopyFile(src.c_str(), dst.c_str(), true);
+							const auto staging = dst + ".writing";
+							if (CParaFile::CopyFile(src.c_str(), staging.c_str(), true))
+								CParaFile::MoveFile(staging.c_str(), dst.c_str());
 						}
 					}
 				}
@@ -364,22 +375,17 @@ void ParaEngine::CBlockWorld::LeaveWorld()
 		UnloadRegion(pRegion, false);
 	}
 
-	for (int i = 0; i < m_activeChunkDim; i++)
-	{
-		for (int j = 0; j < m_activeChunkDimY; j++)
-		{
-			for (int k = 0; k < m_activeChunkDim; k++)
-			{
-				GetActiveChunk(i, j, k).OnLeaveWorld();
-			}
-		}
-	}
-
+	m_renderChunksByPosition.clear();
+	m_freeRenderChunks = m_activeChunks;
+	for (auto* chunk : m_activeChunks) chunk->OnLeaveWorld();
 	m_visibleChunks.clear();
 
 	ClearAllBlockTemplates();
 
 	m_isInWorld = false;
+	m_unloadedColumnHeights.clear();
+	m_legacyHeightSession = false;
+	m_requiresExtendedHeight = false;
 
 	GetLightGrid().OnLeaveWorld();
 
@@ -428,42 +434,21 @@ void ParaEngine::CBlockWorld::UpdateAllActiveChunks()
 
 void ParaEngine::CBlockWorld::SetActiveChunkRadius(int nActiveChunkRadius)
 {
-	if (nActiveChunkRadius >= 3 && nActiveChunkRadius <= 64)
-	{
-		// m_activeChunkDim must be a odd value
-		int nActiveChunkDim = 2 * (nActiveChunkRadius + 1) + 1;
-		if (nActiveChunkDim != m_activeChunkDim)
-		{
-			if (nActiveChunkDim > m_activeChunkDim)
-			{
-				m_activeChunks.resize(nActiveChunkDim * m_activeChunkDimY * nActiveChunkDim, NULL);
-				for (int i = 0; i < (int)(m_activeChunks.size()); ++i)
-				{
-					if (m_activeChunks[i] == NULL)
-					{
-						m_activeChunks[i] = new RenderableChunk();
-					}
-				}
-				m_activeChunkDim = nActiveChunkDim;
-
-				if (IsInBlockWorld())
-					UpdateAllActiveChunks();
-			}
-		}
-	}
-	else
-	{
-		OUTPUT_LOG("warning: SetActiveChunkRadius %d is too big or too small\n", nActiveChunkRadius);
-	}
+	if (nActiveChunkRadius < 3 || nActiveChunkRadius > 64 || m_activeChunkDim == 2 * (nActiveChunkRadius + 1) + 1) return;
+	m_activeChunkDim = 2 * (nActiveChunkRadius + 1) + 1;
+	m_activeChunkDimY = m_activeChunkDim;
+	if (IsInBlockWorld()) UpdateAllActiveChunks();
 }
 
 void CBlockWorld::SetRenderDist(int nValue)
 {
+	nValue = (std::max)(0, nValue);
 	SetActiveChunkRadius((int)((float)nValue / (float)BlockConfig::g_chunkBlockDim + 0.5f));
 	m_nRenderDistance = min(nValue, m_activeChunkDim * BlockConfig::g_chunkBlockDim / 2);
 	GetLightGrid().SetLightGridSize((int)(m_nRenderDistance * 2 / BlockConfig::g_chunkBlockDim) + 2);
 
-	int nMinRegionCount = ((int)(m_nRenderDistance / 512) + 2) ^ 2;
+	int regionWidth = m_nRenderDistance / 512 + 2;
+	int nMinRegionCount = regionWidth * regionWidth;
 
 	if (m_maxCacheRegionCount < nMinRegionCount)
 		m_maxCacheRegionCount = nMinRegionCount;
@@ -484,7 +469,7 @@ void ParaEngine::CBlockWorld::SetEyeBlockId(const Uint16x3& eyePos)
 {
 	m_curCamBlockId = eyePos;
 	m_curCamChunkId.x = m_curCamBlockId.x / 16;
-	m_curCamChunkId.y = m_curCamBlockId.y / 16;
+	m_curCamChunkId.y = BlockConfig::SectionY(m_curCamBlockId.y);
 	m_curCamChunkId.z = m_curCamBlockId.z / 16;
 }
 
@@ -513,9 +498,9 @@ void ParaEngine::CBlockWorld::SetBlockRenderMethod(BlockRenderMethod method)
 }
 
 
-BlockRegion* ParaEngine::CBlockWorld::CreateGetRegion(uint16_t x, uint16_t y, uint16_t z)
+BlockRegion* ParaEngine::CBlockWorld::CreateGetRegion(uint16_t x, int32_t y, uint16_t z)
 {
-	if (!m_isInWorld || y >= BlockConfig::g_regionBlockDimY)
+	if (!m_isInWorld || !BlockConfig::IsBlockY(y))
 		return NULL;
 
 	uint16_t region_x = x >> 9;
@@ -564,9 +549,10 @@ void ParaEngine::CBlockWorld::ResetAllLight()
 	lightGrid.OnEnterWorld();
 }
 
-bool ParaEngine::CBlockWorld::UnloadRegion(uint16_t block_x, uint16_t block_y, uint16_t block_z, bool bAutoSave /*= true*/)
+bool ParaEngine::CBlockWorld::UnloadRegion(uint16_t block_x, int32_t block_y, uint16_t block_z, bool bAutoSave /*= true*/)
 {
-	uint16_t rx, ry, rz;
+	uint16_t rx, rz;
+	int16_t ry;
 	BlockRegion* pRegion = GetRegion(block_x, block_y, block_z, rx, ry, rz);
 	if (pRegion) {
 		UnloadRegion(pRegion, bAutoSave);
@@ -582,9 +568,38 @@ void CBlockWorld::UnloadRegion(BlockRegion* pRegion, bool bAutoSave)
 		if (m_pRegions[pRegion->GetPackedRegionIndex()] == pRegion)
 		{
 			if (!IsRemote() && bAutoSave && !IsReadOnly() && pRegion->IsModified())
+			{
 				pRegion->SaveToFile();
+				if (pRegion->IsModified()) return;
+			}
 			OnUnLoadBlockRegion(pRegion->GetRegionX(), pRegion->GetRegionZ());
 			Scoped_WriteLock<BlockReadWriteLock> Lock_(GetReadWriteLock());
+			if (bAutoSave)
+			{
+				for (int z = 0; z < 32; ++z)
+					for (int x = 0; x < 32; ++x)
+					{
+						uint32_t key = ((pRegion->GetRegionX() * 32u + x) << 16) | (pRegion->GetRegionZ() * 32u + z);
+						if (!IsRemote() && pRegion->GetColumnSections(x, z).empty()) { m_unloadedColumnHeights.erase(key); continue; }
+						std::vector<ChunkMaxHeight> heights;
+						heights.reserve(256);
+						for (int dz = 0; dz < 16; ++dz)
+							for (int dx = 0; dx < 16; ++dx)
+								heights.push_back(*pRegion->GetHighestBlock(x * 16 + dx, z * 16 + dz));
+						if (std::all_of(heights.begin(), heights.end(), [&](const ChunkMaxHeight& h) {
+							return h.m_nSolidHeight == heights.front().m_nSolidHeight && h.m_nMaxHeight == heights.front().m_nMaxHeight;
+						}))
+						{
+							if (heights.front().m_nMaxHeight < BlockConfig::MinBlockY)
+							{
+								m_unloadedColumnHeights.erase(key);
+								continue;
+							}
+							heights = std::vector<ChunkMaxHeight>(1, heights.front());
+						}
+						m_unloadedColumnHeights[key] = std::move(heights);
+					}
+			}
 			m_pRegions[pRegion->GetPackedRegionIndex()] = NULL;
 			m_regionCache.erase(pRegion->GetPackedRegionIndex());
 			pRegion->OnUnloadWorld();
@@ -597,9 +612,9 @@ void CBlockWorld::UnloadRegion(BlockRegion* pRegion, bool bAutoSave)
 	}
 }
 
-BlockRegion* CBlockWorld::GetRegion(uint16_t x, uint16_t y, uint16_t z, uint16_t& rs_x, uint16_t& rs_y, uint16_t& rs_z)
+BlockRegion* CBlockWorld::GetRegion(uint16_t x, int32_t y, uint16_t z, uint16_t& rs_x, int16_t& rs_y, uint16_t& rs_z)
 {
-	if (m_isInWorld && y < BlockConfig::g_regionBlockDimY)
+	if (m_isInWorld && BlockConfig::IsBlockY(y))
 	{
 		uint16_t region_x = x >> 9;
 		uint16_t region_z = z >> 9;
@@ -610,7 +625,7 @@ BlockRegion* CBlockWorld::GetRegion(uint16_t x, uint16_t y, uint16_t z, uint16_t
 			if (pRegion)
 			{
 				rs_x = x & 0x1ff;
-				rs_y = y & 0xff;
+				rs_y = static_cast<int16_t>(y);
 				rs_z = z & 0x1ff;
 				return pRegion;
 			}
@@ -896,33 +911,26 @@ void CBlockWorld::LoadBlockTemplateData()
 
 }
 
-RenderableChunk& CBlockWorld::GetActiveChunk(uint16_t curChunkWX, uint16_t curChunkWY, uint16_t curChunkWZ)
+RenderableChunk& CBlockWorld::GetActiveChunk(uint16_t x, int16_t y, uint16_t z)
 {
-	curChunkWX = curChunkWX % m_activeChunkDim;
-	curChunkWY = curChunkWY % m_activeChunkDimY;
-	curChunkWZ = curChunkWZ % m_activeChunkDim;
-	uint32_t index = curChunkWZ + curChunkWX * m_activeChunkDim + curChunkWY * m_activeChunkDim * m_activeChunkDim;
-	return *(m_activeChunks[index]);
-}
+	const auto key = GetBlockSparseIndex(x, y, z);
+	auto it = m_renderChunksByPosition.find(key);
+	if (it != m_renderChunksByPosition.end()) return *it->second;
 
-
-bool CBlockWorld::ReuseActiveChunk(int16_t curChunkWX, int16_t curChunkWY, int16_t curChunkWZ, BlockRegion* pRegion)
-{
-	if (curChunkWX >= 0 && curChunkWY >= 0 && curChunkWY < 16 && curChunkWZ >= 0 && pRegion)
+	RenderableChunk* chunk;
+	if (m_freeRenderChunks.empty())
 	{
-		int16_t localChunkX = curChunkWX & 0x1f;
-		int16_t localChunkY = curChunkWY & 0xf;
-		int16_t localChunkZ = curChunkWZ & 0x1f;
-
-		uint16_t chunkIndex = PackChunkIndex(localChunkX, localChunkY, localChunkZ);
-		GetActiveChunk(curChunkWX, curChunkWY, curChunkWZ).ReuseChunk(pRegion, chunkIndex);
-		return true;
+		chunk = new RenderableChunk();
+		m_activeChunks.push_back(chunk);
 	}
 	else
 	{
-		GetActiveChunk(curChunkWX, curChunkWY, curChunkWZ).ReuseChunk(NULL, -1);
-		return false;
+		chunk = m_freeRenderChunks.back();
+		m_freeRenderChunks.pop_back();
 	}
+	chunk->ReuseChunk(GetRegion(x >> 5, z >> 5), PackChunkIndex(x & 31, y, z & 31));
+	m_renderChunksByPosition.emplace(key, chunk);
+	return *chunk;
 }
 
 BlockTemplate* CBlockWorld::GetBlockTemplate(uint16_t id)
@@ -958,7 +966,7 @@ void CBlockWorld::SetBlockTemplateId(float x, float y, float z, uint16_t templat
 	SetBlockId(blockIdx.x, blockIdx.y, blockIdx.z, templateId);
 }
 
-void CBlockWorld::SetBlockTemplateIdByIdx(uint16_t x, uint16_t y, uint16_t z, uint16_t templateId)
+void CBlockWorld::SetBlockTemplateIdByIdx(uint16_t x, int32_t y, uint16_t z, uint16_t templateId)
 {
 	SetBlockId(x, y, z, templateId);
 }
@@ -970,7 +978,7 @@ uint16_t CBlockWorld::GetBlockTemplateId(float x, float y, float z)
 	return GetBlockId(blockIdx.x, blockIdx.y, blockIdx.z);
 }
 
-uint16_t CBlockWorld::GetBlockTemplateIdByIdx(uint16_t x, uint16_t y, uint16_t z)
+uint16_t CBlockWorld::GetBlockTemplateIdByIdx(uint16_t x, int32_t y, uint16_t z)
 {
 	return GetBlockId(x, y, z);
 }
@@ -982,7 +990,7 @@ void CBlockWorld::SetBlockUserData(float x, float y, float z, uint32_t data)
 	SetBlockData(blockIdx.x, blockIdx.y, blockIdx.z, data);
 }
 
-void CBlockWorld::SetBlockUserDataByIdx(uint16_t x, uint16_t y, uint16_t z, uint32_t data)
+void CBlockWorld::SetBlockUserDataByIdx(uint16_t x, int32_t y, uint16_t z, uint32_t data)
 {
 	SetBlockData(x, y, z, data);
 }
@@ -994,7 +1002,7 @@ uint32_t CBlockWorld::GetBlockUserData(float x, float y, float z)
 	return GetBlockData(blockIdx.x, blockIdx.y, blockIdx.z);
 }
 
-uint32_t CBlockWorld::GetBlockUserDataByIdx(uint16_t x, uint16_t y, uint16_t z)
+uint32_t CBlockWorld::GetBlockUserDataByIdx(uint16_t x, int32_t y, uint16_t z)
 {
 	return GetBlockData(x, y, z);
 }
@@ -1052,30 +1060,33 @@ void ParaEngine::CBlockWorld::RefreshBlockTemplate(uint16_t templateId)
 	}
 }
 
-uint32_t ParaEngine::CBlockWorld::SetBlockId(uint16_t x, uint16_t y, uint16_t z, uint32_t nBlockID)
+uint32_t ParaEngine::CBlockWorld::SetBlockId(uint16_t x, int32_t y, uint16_t z, uint32_t nBlockID)
 {
-	if (y >= 256)
+	if (!IsBuildableY(y))
 		return 0;
 
-	uint16_t lx, ly, lz;
+	uint16_t lx, lz;
+	int16_t ly;
 	BlockRegion* pRegion = GetRegion(x, y, z, lx, ly, lz);
 
 	if (pRegion)
 	{
 		BlockTemplate* pTemplate = (nBlockID > 0) ? GetBlockTemplate(nBlockID) : NULL;
 		pRegion->SetBlockTemplateByIndex(lx, ly, lz, pTemplate);
+		if (pTemplate && (y < 0 || y > 255)) m_requiresExtendedHeight = true;
 		m_isVisibleChunkDirty = true;
 		return 0;
 	}
 	return 0;
 }
 
-uint32_t ParaEngine::CBlockWorld::GetBlockId(uint16_t x, uint16_t y, uint16_t z)
+uint32_t ParaEngine::CBlockWorld::GetBlockId(uint16_t x, int32_t y, uint16_t z)
 {
-	if (y >= 256)
+	if (!IsBuildableY(y))
 		return 0;
 
-	uint16_t lx, ly, lz;
+	uint16_t lx, lz;
+	int16_t ly;
 	BlockRegion* pRegion = GetRegion(x, y, z, lx, ly, lz);
 
 	if (pRegion)
@@ -1085,12 +1096,13 @@ uint32_t ParaEngine::CBlockWorld::GetBlockId(uint16_t x, uint16_t y, uint16_t z)
 	return 0;
 }
 
-uint32_t ParaEngine::CBlockWorld::SetBlockData(uint16_t x, uint16_t y, uint16_t z, uint32_t nBlockData)
+uint32_t ParaEngine::CBlockWorld::SetBlockData(uint16_t x, int32_t y, uint16_t z, uint32_t nBlockData)
 {
-	if (y >= 256)
+	if (!IsBuildableY(y))
 		return 0;
 
-	uint16_t lx, ly, lz;
+	uint16_t lx, lz;
+	int16_t ly;
 	BlockRegion* pRegion = GetRegion(x, y, z, lx, ly, lz);
 
 	if (pRegion)
@@ -1102,12 +1114,13 @@ uint32_t ParaEngine::CBlockWorld::SetBlockData(uint16_t x, uint16_t y, uint16_t 
 	return 0;
 }
 
-uint32_t ParaEngine::CBlockWorld::GetBlockData(uint16_t x, uint16_t y, uint16_t z)
+uint32_t ParaEngine::CBlockWorld::GetBlockData(uint16_t x, int32_t y, uint16_t z)
 {
-	if (y >= 256)
+	if (!IsBuildableY(y))
 		return 0;
 
-	uint16_t lx, ly, lz;
+	uint16_t lx, lz;
+	int16_t ly;
 	BlockRegion* pRegion = GetRegion(x, y, z, lx, ly, lz);
 
 	if (pRegion)
@@ -1117,12 +1130,13 @@ uint32_t ParaEngine::CBlockWorld::GetBlockData(uint16_t x, uint16_t y, uint16_t 
 	return 0;
 }
 
-bool ParaEngine::CBlockWorld::SetBlockMaterial(uint16_t x, uint16_t y, uint16_t z, int16_t nFaceId, int32_t nMaterial)
+bool ParaEngine::CBlockWorld::SetBlockMaterial(uint16_t x, int32_t y, uint16_t z, int16_t nFaceId, int32_t nMaterial)
 {
-	if (y >= 256)
+	if (!IsBuildableY(y))
 		return false;
 
-	uint16_t lx, ly, lz;
+	uint16_t lx, lz;
+	int16_t ly;
 	BlockRegion* pRegion = GetRegion(x, y, z, lx, ly, lz);
 
 	if (pRegion)
@@ -1134,12 +1148,13 @@ bool ParaEngine::CBlockWorld::SetBlockMaterial(uint16_t x, uint16_t y, uint16_t 
 	return false;
 }
 
-int32_t ParaEngine::CBlockWorld::GetBlockMaterial(uint16_t x, uint16_t y, uint16_t z, int16_t nFaceId)
+int32_t ParaEngine::CBlockWorld::GetBlockMaterial(uint16_t x, int32_t y, uint16_t z, int16_t nFaceId)
 {
-	if (y >= 256)
+	if (!IsBuildableY(y))
 		return -1;
 
-	uint16_t lx, ly, lz;
+	uint16_t lx, lz;
+	int16_t ly;
 	BlockRegion* pRegion = GetRegion(x, y, z, lx, ly, lz);
 
 	if (pRegion)
@@ -1149,9 +1164,11 @@ int32_t ParaEngine::CBlockWorld::GetBlockMaterial(uint16_t x, uint16_t y, uint16
 	return -1;
 }
 
-void ParaEngine::CBlockWorld::LoadBlockAsync(uint16_t x, uint16_t y, uint16_t z, uint16_t blockId, uint32_t userData)
+void ParaEngine::CBlockWorld::LoadBlockAsync(uint16_t x, int32_t y, uint16_t z, uint16_t blockId, uint32_t userData)
 {
-	uint16_t lx, ly, lz;
+	if (!IsBuildableY(y)) return;
+	uint16_t lx, lz;
+	int16_t ly;
 	BlockRegion* pRegion = GetRegion(x, y, z, lx, ly, lz);
 
 	if (pRegion)
@@ -1160,9 +1177,10 @@ void ParaEngine::CBlockWorld::LoadBlockAsync(uint16_t x, uint16_t y, uint16_t z,
 	}
 }
 
-Block* CBlockWorld::GetBlock(uint16_t x_ws, uint16_t y_ws, uint16_t z_ws)
+Block* CBlockWorld::GetBlock(uint16_t x_ws, int32_t y_ws, uint16_t z_ws)
 {
-	uint16_t lx, ly, lz;
+	uint16_t lx, lz;
+	int16_t ly;
 	BlockRegion* pRegion = GetRegion(x_ws, y_ws, z_ws, lx, ly, lz);
 
 	if (pRegion)
@@ -1173,9 +1191,10 @@ Block* CBlockWorld::GetBlock(uint16_t x_ws, uint16_t y_ws, uint16_t z_ws)
 }
 
 
-Block* CBlockWorld::GetUnlockBlock(uint16_t x, uint16_t y, uint16_t z)
+Block* CBlockWorld::GetUnlockBlock(uint16_t x, int32_t y, uint16_t z)
 {
-	uint16_t lx, ly, lz;
+	uint16_t lx, lz;
+	int16_t ly;
 	BlockRegion* pRegion = GetRegion(x, y, z, lx, ly, lz);
 
 	if (pRegion && !pRegion->IsLocked())
@@ -1185,9 +1204,10 @@ Block* CBlockWorld::GetUnlockBlock(uint16_t x, uint16_t y, uint16_t z)
 	return nullptr;
 }
 
-BlockTemplate* CBlockWorld::GetBlockTemplate(uint16_t x, uint16_t y, uint16_t z)
+BlockTemplate* CBlockWorld::GetBlockTemplate(uint16_t x, int32_t y, uint16_t z)
 {
-	uint16_t lx, ly, lz;
+	uint16_t lx, lz;
+	int16_t ly;
 	BlockRegion* pRegion = GetRegion(x, y, z, lx, ly, lz);
 
 	if (pRegion)
@@ -1213,7 +1233,7 @@ void CBlockWorld::SetChunkDirty(Uint16x3& chunkId_ws, bool isDirty)
 		int16_t chunkX_rs = chunkId_ws.x & 0x1f;
 		int16_t chunkZ_rs = chunkId_ws.z & 0x1f;
 
-		uint16_t packedChunkId_rs = PackChunkIndex(chunkX_rs, chunkId_ws.y, chunkZ_rs);
+		int32_t packedChunkId_rs = PackChunkIndex(chunkX_rs, chunkId_ws.y, chunkZ_rs);
 		pRegion->SetChunkDirty(packedChunkId_rs, isDirty);
 	}
 }
@@ -1229,7 +1249,7 @@ void ParaEngine::CBlockWorld::SetChunkLightDirty(Uint16x3& chunkId_ws)
 		int16_t chunkX_rs = chunkId_ws.x & 0x1f;
 		int16_t chunkZ_rs = chunkId_ws.z & 0x1f;
 
-		uint16_t packedChunkId_rs = PackChunkIndex(chunkX_rs, chunkId_ws.y, chunkZ_rs);
+		int32_t packedChunkId_rs = PackChunkIndex(chunkX_rs, chunkId_ws.y, chunkZ_rs);
 		pRegion->SetChunkLightDirty(packedChunkId_rs);
 	}
 }
@@ -1237,13 +1257,15 @@ void ParaEngine::CBlockWorld::SetChunkLightDirty(Uint16x3& chunkId_ws)
 
 ChunkMaxHeight* CBlockWorld::GetHighestBlock(uint16_t blockX_ws, uint16_t blockZ_ws)
 {
-	uint16_t lx, ly, lz;
+	uint16_t lx, lz;
+	int16_t ly;
 	BlockRegion* pRegion = GetRegion(blockX_ws, 0, blockZ_ws, lx, ly, lz);
-	if (pRegion)
-	{
+	if (pRegion && !pRegion->IsLocked())
 		return pRegion->GetHighestBlock(lx, lz);
-	}
-	return NULL;
+	auto it = m_unloadedColumnHeights.find((uint32_t(blockX_ws >> 4) << 16) | (blockZ_ws >> 4));
+	if (it == m_unloadedColumnHeights.end()) return nullptr;
+	auto& heights = it->second;
+	return &heights[heights.size() == 1 ? 0 : ((blockZ_ws & 15) << 4) + (blockX_ws & 15)];
 }
 
 void CBlockWorld::GetMaxBlockHeightWatchingSky(uint16_t blockX_ws, uint16_t blockZ_ws, ChunkMaxHeight* pResult)
@@ -1278,183 +1300,49 @@ bool ParaEngine::CBlockWorld::IsChunkColumnInActiveRange(int16_t curChunkWX, int
 
 bool CBlockWorld::RefreshChunkColumn(int16_t curChunkWX, int16_t curChunkWZ)
 {
-	if (IsChunkColumnInActiveRange(curChunkWX, curChunkWZ))
+	if (!IsChunkColumnInActiveRange(curChunkWX, curChunkWZ)) return false;
+	auto* region = GetRegion(curChunkWX >> 5, curChunkWZ >> 5);
+	if (region)
 	{
-		int16_t regionX = curChunkWX >> 5;
-		int16_t regionZ = curChunkWZ >> 5;
-		BlockRegion* pRegion = GetRegion(regionX, regionZ);
-
-		for (int16_t curChunkWY = 0; curChunkWY < 16; curChunkWY++)
+		for (int y : region->GetColumnSections(curChunkWX, curChunkWZ))
 		{
-			ReuseActiveChunk(curChunkWX, curChunkWY, curChunkWZ, pRegion);
+			auto it = m_renderChunksByPosition.find(GetBlockSparseIndex(curChunkWX, y, curChunkWZ));
+			if (it != m_renderChunksByPosition.end()) it->second->SetChunkDirty(true);
 		}
-		GetLightGrid().AddDirtyColumn(curChunkWX, curChunkWZ);
-		m_isVisibleChunkDirty = true;
-		return true;
 	}
-	return false;
+	GetLightGrid().AddDirtyColumn(curChunkWX, curChunkWZ);
+	m_isVisibleChunkDirty = true;
+	return true;
 }
 
 void CBlockWorld::UpdateActiveChunk()
 {
-	Int16x3 curMinActiveChunkId(m_minActiveChunkId_ws);
-
-	Int16x3 deltaOfs;
-	Int16x3::Subtract(m_curChunkIdW, m_lastChunkIdW, deltaOfs);
-	m_minActiveChunkId_ws.x = m_curChunkIdW.x - (int)((m_activeChunkDim) / 2);
-	m_minActiveChunkId_ws.y = m_curChunkIdW.y - (int)((m_activeChunkDimY) / 2);
-	m_minActiveChunkId_ws.z = m_curChunkIdW.z - (int)((m_activeChunkDim) / 2);
-
-
-	// tricky: this will be set to fixed value, since we want to cache for all chunks vertically. 
-	m_minActiveChunkId_ws.y = 0;
-	curMinActiveChunkId.y = 0;
-	deltaOfs.y = 0;
-
-	if (deltaOfs.x == 0 && deltaOfs.y == 0 && deltaOfs.z == 0)
-		return;
-
-
-	Int16x3 deltaAbs(deltaOfs);
-	deltaAbs.Abs();
-
-	if (m_lastChunkIdW.x < 0 || deltaAbs.x >= m_activeChunkDim ||
-		deltaAbs.y >= m_activeChunkDimY ||
-		deltaAbs.z >= m_activeChunkDim)
+	const int radius = m_activeChunkDim / 2;
+	m_minActiveChunkId_ws = Int16x3(m_curChunkIdW.x - radius, m_curChunkIdW.y - radius, m_curChunkIdW.z - radius);
+	for (auto it = m_renderChunksByPosition.begin(); it != m_renderChunksByPosition.end(); )
 	{
-		for (int y = 0; y < m_activeChunkDimY; y++)
+		auto* chunk = it->second;
+		const auto pos = chunk->GetChunkPosWs();
+		if (!chunk->IsBuildingBuffer() && (!IsChunkColumnInActiveRange(pos.x, pos.z) || abs(pos.y - m_curChunkIdW.y) > radius))
 		{
-			int16_t curChunkWY = m_minActiveChunkId_ws.y + y;
-
-			for (int z = 0; z < m_activeChunkDim; z++)
-			{
-				int16_t curChunkWZ = m_minActiveChunkId_ws.z + z;
-				for (int x = 0; x < m_activeChunkDim; x++)
-				{
-					int16_t curChunkWX = m_minActiveChunkId_ws.x + x;
-					int16_t regionX = curChunkWX >> 5;
-					int16_t regionZ = curChunkWZ >> 5;
-					// check load regions
-					BlockRegion* pRegion = CreateGetRegion(regionX, regionZ);
-
-					if (pRegion)
-					{
-						ReuseActiveChunk(curChunkWX, curChunkWY, curChunkWZ, pRegion);
-					}
-					else
-					{
-						// OUTPUT_DEBUG("warning: no region at visible chunk\r\n");
-					}
-				}
-			}
+			chunk->ReuseChunk(nullptr, -1);
+			m_freeRenderChunks.push_back(chunk);
+			it = m_renderChunksByPosition.erase(it);
 		}
+		else ++it;
 	}
-	else
-	{
-		Int16x3 startChunkId(m_minActiveChunkId_ws);
-
-		if (deltaOfs.x >= 0)
-			startChunkId.x = startChunkId.x + m_activeChunkDim - deltaOfs.x;
-
-		if (deltaOfs.y >= 0)
-			startChunkId.y = startChunkId.y + m_activeChunkDimY - deltaOfs.y;
-
-		if (deltaOfs.z >= 0)
-			startChunkId.z = startChunkId.z + m_activeChunkDim - deltaOfs.z;
-
-		//update 3D ring array, try to simplify the update logic here 
-		// x direction
-		for (int16_t x = 0; x < deltaAbs.x; x++)
-		{
-			int16_t curChunkWX = startChunkId.x + x;
-
-			for (int16_t z = 0; z < m_activeChunkDim; z++)
-			{
-				int16_t curChunkWZ = curMinActiveChunkId.z + z;
-
-				int16_t regionX = curChunkWX >> 5;
-				int16_t regionZ = curChunkWZ >> 5;
-				BlockRegion* pRegion = CreateGetRegion(regionX, regionZ);
-
-				for (int16_t y = 0; y < m_activeChunkDimY; y++)
-				{
-					int16_t curChunkWY = curMinActiveChunkId.y + y;
-
-					ReuseActiveChunk(curChunkWX, curChunkWY, curChunkWZ, pRegion);
-					if (!pRegion)
-					{
-						// OUTPUT_DEBUG("warning: no region at visible chunk\r\n");
-					}
-				}
-			}
-		}
-
-		curMinActiveChunkId.x = m_minActiveChunkId_ws.x;
-
-		// y direction
-		for (int16_t y = 0; y < deltaAbs.y; y++)
-		{
-			int16_t curChunkWY = startChunkId.y + y;
-
-			for (int z = 0; z < m_activeChunkDim; z++)
-			{
-				int16_t curChunkWZ = curMinActiveChunkId.z + z;
-
-				for (int x = 0; x < m_activeChunkDim; x++)
-				{
-					int16_t curChunkWX = curMinActiveChunkId.x + x;
-
-					int16_t regionX = curChunkWX >> 5;
-					int16_t regionZ = curChunkWZ >> 5;
-					BlockRegion* pRegion = CreateGetRegion(regionX, regionZ);
-					ReuseActiveChunk(curChunkWX, curChunkWY, curChunkWZ, pRegion);
-					if (!pRegion)
-					{
-						// OUTPUT_DEBUG("warning: no region at visible chunk\r\n");
-					}
-				}
-			}
-		}
-
-		curMinActiveChunkId.y = m_minActiveChunkId_ws.y;
-
-		// z direction
-		for (int16_t z = 0; z < deltaAbs.z; z++)
-		{
-			int16_t curChunkWZ = startChunkId.z + z;
-
-			for (int16_t x = 0; x < m_activeChunkDim; x++)
-			{
-				int16_t curChunkWX = curMinActiveChunkId.x + x;
-
-				int16_t regionX = curChunkWX >> 5;
-				int16_t regionZ = curChunkWZ >> 5;
-				BlockRegion* pRegion = CreateGetRegion(regionX, regionZ);
-
-				for (int16_t y = 0; y < m_activeChunkDimY; y++)
-				{
-					int16_t curChunkWY = curMinActiveChunkId.y + y;
-					ReuseActiveChunk(curChunkWX, curChunkWY, curChunkWZ, pRegion);
-					if (!pRegion)
-					{
-						// OUTPUT_DEBUG("warning: no region at visible chunk\r\n");
-					}
-				}
-			}
-		}
-	}
+	for (int rz = (std::max)(0, int(m_minActiveChunkId_ws.z)) >> 5; rz <= (m_curChunkIdW.z + radius) >> 5; ++rz)
+		for (int rx = (std::max)(0, int(m_minActiveChunkId_ws.x)) >> 5; rx <= (m_curChunkIdW.x + radius) >> 5; ++rx)
+			CreateGetRegion(rx, rz);
 }
 
-void CBlockWorld::RefreshAllLightsInColumn(uint16_t chunkX_ws, uint16_t chunkZ_ws)
+bool CBlockWorld::RefreshAllLightsInColumn(uint16_t chunkX_ws, uint16_t chunkZ_ws)
 {
 	uint16_t regionX = chunkX_ws / BlockConfig::g_regionChunkDimX;
 	uint16_t regionZ = chunkZ_ws / BlockConfig::g_regionChunkDimZ;
 
 	BlockRegion* pRegion = GetRegion(regionX, regionZ);
-	if (pRegion)
-	{
-		pRegion->RefreshAllLightsInColumn(chunkX_ws, chunkZ_ws);
-	}
+	return pRegion && pRegion->RefreshAllLightsInColumn(chunkX_ws, chunkZ_ws);
 }
 
 void CBlockWorld::NotifyBlockHeightMapChanged(uint16_t blockIdX_ws, uint16_t blockIdZ_ws, ChunkMaxHeight& prevBlockHeight)
@@ -1564,7 +1452,7 @@ bool CBlockWorld::IsCubeModePicking()
 	return m_bCubeModePicking;
 }
 
-bool CBlockWorld::Pick(const Vector3& rayOrig, const Vector3& dir, float length, PickResult& result, uint32_t filter, const std::function<bool(uint32 bx, uint32 by, uint32 bz, const BlockTemplate* pBlock)>& blockFilterCallback)
+bool CBlockWorld::Pick(const Vector3& rayOrig, const Vector3& dir, float length, PickResult& result, uint32_t filter, const std::function<bool(uint32 bx, int32_t by, uint32 bz, const BlockTemplate* pBlock)>& blockFilterCallback)
 {
 	if (!m_isInWorld)
 		return false;
@@ -1710,10 +1598,10 @@ bool CBlockWorld::Pick(const Vector3& rayOrig, const Vector3& dir, float length,
 			curRegion = GetRegion(curRegionX, curRegionZ);
 		}
 
-		if (curRegion == NULL || curBlockIdX < 0 || curBlockIdY < 0 || curBlockIdZ < 0)
+		if (curRegion == NULL || curBlockIdX < 0 || curBlockIdZ < 0)
 			return false;
 
-		Block* pBlock = curRegion->GetBlock(curBlockIdX & 0x1ff, curBlockIdY & 0xff, curBlockIdZ & 0x1ff);
+		Block* pBlock = BlockConfig::IsBlockY(curBlockIdY) ? curRegion->GetBlock(curBlockIdX & 0x1ff, curBlockIdY, curBlockIdZ & 0x1ff) : nullptr;
 		BlockTemplate* pBlockTemplate = NULL;
 		if (pBlock != 0 && (pBlockTemplate = pBlock->GetTemplate()) != 0 && ((pBlockTemplate->GetAttFlag() & filter) > 0)
 			&& (!blockFilterCallback || blockFilterCallback(curBlockIdX, curBlockIdY, curBlockIdZ, pBlockTemplate)))
@@ -1777,12 +1665,13 @@ bool CBlockWorld::Pick(const Vector3& rayOrig, const Vector3& dir, float length,
 	return false;
 }
 
-bool CBlockWorld::IsObstructionBlock(uint16_t x, uint16_t y, uint16_t z)
+bool CBlockWorld::IsObstructionBlock(uint16_t x, int32_t y, uint16_t z)
 {
 	if (!m_isInWorld)
 		return 0;
 
-	uint16_t lx, ly, lz;
+	uint16_t lx, lz;
+	int16_t ly;
 	BlockRegion* pRegion = GetRegion(x, y, z, lx, ly, lz);
 
 	if (pRegion)
@@ -1880,7 +1769,7 @@ bool CBlockWorld::IsLightUpdateSuspended()
 
 void CBlockWorld::SetChunkColumnTimeStamp(uint16_t x, uint16_t z, uint16_t nTimeStamp)
 {
-	uint16_t y = 0;
+	int16_t y = 0;
 	BlockRegion* pRegion = GetRegion(x, y, z, x, y, z);
 	if (pRegion)
 	{
@@ -1890,7 +1779,7 @@ void CBlockWorld::SetChunkColumnTimeStamp(uint16_t x, uint16_t z, uint16_t nTime
 
 int32_t CBlockWorld::GetChunkColumnTimeStamp(uint16_t x, uint16_t z)
 {
-	uint16_t y = 0;
+	int16_t y = 0;
 	BlockRegion* pRegion = GetRegion(x, y, z, x, y, z);
 	if (pRegion)
 	{
@@ -1901,59 +1790,57 @@ int32_t CBlockWorld::GetChunkColumnTimeStamp(uint16_t x, uint16_t z)
 
 
 
-int CBlockWorld::FindFirstBlock(uint16_t x, uint16_t y, uint16_t z, uint16_t nSide /*= 4*/, uint32_t max_dist /*= 32*/, uint32_t filter /*= 0xffffffff*/, int nCategoryID)
+// Search allocated sections in ray order. A distant roof must not make a downward
+// pick or a dynamic block query visit every air cell in between.
+template<class Predicate>
+static int FindVerticalBlock(BlockRegion* region, int x, int y, int z, int side, uint32_t limit, Predicate matches)
+{
+	if (!region || limit == 0) return -1;
+	const auto sections = region->GetColumnSections(x >> 4, z >> 4);
+	for (size_t i = 0; i < sections.size(); ++i)
+	{
+		const int section = sections[side == 4 ? i : sections.size() - 1 - i];
+		auto* chunk = region->GetChunk(PackChunkIndex((x >> 4) & 31, section, (z >> 4) & 31), false);
+		if (!chunk || !chunk->HasBlocks()) continue;
+		for (int layer = 0; layer < 16; ++layer)
+		{
+			const int by = section * 16 + (side == 4 ? layer : 15 - layer);
+			const int64_t distance = side == 4 ? int64_t(by) - y : int64_t(y) - by;
+			if (distance <= 0) continue;
+			if (distance > limit || distance > INT32_MAX) return -1;
+			auto* block = chunk->GetBlockTemplate(CalcPackedBlockID(x, by, z));
+			if (block && matches(block)) return static_cast<int>(distance);
+		}
+	}
+	return -1;
+}
+
+int CBlockWorld::FindFirstBlock(uint16_t x, int32_t y, uint16_t z, uint16_t nSide /*= 4*/, uint32_t max_dist /*= 32*/, uint32_t filter /*= 0xffffffff*/, int nCategoryID)
 {
 	int bx = x;
 	int by = y;
-	int dist_offset = 0;
 	int bz = z;
 
-	if (nSide == 5)
-	{
-		// if we are finding downward, we can accelerate by using the heightmap;
-		auto pHeightPair = GetHighestBlock(x, z);
-		if (pHeightPair)
-		{
-			int nMaxY = pHeightPair->GetMaxHeight();
-			if (y > nMaxY)
-			{
-				if (filter != 0)
-				{
-					// start searching from highest block.
-					by = nMaxY + 1;
-					dist_offset = y - by;
-				}
-				else
-				{
-					return 1;
-				}
-			}
-		}
-		else
-		{
-			// all column is air. 
-			if (filter == 0)
-				return 1;
-			else
-				return -1;
-		}
-	}
+	if ((nSide == 4 || nSide == 5) && filter != 0)
+		return FindVerticalBlock(GetRegion(x >> 9, z >> 9), x, y, z, nSide, max_dist, [&](BlockTemplate* p) {
+			return p->IsMatchAttribute(filter) && (nCategoryID < 0 || p->GetCategoryID() == nCategoryID);
+		});
 	for (uint32_t nDist = 1; nDist <= max_dist; ++nDist)
 	{
 		BlockCommon::GetBlockPosBySide(bx, by, bz, nSide);
-		if (by >= 0 && by <= 256)
+		if (BlockConfig::IsBlockY(by))
 		{
 			BlockTemplate* pTemplate = GetBlockTemplate(bx, by, bz);
 			if (pTemplate)
 			{
 				if (pTemplate->IsMatchAttribute(filter) && (nCategoryID < 0 || pTemplate->GetCategoryID() == nCategoryID))
 				{
-					return nDist + dist_offset;
+					return nDist;
 				}
 			}
 			else if (filter == 0)
 			{
-				return nDist + dist_offset;
+				return nDist;
 			}
 		}
 	}
@@ -1961,45 +1848,23 @@ int CBlockWorld::FindFirstBlock(uint16_t x, uint16_t y, uint16_t z, uint16_t nSi
 }
 
 
-int CBlockWorld::GetFirstBlock(uint16_t x, uint16_t y, uint16_t z, int nBlockId, uint16_t nSide /*= 4*/, uint32_t max_dist /*= 32*/)
+int CBlockWorld::GetFirstBlock(uint16_t x, int32_t y, uint16_t z, int nBlockId, uint16_t nSide /*= 4*/, uint32_t max_dist /*= 32*/)
 {
 	int bx = x;
 	int by = y;
-	int dist_offset = 0;
 	int bz = z;
 
-	if (nSide == 5)
-	{
-		// if we are finding downward, we can accelerate by using the heightmap;
-		BlockTemplate* pBlock = GetBlockTemplate(nBlockId);
-		if (pBlock && pBlock->IsMatchAttribute(BlockTemplate::batt_solid))
-		{
-			auto pHeightPair = GetHighestBlock(x, z);
-			if (pHeightPair && pHeightPair->GetMaxHeight() > 0)
-			{
-				if (y > pHeightPair->GetMaxHeight())
-				{
-					// start searching from highest block.
-					by = pHeightPair->GetMaxHeight() + 1;
-					dist_offset = y - by;
-				}
-			}
-			else
-			{
-				// all column is air. 
-				return -1;
-			}
-		}
-	}
+	if (nSide == 4 || nSide == 5)
+		return FindVerticalBlock(GetRegion(x >> 9, z >> 9), x, y, z, nSide, max_dist, [&](BlockTemplate* p) { return p->GetID() == nBlockId; });
 	for (uint32_t nDist = 1; nDist <= max_dist; ++nDist)
 	{
 		BlockCommon::GetBlockPosBySide(bx, by, bz, nSide);
-		if (by >= 0 && by <= 256)
+		if (BlockConfig::IsBlockY(by))
 		{
 			BlockTemplate* pTemplate = GetBlockTemplate(bx, by, bz);
 			if (pTemplate && pTemplate->GetID() == nBlockId)
 			{
-				return nDist + dist_offset;
+				return nDist;
 			}
 		}
 	}
@@ -2007,9 +1872,10 @@ int CBlockWorld::GetFirstBlock(uint16_t x, uint16_t y, uint16_t z, int nBlockId,
 }
 
 
-BlockIndex CBlockWorld::GetBlockIndex(uint16_t x, uint16_t y, uint16_t z, bool bCreateIfNotExist)
+BlockIndex CBlockWorld::GetBlockIndex(uint16_t x, int32_t y, uint16_t z, bool bCreateIfNotExist)
 {
-	uint16_t lx, ly, lz;
+	uint16_t lx, lz;
+	int16_t ly;
 	BlockRegion* pRegion = GetRegion(x, y, z, lx, ly, lz);
 	if (pRegion)
 	{
@@ -2022,9 +1888,10 @@ BlockIndex CBlockWorld::GetBlockIndex(uint16_t x, uint16_t y, uint16_t z, bool b
 	return BlockIndex((BlockChunk*)NULL, 0);
 }
 
-BlockChunk* CBlockWorld::GetChunk(uint16_t x, uint16_t y, uint16_t z, bool bCreateIfNotExist)
+BlockChunk* CBlockWorld::GetChunk(uint16_t x, int32_t y, uint16_t z, bool bCreateIfNotExist)
 {
-	uint16_t lx, ly, lz;
+	uint16_t lx, lz;
+	int16_t ly;
 	BlockRegion* pRegion = GetRegion(x, y, z, lx, ly, lz);
 	if (pRegion)
 	{
@@ -2033,7 +1900,7 @@ BlockChunk* CBlockWorld::GetChunk(uint16_t x, uint16_t y, uint16_t z, bool bCrea
 	return NULL;
 }
 
-LightData* CBlockWorld::GetLightData(uint16_t x, uint16_t y, uint16_t z, bool bCreateIfNotExist)
+LightData* CBlockWorld::GetLightData(uint16_t x, int32_t y, uint16_t z, bool bCreateIfNotExist)
 {
 	BlockIndex index = GetBlockIndex(x, y, z, bCreateIfNotExist);
 	if (index.m_pChunk != NULL)
@@ -2127,7 +1994,9 @@ void CBlockWorld::UpdateRegionCache()
 				if (pFarthestRegion)
 				{
 					OUTPUT_LOG("unload out of range region: %d %d\n", pFarthestRegion->GetRegionX(), pFarthestRegion->GetRegionZ());
+					const auto previousCount = m_regionCache.size();
 					UnloadRegion(pFarthestRegion);
+					if (m_regionCache.size() == previousCount) break;
 					bHasUnloadedRegion = true;
 					nRegionUnloaded++;
 				}
@@ -2203,28 +2072,19 @@ void CBlockWorld::SetSunIntensity(float intensity)
 		// it will cause all buffer to rebuild, we will only change if light value changed a lot. 
 		if (fDelta > 0.15f && GetBlockRenderMethod() == BLOCK_RENDER_FIXED_FUNCTION)
 		{
-			for (int x = 0; x < m_activeChunkDim; x++)
+			for (auto* chunk : m_activeChunks)
 			{
-				for (int z = 0; z < m_activeChunkDim; z++)
-				{
-					for (int y = 0; y < m_activeChunkDimY; y++)
-					{
-						RenderableChunk& chunk = GetActiveChunk(x, y, z);
-						BlockChunk* pChunk = chunk.GetChunk();
-						if (pChunk && pChunk->IsInfluenceBySunLight())
-						{
-							chunk.SetChunkDirty(true);
-						}
-					}
-				}
+				auto* data = chunk->GetChunk();
+				if (data && data->IsInfluenceBySunLight()) chunk->SetChunkDirty(true);
 			}
 		}
 	}
 }
 
 
-void CBlockWorld::SelectBlock(uint16_t x, uint16_t y, uint16_t z, int nGroupID)
+void CBlockWorld::SelectBlock(uint16_t x, int32_t y, uint16_t z, int nGroupID)
 {
+	if (!IsBuildableY(y)) return;
 	if (nGroupID >= 0 && nGroupID < BLOCK_GROUP_ID_MAX)
 	{
 		int64_t	nIndex = GetBlockSparseIndex(x, y, z);
@@ -2238,8 +2098,9 @@ void CBlockWorld::SelectBlock(uint16_t x, uint16_t y, uint16_t z, int nGroupID)
 	}
 }
 
-void CBlockWorld::DeselectBlock(uint16_t x, uint16_t y, uint16_t z, int nGroupID)
+void CBlockWorld::DeselectBlock(uint16_t x, int32_t y, uint16_t z, int nGroupID)
 {
+	if (!IsBuildableY(y)) return;
 	if (nGroupID >= 0 && nGroupID < BLOCK_GROUP_ID_MAX)
 	{
 		int64_t	nIndex = GetBlockSparseIndex(x, y, z);
@@ -2253,7 +2114,7 @@ void CBlockWorld::DeselectBlock(uint16_t x, uint16_t y, uint16_t z, int nGroupID
 	}
 }
 
-void CBlockWorld::UpdateSelectedBlockNearbyValues(uint16_t x, uint16_t y, uint16_t z, int nGroupID)
+void CBlockWorld::UpdateSelectedBlockNearbyValues(uint16_t x, int32_t y, uint16_t z, int nGroupID)
 {
 	UpdateSelectedBlockValue(x, y, z, nGroupID);
 	UpdateSelectedBlockValue(x, y + 1, z, nGroupID);
@@ -2264,7 +2125,7 @@ void CBlockWorld::UpdateSelectedBlockNearbyValues(uint16_t x, uint16_t y, uint16
 	UpdateSelectedBlockValue(x, y, z + 1, nGroupID);
 }
 
-void CBlockWorld::UpdateSelectedBlockValue(uint16_t x, uint16_t y, uint16_t z, int nGroupID)
+void CBlockWorld::UpdateSelectedBlockValue(uint16_t x, int32_t y, uint16_t z, int nGroupID)
 {
 	if (nGroupID >= 0 && nGroupID < BLOCK_GROUP_ID_MAX)
 	{
@@ -2426,14 +2287,14 @@ void ParaEngine::CBlockWorld::ClearBlockRenderCache()
 
 }
 
-bool ParaEngine::CBlockWorld::DoChunksNearChunkExist(uint16_t x, uint16_t y, uint16_t z, uint16_t radius)
+bool ParaEngine::CBlockWorld::DoChunksNearChunkExist(uint16_t x, int32_t y, uint16_t z, uint16_t radius)
 {
 	return CheckChunkColumnsExist(x - radius, y - radius, z - radius, x + radius, y + radius, z + radius);
 }
 
 bool ParaEngine::CBlockWorld::CheckChunkColumnsExist(int minX, int minY, int minZ, int maxX, int maxY, int maxZ)
 {
-	if (maxY >= 0 && minY < 256)
+	if (maxY >= BlockConfig::MinBlockY && minY <= BlockConfig::MaxBlockY)
 	{
 		minX >>= 4;
 		minZ >>= 4;
@@ -2462,7 +2323,7 @@ bool ParaEngine::CBlockWorld::CheckChunkColumnsExist(int minX, int minY, int min
 bool ParaEngine::CBlockWorld::ChunkColumnExists(uint16_t chunkX, uint16_t chunkZ)
 {
 	ChunkLocation chunkPos(chunkX, chunkZ);
-	uint16_t y = 0;
+	int16_t y = 0;
 	uint16_t x = chunkPos.GetCenterWorldX();
 	uint16_t z = chunkPos.GetCenterWorldZ();
 
@@ -2649,52 +2510,14 @@ void ParaEngine::CBlockWorld::SetMaxCacheRegionCount(uint16_t val)
 
 RenderableChunk* ParaEngine::CBlockWorld::GetRenderableChunk(const Int16x3& chunkPos)
 {
-	if (IsChunkColumnInActiveRange(chunkPos.x, chunkPos.z))
-	{
-		RenderableChunk* pChunk = &GetActiveChunk(chunkPos.x, chunkPos.y, chunkPos.z);
-		if (pChunk->IsDirty() || pChunk->GetChunkPosWs() != chunkPos)
-			pChunk = NULL;
-		return pChunk;
-	}
-	return NULL;
+	auto it = m_renderChunksByPosition.find(GetBlockSparseIndex(chunkPos.x, chunkPos.y, chunkPos.z));
+	return it != m_renderChunksByPosition.end() && !it->second->IsDirty() ? it->second : nullptr;
 }
 
 
 void ParaEngine::CBlockWorld::ClearOutOfRangeActiveChunkData()
 {
-	int nChunkColumnRemoved = 0;
-	int32 centerX = m_curCamBlockId.x;
-	int32 centerZ = m_curCamBlockId.z;
-
-	for (int z = 0; z < m_activeChunkDim; z++)
-	{
-		int16_t curChunkWZ = m_minActiveChunkId_ws.z + z;
-		for (int x = 0; x < m_activeChunkDim; x++)
-		{
-			int16_t curChunkWX = m_minActiveChunkId_ws.x + x;
-			int32 nDist = (int32)(pow(centerX - (curChunkWX * 16 + 8), 2) + pow(centerZ - (curChunkWZ * 16 + 8), 2));
-
-			if (nDist > 0)
-				nDist = (int)((Math::Sqrt((float)nDist) + 12)); // 16/2 * 1.414 = 12
-			if (nDist > GetRenderDist())
-			{
-				//if (!GetActiveChunk(curChunkWX, 0, curChunkWZ).IsDirty())
-				{
-					for (int y = 0; y < m_activeChunkDimY; y++)
-					{
-						int16_t curChunkWY = m_minActiveChunkId_ws.y + y;
-
-						GetActiveChunk(curChunkWX, curChunkWY, curChunkWZ).ClearChunkData();
-					}
-					nChunkColumnRemoved++;
-				}
-			}
-		}
-	}
-	if (nChunkColumnRemoved > 0)
-	{
-		// OUTPUT_LOG1("nChunkColumnRemoved: %d\n", nChunkColumnRemoved);
-	}
+	UpdateActiveChunk();
 }
 
 IAttributeFields* ParaEngine::CBlockWorld::GetChildAttributeObject(const char* sName)
@@ -2776,6 +2599,10 @@ int ParaEngine::CBlockWorld::InstallFields(CAttributeClass* pClass, bool bOverri
 
 	pClass->AddField("SetChunkColumnTimeStamp", FieldType_Float_Float_Float, (void*)SetChunkColumnTimeStamp_s, NULL, NULL, NULL, bOverride);
 
+	pClass->AddField("LegacyHeightSession", FieldType_Bool, (void*)SetLegacyHeightSession_s, (void*)GetLegacyHeightSession_s, NULL, NULL, bOverride);
+	pClass->AddField("RequiresExtendedHeight", FieldType_Bool, NULL, (void*)RequiresExtendedHeight_s, NULL, NULL, bOverride);
+	pClass->AddField("MinBlockY", FieldType_Int, NULL, (void*)GetMinBlockY_s, NULL, NULL, bOverride);
+	pClass->AddField("MaxBlockY", FieldType_Int, NULL, (void*)GetMaxBlockY_s, NULL, NULL, bOverride);
 	pClass->AddField("RenderDist", FieldType_Int, (void*)SetRenderDist_s, (void*)GetRenderDist_s, NULL, NULL, bOverride);
 
 	pClass->AddField("DirtyColumnCount", FieldType_Int, NULL, (void*)GetDirtyColumnCount_s, NULL, NULL, bOverride);

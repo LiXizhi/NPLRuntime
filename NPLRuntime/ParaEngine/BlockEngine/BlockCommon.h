@@ -109,7 +109,7 @@ namespace ParaEngine
 		float Z;
 		float Distance;
 		uint16_t BlockX;
-		uint16_t BlockY;
+		int16_t BlockY;
 		uint16_t BlockZ;
 		uint16_t Side;
 	};
@@ -141,8 +141,8 @@ namespace ParaEngine
 		* @param nSide: default to -1. -1 is the block center, 4 is top.  5 is bottom.
 		* @return: the returned position is always the center of the block.
 		*/
-		static Vector3 ConvertToRealPosition(uint16 x, uint16 y, uint16 z, int nSide = -1);
-		static float ConvertToRealY(uint16 y);
+		static Vector3 ConvertToRealPosition(uint16 x, int16_t y, uint16 z, int nSide = -1);
+		static float ConvertToRealY(int16_t y);
 
 		/** convert from block x,y,z, to new x,y,z accordig to side. 
 		* @param nSide: default to -1. -1 is the block center, 4 is top.  5 is bottom.
@@ -151,7 +151,13 @@ namespace ParaEngine
 
 		/** convert real world coordinate x,y,z to block index.
 		*/
-		static void ConvertToBlockIndex(float x,float y,float z, uint16& idx_x, uint16& idx_y, uint16& idx_z);
+		static void ConvertToBlockIndex(float x,float y,float z, uint16& idx_x, int16_t& idx_y, uint16& idx_z);
+		static void ConvertToBlockIndex(float x, float y, float z, uint16& idx_x, uint16& idx_y, uint16& idx_z)
+		{
+			int16_t signedY;
+			ConvertToBlockIndex(x, y, z, idx_x, signedY, idx_z);
+			idx_y = static_cast<uint16>(signedY);
+		}
 
 		/** get the block center, based on a real world position.
 		*/

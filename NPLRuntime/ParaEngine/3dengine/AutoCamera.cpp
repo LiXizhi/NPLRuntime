@@ -1342,7 +1342,7 @@ VOID CAutoCamera::FrameMove(FLOAT fElapsedTime)
 						bool bIsEyeBlocked = (pEyeBlock && (pEyeBlock->IsMatchAttribute(BlockTemplate::batt_solid | BlockTemplate::batt_blockcamera)) && !pEyeBlock->IsMatchAttribute(BlockTemplate::batt_transparent));
 						if (!bIsEyeBlocked)
 						{
-							auto blockFilterCallback = [pBlockWorldClient](uint32 bx, uint32 by, uint32 bz, const BlockTemplate* pBlock) -> bool {
+							auto blockFilterCallback = [pBlockWorldClient](uint32 bx, int32_t by, uint32 bz, const BlockTemplate* pBlock) -> bool {
 								const DWORD dwSolidBlockAttrs = (BlockTemplate::batt_solid | BlockTemplate::batt_blockcamera);
 								if ((pBlock->GetAttFlag() & dwSolidBlockAttrs) && !(pBlock->IsMatchAttribute(BlockTemplate::batt_transparent)))
 								{
@@ -1462,7 +1462,8 @@ VOID CAutoCamera::FrameMove(FLOAT fElapsedTime)
 					// the camera_box_size thinness is 0.15
 					const float camera_dist_size = block_size * (0.5f - 0.15f);
 
-					uint16 block_x, block_y, block_z;
+					uint16 block_x, block_z;
+					int16_t block_y;
 					BlockCommon::ConvertToBlockIndex((float)vEye.x, (float)vEye.y, (float)vEye.z, block_x, block_y, block_z);
 
 					Vector3 vCenterPos = BlockCommon::ConvertToRealPosition(block_x, block_y, block_z);
@@ -1481,11 +1482,11 @@ VOID CAutoCamera::FrameMove(FLOAT fElapsedTime)
 								block_x_tmp = block_x + i - 1;
 								block_y_tmp = block_y + k - 1;
 								block_z_tmp = block_z + j - 1;
-								if (block_y_tmp < 0 || block_y_tmp>255)
-									obstruction_matrix[i][k][j] = true;
+								if (!BlockConfig::IsBlockY(block_y_tmp))
+									obstruction_matrix[i][k][j] = false;
 								else
 								{
-									uint16_t templateId = pBlockWorldClient->GetBlockTemplateIdByIdx((uint16)block_x_tmp, (uint16)block_y_tmp, (uint16)block_z_tmp);
+									uint16_t templateId = pBlockWorldClient->GetBlockTemplateIdByIdx((uint16)block_x_tmp, block_y_tmp, (uint16)block_z_tmp);
 									if (templateId > 0)
 									{
 										BlockTemplate* temp = pBlockWorldClient->GetBlockTemplate(templateId);

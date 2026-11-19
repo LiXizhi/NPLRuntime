@@ -157,9 +157,7 @@ bool ParaEngine::CParaFileUtils::Move(const std::string& src, const std::string&
 	{
 #ifdef __EMSCRIPTEN__
 		if (src == dest) return true;
-		bool ret =  Copy(src, dest, true);
-		Delete(src);
-		return ret;
+		return std::rename(src.c_str(), dest.c_str()) == 0;
 #else
 #if defined(WIN32) && defined(DEFAULT_FILE_ENCODING)
 		std::wstring src16 = StringHelper::MultiByteToWideChar(src.c_str(), DEFAULT_FILE_ENCODING);

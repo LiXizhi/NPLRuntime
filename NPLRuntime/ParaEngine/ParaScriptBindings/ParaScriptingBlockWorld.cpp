@@ -11,6 +11,7 @@
 #include "BlockEngine/BlockWorldManager.h"
 #include "BlockEngine/BlockWorldClient.h"
 #include "ParaScriptingBlockWorld.h"
+#include "ParaScriptingTerrain.h"
 
 /**@define  user defined block index */
 #define CUSTOM_BLOCK_ID_BEGIN 2000
@@ -329,25 +330,25 @@ void ParaScripting::ParaBlockWorld::SetBlockWorldYOffset(const object& pWorld_, 
 	pWorld->SetVerticalOffset(offset);
 }
 
-void ParaScripting::ParaBlockWorld::SetBlockId(const object& pWorld_, uint16_t x, uint16_t y, uint16_t z, uint32_t templateId)
+void ParaScripting::ParaBlockWorld::SetBlockId(const object& pWorld_, uint16_t x, int32_t y, uint16_t z, uint32_t templateId)
 {
 	GETBLOCKWORLD(pWorld, pWorld_);
 	pWorld->SetBlockTemplateIdByIdx(x, y, z, templateId);
 }
 
-uint32_t ParaScripting::ParaBlockWorld::GetBlockId(const object& pWorld_, uint16_t x, uint16_t y, uint16_t z)
+uint32_t ParaScripting::ParaBlockWorld::GetBlockId(const object& pWorld_, uint16_t x, int32_t y, uint16_t z)
 {
 	GETBLOCKWORLD(pWorld, pWorld_);
 	return pWorld->GetBlockTemplateIdByIdx(x, y, z);
 }
 
-void ParaScripting::ParaBlockWorld::SetBlockData(const object& pWorld_, uint16_t x, uint16_t y, uint16_t z, uint32_t data)
+void ParaScripting::ParaBlockWorld::SetBlockData(const object& pWorld_, uint16_t x, int32_t y, uint16_t z, uint32_t data)
 {
 	GETBLOCKWORLD(pWorld, pWorld_);
 	pWorld->SetBlockUserDataByIdx(x, y, z, data);
 }
 
-uint32_t ParaScripting::ParaBlockWorld::GetBlockData(const object& pWorld_, uint16_t x, uint16_t y, uint16_t z)
+uint32_t ParaScripting::ParaBlockWorld::GetBlockData(const object& pWorld_, uint16_t x, int32_t y, uint16_t z)
 {
 	GETBLOCKWORLD(pWorld, pWorld_);
 	return pWorld->GetBlockUserDataByIdx(x, y, z);
@@ -356,7 +357,7 @@ uint32_t ParaScripting::ParaBlockWorld::GetBlockData(const object& pWorld_, uint
 luabind::object ParaScripting::ParaBlockWorld::GetBlocksInRegion(const object& pWorld_, int32_t startChunkX, int32_t startChunkY, int32_t startChunkZ, int32_t endChunkX, int32_t endChunkY, int32_t endChunkZ, uint32_t matchType, const object& result)
 {
 	GETBLOCKWORLD(pWorld, pWorld_);
-	return object(result);
+	return ParaTerrain::GetBlocksInWorldRegion(pWorld, startChunkX, startChunkY, startChunkZ, endChunkX, endChunkY, endChunkZ, matchType, result);
 }
 
 void ParaScripting::ParaBlockWorld::SetBlockWorldSunIntensity(const object& pWorld_, float value)
@@ -365,13 +366,13 @@ void ParaScripting::ParaBlockWorld::SetBlockWorldSunIntensity(const object& pWor
 	pWorld->SetSunIntensity(value);
 }
 
-int ParaScripting::ParaBlockWorld::FindFirstBlock(const object& pWorld_, uint16_t x, uint16_t y, uint16_t z, uint16_t nSide /*= 4*/, uint32_t max_dist /*= 32*/, uint32_t attrFilter /*= 0xffffffff*/, int nCategoryID /*= -1*/)
+int ParaScripting::ParaBlockWorld::FindFirstBlock(const object& pWorld_, uint16_t x, int32_t y, uint16_t z, uint16_t nSide /*= 4*/, uint32_t max_dist /*= 32*/, uint32_t attrFilter /*= 0xffffffff*/, int nCategoryID /*= -1*/)
 {
 	GETBLOCKWORLD(pWorld, pWorld_);
 	return pWorld->FindFirstBlock(x, y, z, nSide, max_dist, attrFilter, nCategoryID);
 }
 
-int ParaScripting::ParaBlockWorld::GetFirstBlock(const object& pWorld_, uint16_t x, uint16_t y, uint16_t z, int nBlockId, uint16_t nSide /*= 4*/, uint32_t max_dist /*= 32*/)
+int ParaScripting::ParaBlockWorld::GetFirstBlock(const object& pWorld_, uint16_t x, int32_t y, uint16_t z, int nBlockId, uint16_t nSide /*= 4*/, uint32_t max_dist /*= 32*/)
 {
 	GETBLOCKWORLD(pWorld, pWorld_);
 	return pWorld->GetFirstBlock(x, y, z, nBlockId, nSide, max_dist);
@@ -409,11 +410,11 @@ luabind::object ParaScripting::ParaBlockWorld::GetVisibleChunkRegion(const objec
 			;
 
 			if (minChunkId.x < 0) minChunkId.x = 0;
-			if (minChunkId.y < 0) minChunkId.y = 0;
+			if (minChunkId.y < BlockConfig::MinSectionY) minChunkId.y = BlockConfig::MinSectionY;
 			if (minChunkId.z < 0) minChunkId.z = 0;
 			if (maxChunkX > 0xffff) maxChunkX = 0xffff;
-			if (maxChunkY > BlockConfig::g_regionChunkDimY)
-				maxChunkY = BlockConfig::g_regionChunkDimY - 1;
+			if (maxChunkY > BlockConfig::MaxSectionY)
+				maxChunkY = BlockConfig::MaxSectionY;
 			if (maxChunkZ > 0xffff) maxChunkZ = 0xffff;
 
 			result["minX"] = minChunkId.x;
@@ -467,12 +468,12 @@ luabind::object ParaScripting::ParaBlockWorld::MousePick(const object& pWorld_, 
 	return object(result);
 }
 
-void ParaScripting::ParaBlockWorld::SelectBlock(const object& pWorld_, uint16_t x, uint16_t y, uint16_t z, bool isSelect)
+void ParaScripting::ParaBlockWorld::SelectBlock(const object& pWorld_, uint16_t x, int32_t y, uint16_t z, bool isSelect)
 {
 	SelectBlock1(pWorld_, x, y, z, isSelect, 0);
 }
 
-void ParaScripting::ParaBlockWorld::SelectBlock1(const object& pWorld_, uint16_t x, uint16_t y, uint16_t z, bool isSelect, int nGroupID)
+void ParaScripting::ParaBlockWorld::SelectBlock1(const object& pWorld_, uint16_t x, int32_t y, uint16_t z, bool isSelect, int nGroupID)
 {
 	GETBLOCKWORLD(pWorld, pWorld_);
 	if (isSelect)
@@ -492,7 +493,7 @@ void ParaScripting::ParaBlockWorld::DeselectAllBlock(const object& pWorld_)
 	DeselectAllBlock1(pWorld_, -1);
 }
 
-void ParaScripting::ParaBlockWorld::SetDamagedBlock(const object& pWorld_, uint16_t x, uint16_t y, uint16_t z)
+void ParaScripting::ParaBlockWorld::SetDamagedBlock(const object& pWorld_, uint16_t x, int32_t y, uint16_t z)
 {
 	OUTPUT_LOG("SetDamagedBlock Not implemented\n");
 }
@@ -502,13 +503,13 @@ void ParaScripting::ParaBlockWorld::SetDamageDegree(const object& pWorld_, float
 	OUTPUT_LOG("SetDamagedBlock Not implemented\n");
 }
 
-void ParaScripting::ParaBlockWorld::LoadRegion(const object& pWorld_, uint16_t x, uint16_t y, uint16_t z)
+void ParaScripting::ParaBlockWorld::LoadRegion(const object& pWorld_, uint16_t x, int32_t y, uint16_t z)
 {
 	GETBLOCKWORLD(pWorld, pWorld_);
 	pWorld->CreateGetRegion(x, y, z);
 }
 
-void ParaScripting::ParaBlockWorld::UnloadRegion(const object& pWorld_, uint16_t x, uint16_t y, uint16_t z)
+void ParaScripting::ParaBlockWorld::UnloadRegion(const object& pWorld_, uint16_t x, int32_t y, uint16_t z)
 {
 	GETBLOCKWORLD(pWorld, pWorld_);
 	pWorld->UnloadRegion(x, y, z, false);
@@ -584,32 +585,32 @@ ParaScripting::ParaAttributeObject ParaScripting::ParaBlockWorld::GetBlockAttrib
 // for LuaJit, only for function that maybe called millions of time per second
 extern "C" {
 
-	PE_CORE_DECL void ParaBlockWorld_SetBlockId(void* pWorld, uint16_t x, uint16_t y, uint16_t z, uint32_t templateId)
+	PE_CORE_DECL void ParaBlockWorld_SetBlockId(void* pWorld, uint16_t x, int32_t y, uint16_t z, uint32_t templateId)
 	{
 		((CBlockWorld*)pWorld)->SetBlockTemplateIdByIdx(x, y, z, templateId);
 	}
 
-	PE_CORE_DECL uint32_t ParaBlockWorld_GetBlockId(void* pWorld, uint16_t x, uint16_t y, uint16_t z)
+	PE_CORE_DECL uint32_t ParaBlockWorld_GetBlockId(void* pWorld, uint16_t x, int32_t y, uint16_t z)
 	{
 		return ((CBlockWorld*)pWorld)->GetBlockTemplateIdByIdx(x, y, z);
 	}
 
-	PE_CORE_DECL void ParaBlockWorld_SetBlockData(void* pWorld, uint16_t x, uint16_t y, uint16_t z, uint32_t data)
+	PE_CORE_DECL void ParaBlockWorld_SetBlockData(void* pWorld, uint16_t x, int32_t y, uint16_t z, uint32_t data)
 	{
 		((CBlockWorld*)pWorld)->SetBlockUserDataByIdx(x, y, z, data);
 	}
 
-	PE_CORE_DECL uint32_t ParaBlockWorld_GetBlockData(void* pWorld, uint16_t x, uint16_t y, uint16_t z)
+	PE_CORE_DECL uint32_t ParaBlockWorld_GetBlockData(void* pWorld, uint16_t x, int32_t y, uint16_t z)
 	{
 		return ((CBlockWorld*)pWorld)->GetBlockUserDataByIdx(x, y, z);
 	}
 
-	PE_CORE_DECL int ParaBlockWorld_FindFirstBlock(void* pWorld, uint16_t x, uint16_t y, uint16_t z, uint16_t nSide /*= 4*/, uint32_t max_dist /*= 32*/, uint32_t attrFilter /*= 0xffffffff*/, int nCategoryID /*= -1*/)
+	PE_CORE_DECL int ParaBlockWorld_FindFirstBlock(void* pWorld, uint16_t x, int32_t y, uint16_t z, uint16_t nSide /*= 4*/, uint32_t max_dist /*= 32*/, uint32_t attrFilter /*= 0xffffffff*/, int nCategoryID /*= -1*/)
 	{
 		return ((CBlockWorld*)pWorld)->FindFirstBlock(x, y, z, nSide, max_dist, attrFilter, nCategoryID);
 	}
 
-	PE_CORE_DECL int ParaBlockWorld_GetFirstBlock(void* pWorld, uint16_t x, uint16_t y, uint16_t z, int nBlockId, uint16_t nSide /*= 4*/, uint32_t max_dist /*= 32*/)
+	PE_CORE_DECL int ParaBlockWorld_GetFirstBlock(void* pWorld, uint16_t x, int32_t y, uint16_t z, int nBlockId, uint16_t nSide /*= 4*/, uint32_t max_dist /*= 32*/)
 	{
 		return ((CBlockWorld*)pWorld)->GetFirstBlock(x, y, z, nBlockId, nSide, max_dist);
 	}

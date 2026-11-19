@@ -1,5 +1,6 @@
 #pragma once
 #include "BlockCoordinate.h"
+#include "BlockConfig.h"
 
 namespace ParaEngine
 {
@@ -19,22 +20,22 @@ namespace ParaEngine
 	//////////////////////////////////////////////////////////////////////////
 
 	//pack region space chunk id to a single value
-	inline uint16 PackChunkIndex(uint16 rx, uint16 ry, uint16 rz)
+	inline uint32_t PackChunkIndex(uint16 rx, int16_t ry, uint16 rz)
 	{
-		return rx + (rz << 5) + (ry << 10);
+		return rx + (rz << 5) + (uint32_t(uint16_t(ry)) << 10);
 	}
 
 	//parse packed chunk id to region space chunk id
-	inline void UnpackChunkIndex(uint16 index, uint16& ox, uint16& oy, uint16& oz)
+	inline void UnpackChunkIndex(uint32_t index, uint16& ox, int16_t& oy, uint16& oz)
 	{
-		oy = index >> 10;
+		oy = static_cast<int16_t>(index >> 10);
 		index &= 0x3ff;
 		oz = index >> 5;
 		ox = index & 0x1f;
 	}
 
 	//calc packed block id, parameters are in region space
-	inline uint16 CalcPackedBlockID(uint16 rx, uint16 ry, uint16 rz)
+	inline uint16 CalcPackedBlockID(uint16 rx, int16_t ry, uint16 rz)
 	{
 		uint16 cx = rx & 0xf;
 		uint16 cy = ry & 0xf;
@@ -63,7 +64,8 @@ namespace ParaEngine
 	}
 
 	//unpack block index ,parameters are in chunk space
-	inline void UnpackBlockIndex(uint16 index, uint16& cx, uint16& cy, uint16& cz)
+	template<typename LocalY>
+	inline void UnpackBlockIndex(uint16 index, uint16& cx, LocalY& cy, uint16& cz)
 	{
 		cy = index >> 8;
 		index &= 0xff;
@@ -71,23 +73,23 @@ namespace ParaEngine
 		cx = index & 0xf;
 	}
 
-	inline uint16 CalcPackedChunkID(uint16 blockRX, uint16 blockRY, uint16 blockRZ)
+	inline uint32_t CalcPackedChunkID(uint16 blockRX, int16_t blockRY, uint16 blockRZ)
 	{
 		uint16 chunkIndexX = blockRX >> 4;
-		uint16 chunkIndexY = blockRY >> 4;
+		int16_t chunkIndexY = BlockConfig::SectionY(blockRY);
 		uint16 chunkIndexZ = blockRZ >> 4;
-		return chunkIndexX + (chunkIndexZ << 5) + (chunkIndexY << 10);
+		return PackChunkIndex(chunkIndexX, chunkIndexY, chunkIndexZ);
 	}
 
-	inline uint16 CalcPackedChunkID(Uint16x3& blockId_r)
+	inline uint32_t CalcPackedChunkID(Uint16x3& blockId_r)
 	{
-		return (blockId_r.x >> 4) + ((blockId_r.z >> 4) << 5) + ((blockId_r.y >> 4) << 10);
+		return CalcPackedChunkID(blockId_r.x, blockId_r.y, blockId_r.z);
 	}
 
 	//pack region space chunk id to a single value
-	inline uint16 PackChunkIndex(Uint16x3& chunkId_r)
+	inline uint32_t PackChunkIndex(Uint16x3& chunkId_r)
 	{
-		return chunkId_r.x + (chunkId_r.z << 5) + (chunkId_r.y << 10);
+		return PackChunkIndex(chunkId_r.x, chunkId_r.y, chunkId_r.z);
 	}
 
 	// pack chunk column in x,z plane

@@ -7,6 +7,7 @@
 namespace ParaEngine
 {
 	class CBlockWorld;
+	struct ChunkMaxHeight;
 	class BlockChunk;
 	class LightData;
 
@@ -108,6 +109,8 @@ namespace ParaEngine
 		virtual int GetDirtyColumnCount();
 		/** get the number of remaining dirty blocks */
 		virtual int GetDirtyBlockCount();
+		virtual bool CalculatesLight() const { return false; }
+		virtual bool IsSectionLightPending(int x, int y, int z) { return false; }
 
 		/** get the light grid chunk size */
 		virtual int GetLightGridSize();
@@ -152,8 +155,8 @@ namespace ParaEngine
 	protected:
 		BlockIndex  CalcLightDataIndex(const Uint16x3& blockId, bool bCreateIfNotExist = true);
 		LightData* GetLightData(const BlockIndex& index);
-		LightData* GetLightData(uint16_t x, uint16_t y, uint16_t z, bool bCreateIfNotExist = true);
-		BlockChunk* GetChunk(uint16_t x, uint16_t y, uint16_t z, bool bCreateIfNotExist = true);
+		LightData* GetLightData(uint16_t x, int16_t y, uint16_t z, bool bCreateIfNotExist = true);
+		BlockChunk* GetChunk(uint16_t x, int16_t y, uint16_t z, bool bCreateIfNotExist = true);
 
 	protected:
 		bool m_suspendLightUpdate;

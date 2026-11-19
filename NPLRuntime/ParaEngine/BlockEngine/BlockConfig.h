@@ -7,6 +7,11 @@ namespace ParaEngine
 {
 	struct BlockConfig
 	{
+		enum : int { MinBlockY = -256, MaxBlockY = 9000, MinSectionY = MinBlockY / 16, MaxSectionY = MaxBlockY / 16 };
+		static bool IsBlockY(int y) { return y >= MinBlockY && y <= MaxBlockY; }
+		static bool IsSectionY(int y) { return y >= MinSectionY && y <= MaxSectionY; }
+		static int SectionY(int y) { return y >= 0 ? y / 16 : -1 - (-(y + 1) / 16); }
+
 		static const int16_t g_regionBlockDimX;
 		static const int16_t g_regionBlockDimY;
 		static const int16_t g_regionBlockDimZ;

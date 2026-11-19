@@ -6,6 +6,7 @@
 // Date:	2012.11.26
 //-----------------------------------------------------------------------------
 #include "ParaEngine.h"
+#include "BlockIndex.h"
 #include "SceneObject.h"
 #include "BipedObject.h"
 #include "ParaXAnimInstance.h"
@@ -72,10 +73,10 @@ namespace ParaEngine
 		return (((uint64)bx) << 32) + (((uint64)by) << 16) + bz;
 	}
 
-	void FromBlockSparseIndex(int64_t index, uint16_t& bx, uint16_t& by, uint16_t& bz)
+	void FromBlockSparseIndex(int64_t index, uint16_t& bx, int16_t& by, uint16_t& bz)
 	{
 		bx = (uint16_t)(index >> 32);
-		by = (uint16_t)(((DWORD)index) >> 16);
+		by = static_cast<int16_t>(index >> 16);
 		bz = (uint16_t)(((DWORD)index) & 0xffff);
 	}
 
@@ -1117,7 +1118,8 @@ namespace ParaEngine
 			auto itEnd = selectedBlockMap.end();
 			for (auto itCur = selectedBlockMap.begin(); itCur != itEnd; itCur++)
 			{
-				uint16_t x, y, z;
+				uint16_t x, z;
+				int16_t y;
 				FromBlockSparseIndex((*itCur).first, x, y, z);
 
 				BlockTemplate* pBlockTemplate = GetBlockTemplate(x, y, z);
@@ -1282,7 +1284,8 @@ namespace ParaEngine
 					if (nNearbyValue == 0 && !selectedBlocks.m_bOnlyRenderClickableArea)
 						continue;
 
-					uint16_t x, y, z;
+					uint16_t x, z;
+					int16_t y;
 					FromBlockSparseIndex((*itCur).first, x, y, z);
 
 					if (abs(eyeX - x) >= nRenderDist || abs(eyeZ - z) >= nRenderDist)
@@ -2041,7 +2044,7 @@ namespace ParaEngine
 			Uint16x3 blockIdx;
 			BlockCommon::ConvertToBlockIndex(x, y, z, blockIdx.x, blockIdx.y, blockIdx.z);
 
-			if (blockIdx.y < BlockConfig::g_regionBlockDimY)
+			if (BlockConfig::IsBlockY(blockIdx.y))
 			{
 				for (int i = 0; i < nRayLength; i++)
 				{
@@ -2167,25 +2170,8 @@ namespace ParaEngine
 
 	void BlockWorldClient::ClearBlockRenderCache()
 	{
-		if (IsInBlockWorld())
-		{
-			for (int x = 0; x < m_activeChunkDim; x++)
-			{
-				for (int z = 0; z < m_activeChunkDim; z++)
-				{
-					for (int y = 0; y < m_activeChunkDim; y++)
-					{
-						RenderableChunk& chunk = GetActiveChunk(x, y, z);
-
-						if (!chunk.IsEmptyChunk())
-						{
-							chunk.SetChunkDirty(true);
-						}
-					}
-				}
-			}
-		}
-	}
+		for (auto* chunk : m_activeChunks) chunk->SetChunkDirty(true);
+}
 
 	void BlockWorldClient::SetBlockLightColor(const LinearColor& color)
 	{
@@ -2587,7 +2573,7 @@ namespace ParaEngine
 		auto anchor = [](int coord, int limit) {
 			return (uint16_t)(std::max)(0, (std::min)(limit - Tracer::Side, ((coord + 2) / 4) * 4 - Tracer::Side / 2));
 		};
-		Uint16x3 origin(anchor(eye.x, 65536), anchor(eye.y, BlockConfig::g_regionBlockDimY), anchor(eye.z, 65536));
+		Uint16x3 origin(anchor(eye.x, 65536), BlockConfig::MinBlockY + anchor(eye.y - BlockConfig::MinBlockY, BlockConfig::MaxBlockY - BlockConfig::MinBlockY + 1), anchor(eye.z, 65536));
 		auto now = std::chrono::steady_clock::now();
 		if (target != m_lastSkyTexture || origin != m_skyOrigin || now >= m_nextSkyScan)
 		{
@@ -2834,10 +2820,8 @@ namespace ParaEngine
 				{
 					elevation -= GetVerticalOffset();
 					int32 terrainBlockHeight = (int32)(elevation / BlockConfig::g_blockSize);
-					if (terrainBlockHeight < 0)
-						terrainBlockHeight = 0;
-					if (terrainBlockHeight > BlockConfig::g_regionBlockDimY)
-						terrainBlockHeight = BlockConfig::g_regionBlockDimY;
+					terrainBlockHeight = (std::max<int>)(BlockConfig::MinBlockY - 1,
+						(std::min<int>)(BlockConfig::MaxBlockY, terrainBlockHeight));
 
 					if (terrainBlockHeight > pResult[i].GetMaxHeight())
 					{
@@ -2854,7 +2838,7 @@ namespace ParaEngine
 	void BlockWorldClient::UpdateVisibleChunks(bool bIsShadowPass /*= false*/)
 	{
 		m_visibleChunks.clear();
-		if (m_activeChunkDim <= 0 || m_activeChunks.empty())
+		if (m_activeChunkDim <= 0)
 			return;
 
 		Vector3 camWorldPos = CGlobals::GetSceneState()->vEye;
@@ -2921,15 +2905,15 @@ namespace ParaEngine
 		BlockCommon::ConvertToBlockIndex(camMax.x, camMax.y, camMax.z, rawEnd.x, rawEnd.y, rawEnd.z);
 
 		const int32 startIdxX = (std::max<int32>)(minActiveX, static_cast<int32>(rawStart.x / 16) - 1);
-		const int32 startIdxY = (std::max<int32>)(0, (std::min<int32>)(15, static_cast<int32>(rawStart.y / 16) - 1));
+		const int32 startIdxY = (std::max<int>)(BlockConfig::MinSectionY, BlockConfig::SectionY(rawStart.y) - 1);
 		const int32 startIdxZ = (std::max<int32>)(minActiveZ, static_cast<int32>(rawStart.z / 16) - 1);
 
 		const int32 endIdxX = (std::min<int32>)(maxActiveX, static_cast<int32>(rawEnd.x / 16) + 1);
-		const int32 endIdxY = (std::min<int32>)(15, static_cast<int32>(rawEnd.y / 16) + 1);
+		const int32 endIdxY = (std::min<int>)(BlockConfig::MaxSectionY, BlockConfig::SectionY(rawEnd.y) + 1);
 		const int32 endIdxZ = (std::min<int32>)(maxActiveZ, static_cast<int32>(rawEnd.z / 16) + 1);
 
 		const float fRenderDist = GetRenderDist() * BlockConfig::g_blockSize;
-		CShapeSphere sEyeSphere(camWorldPos, fRenderDist);
+		CShapeSphere sEyeSphere(camWorldPos - renderOrig, fRenderDist);
 		const Vector3 vChunkSize(BlockConfig::g_chunkSize, BlockConfig::g_chunkSize, BlockConfig::g_chunkSize);
 
 		const int32 chunkX = GetEyeChunkId().x;
@@ -2952,265 +2936,61 @@ namespace ParaEngine
 				clipZeroToOne = pDev->GetCaps().clipSpaceZeroToOne;
 			m_softwareOccluder.BeginFrame(matViewProj, camWorldPos, renderOrig, clipZeroToOne);
 
-			if (startIdxX > endIdxX || startIdxZ > endIdxZ)
+		}
+
+		const int radius = GetRenderDist() / 16 + 1;
+		const int minX = (std::max)(startIdxX, chunkX - radius), maxX = (std::min)(endIdxX, chunkX + radius);
+		const int minZ = (std::max)(startIdxZ, chunkZ - radius), maxZ = (std::min)(endIdxZ, chunkZ + radius);
+		const int minY = (std::max)(startIdxY, chunkY - radius), maxY = (std::min)(endIdxY, chunkY + radius);
+		m_renderCandidates.clear();
+		for (int rz = minZ >> 5; rz <= (maxZ >> 5); ++rz)
+			for (int rx = minX >> 5; rx <= (maxX >> 5); ++rx)
 			{
-				m_isVisibleChunkDirty = false;
-				return;
+				auto* region = GetRegion(rx, rz);
+				if (region && !region->IsLocked()) region->GetOccupiedSections(minX, minY, minZ, maxX, maxY, maxZ, m_renderCandidates);
 			}
-
-			const double eyeRelY = static_cast<double>(camWorldPos.y) - CBlockWorld::GetVerticalOffset();
-			const int32 rawSeedY = (eyeRelY < 0.0) ? -1 : ((chunkY >= 16) ? 16 : chunkY);
-			const int32 bfsMinY = (rawSeedY < 0) ? -1 : 0;
-			const int32 bfsMaxY = (rawSeedY >= 16) ? 16 : 15;
-
-			const int32 seedX = (std::max)(minActiveX, (std::min)(maxActiveX, chunkX));
-			const int32 seedY = rawSeedY;
-			const int32 seedZ = (std::max)(minActiveZ, (std::min)(maxActiveZ, chunkZ));
-			const bool bSeedClampedXZ = (seedX != chunkX || seedZ != chunkZ);
-
-			const int32 chunkViewRadius = (std::max<int32>)(static_cast<int32>(GetRenderDist() / 16), 1);
-			const int32 chunkViewSize = chunkViewRadius * 2;
-			const int32 viewMinX = (std::max)(minActiveX, chunkX - chunkViewSize);
-			const int32 viewMaxX = (std::min)(maxActiveX, chunkX + chunkViewSize);
-			const int32 viewMinZ = (std::max)(minActiveZ, chunkZ - chunkViewSize);
-			const int32 viewMaxZ = (std::min)(maxActiveZ, chunkZ + chunkViewSize);
-
-			const int32 travMinX = (std::max)(viewMinX, (std::min)(startIdxX, seedX));
-			const int32 travMaxX = (std::min)(viewMaxX, (std::max)(endIdxX, seedX));
-			const int32 travMinZ = (std::max)(viewMinZ, (std::min)(startIdxZ, seedZ));
-			const int32 travMaxZ = (std::min)(viewMaxZ, (std::max)(endIdxZ, seedZ));
-			const int32 travMinY = (std::min)(startIdxY, seedY);
-			const int32 travMaxY = (std::max)(endIdxY, seedY);
-
-			const size_t dim = static_cast<size_t>(m_activeChunkDim);
-			const size_t dimXZ = dim * dim;
-			const size_t totalBfsSlots = dimXZ * 18u; // cy in [-1..16]
-			if (m_bfsVisitedGen.size() < totalBfsSlots)
+		m_sectionsByDistance.resize(radius + 1);
+		for (auto& ring : m_sectionsByDistance) ring.clear();
+		for (const auto& p : m_renderCandidates)
+		{
+			const int dist = (std::max)(abs(p.x - chunkX), (std::max)(abs(p.y - chunkY), abs(p.z - chunkZ)));
+			m_sectionsByDistance[dist].push_back(p);
+		}
+		for (int dist = 0; dist <= radius; ++dist)
+		{
+			for (const auto& candidate : m_sectionsByDistance[dist])
 			{
-				m_bfsVisitedGen.assign(totalBfsSlots, 0u);
-				m_bfsEntryFaces.assign(totalBfsSlots, 0u);
-			}
-			++m_bfsGeneration;
-			if (m_bfsGeneration == 0u)
-			{
-				std::fill(m_bfsVisitedGen.begin(), m_bfsVisitedGen.end(), 0u);
-				m_bfsGeneration = 1u;
-			}
-			const uint32_t curGen = m_bfsGeneration;
-
-			auto calcBfsIdx = [&](int32 x, int32 y, int32 z) -> size_t {
-				const size_t lx = static_cast<size_t>(x - static_cast<int32>(m_minActiveChunkId_ws.x));
-				const size_t lz = static_cast<size_t>(z - static_cast<int32>(m_minActiveChunkId_ws.z));
-				return static_cast<size_t>(y + 1) * dimXZ + lx * dim + lz;
-			};
-
-			m_bfsQueue.clear();
-			if (m_bfsQueue.capacity() < 4096)
-				m_bfsQueue.reserve(4096);
-
-			const size_t seedSlot = calcBfsIdx(seedX, seedY, seedZ);
-			m_bfsVisitedGen[seedSlot] = curGen;
-			m_bfsEntryFaces[seedSlot] = 0x3Fu;
-			m_bfsQueue.push_back({ static_cast<int16_t>(seedX), static_cast<int16_t>(seedY), static_cast<int16_t>(seedZ) });
-
-			struct StepDir
-			{
-				int8_t dx, dy, dz;
-				uint8_t exitFace;
-				uint8_t neighborEntryFace;
-			};
-			// Matches BlockChunk::UpdateVisibilityGraph boundary face convention:
-			// cx==15 -> left (+X), cx==0 -> right (-X), cy==15 -> top (+Y), cy==0 -> bottom (-Y), cz==15 -> front (+Z), cz==0 -> back (-Z)
-			static const StepDir kStepDirs[6] = {
-				{ +1,  0,  0, static_cast<uint8_t>(BlockDirection::left),   static_cast<uint8_t>(BlockDirection::right)  },
-				{ -1,  0,  0, static_cast<uint8_t>(BlockDirection::right),  static_cast<uint8_t>(BlockDirection::left)   },
-				{  0, +1,  0, static_cast<uint8_t>(BlockDirection::top),    static_cast<uint8_t>(BlockDirection::bottom) },
-				{  0, -1,  0, static_cast<uint8_t>(BlockDirection::bottom), static_cast<uint8_t>(BlockDirection::top)    },
-				{  0,  0, +1, static_cast<uint8_t>(BlockDirection::front),  static_cast<uint8_t>(BlockDirection::back)   },
-				{  0,  0, -1, static_cast<uint8_t>(BlockDirection::back),   static_cast<uint8_t>(BlockDirection::front)  },
-			};
-
-			size_t qHead = 0;
-			while (qHead < m_bfsQueue.size())
-			{
-				const BfsChunkNode cur = m_bfsQueue[qHead++];
-				const int32 cx = cur.x;
-				const int32 cy = cur.y;
-				const int32 cz = cur.z;
-				const size_t curSlot = calcBfsIdx(cx, cy, cz);
-				const uint8_t entryMask = m_bfsEntryFaces[curSlot];
-				const int32 manhattanDist = std::abs(cx - seedX) + std::abs(cy - seedY) + std::abs(cz - seedZ);
-
-				uint16_t visGraph = BlockChunk::kVisGraphAllConnected;
-
-				if (cy >= 0 && cy <= 15)
+				const int x = candidate.x, y = candidate.y, z = candidate.z;
+				Vector3 worldMin = BlockCommon::ConvertToRealPosition(x * 16, y * 16, z * 16, 7);
+				CShapeAABB box;
+				box.SetMinMax(worldMin - renderOrig, worldMin - renderOrig + vChunkSize);
+				CShapeBox bounds;
+				bounds.SetMinMax(worldMin - renderOrig, worldMin - renderOrig + vChunkSize);
+				if (!frustum->TestBox(&box) || !bounds.Intersect(sEyeSphere) || (!bIsShadowPass && dist > 1 && m_softwareOccluder.IsRenderAABBOccluded(box))) continue;
+				auto& chunk = GetActiveChunk(x, y, z);
+				if (!chunk.IsNearbyChunksLoaded()) continue;
+				if (chunk.IsDirty() || chunk.GetTotalFaceCount() || chunk.ShouldRebuildRenderBuffer(this, false, true))
+					AddToVisibleChunk(chunk, dist, nRenderFrameCount);
+				if (!bIsShadowPass && dist <= 8 && !chunk.IsDirty())
 				{
-					Vector3 vMin = BlockCommon::ConvertToRealPosition(static_cast<uint16>(cx * 16), static_cast<uint16>(cy * 16), static_cast<uint16>(cz * 16), 7);
-					vMin -= renderOrig;
-					Vector3 vMax = vMin + vChunkSize;
-
-					CShapeAABB box;
-					box.SetMinMax(vMin, vMax);
-					const bool inFrustum = frustum->TestBox(&box) != 0;
-					if (!inFrustum && manhattanDist > 1 && !bSeedClampedXZ)
-						continue;
-
-					if (inFrustum && manhattanDist >= 2 && m_softwareOccluder.IsRenderAABBOccluded(box))
-						continue;
-
-					RenderableChunk& chunk = GetActiveChunk(static_cast<uint16>(cx), static_cast<uint16>(cy), static_cast<uint16>(cz));
-					if (!chunk.IsEmptyChunk())
-					{
-						chunk.RefreshVisibilityCache(this);
-						const bool bChunkDirty = chunk.IsDirty();
-						if (!bChunkDirty)
-						{
-							visGraph = chunk.GetVisibilityGraph();
-						}
-
-						const int32 viewDist = (std::max)((std::max)(std::abs(cx - chunkX), std::abs(cz - chunkZ)), std::abs(cy - chunkY));
-						if (inFrustum
-							&& cx >= startIdxX && cx <= endIdxX
-							&& cy >= startIdxY && cy <= endIdxY
-							&& cz >= startIdxZ && cz <= endIdxZ
-							&& chunk.IsIntersect(sEyeSphere)
-							&& chunk.IsNearbyChunksLoaded())
-						{
-							if (bChunkDirty || chunk.GetTotalFaceCount() > 0 || chunk.ShouldRebuildRenderBuffer(this, false, true))
-							{
-								AddToVisibleChunk(chunk, viewDist, nRenderFrameCount);
-							}
-							if (!bChunkDirty && viewDist <= 8)
-							{
-								Vector3 occMin, occMax;
-								if (chunk.GetOpaqueOccluderBoxWS(occMin, occMax))
-								{
-									m_softwareOccluder.RasterizeOccluderWorldAABB(occMin, occMax);
-								}
-							}
-						}
-					}
-				}
-
-				for (int d = 0; d < 6; ++d)
-				{
-					const StepDir& step = kStepDirs[d];
-					if (step.dx != 0 && (cx - seedX) * step.dx < 0) continue;
-					if (step.dy != 0 && (cy - seedY) * step.dy < 0) continue;
-					if (step.dz != 0 && (cz - seedZ) * step.dz < 0) continue;
-
-					const int32 nx = cx + step.dx;
-					const int32 ny = cy + step.dy;
-					const int32 nz = cz + step.dz;
-					if (nx < travMinX || nx > travMaxX || ny < bfsMinY || ny > bfsMaxY || nz < travMinZ || nz > travMaxZ)
-						continue;
-					if (ny >= 0 && ny <= 15 && (ny < travMinY || ny > travMaxY))
-						continue;
-
-					if (manhattanDist > 0 && visGraph != BlockChunk::kVisGraphAllConnected)
-					{
-						if (visGraph == BlockChunk::kVisGraphFullyOpaque)
-							continue;
-						bool bConnected = false;
-						for (int ef = 0; ef < 6; ++ef)
-						{
-							if ((entryMask & (1u << ef)) != 0 && BlockChunk::CanTraverseVisGraph(visGraph, ef, step.exitFace))
-							{
-								bConnected = true;
-								break;
-							}
-						}
-						if (!bConnected)
-							continue;
-					}
-
-					const size_t nSlot = calcBfsIdx(nx, ny, nz);
-					const uint8_t entryBit = static_cast<uint8_t>(1u << step.neighborEntryFace);
-					if (m_bfsVisitedGen[nSlot] != curGen)
-					{
-						m_bfsVisitedGen[nSlot] = curGen;
-						m_bfsEntryFaces[nSlot] = entryBit;
-						m_bfsQueue.push_back({ static_cast<int16_t>(nx), static_cast<int16_t>(ny), static_cast<int16_t>(nz) });
-					}
-					else
-					{
-						m_bfsEntryFaces[nSlot] |= entryBit;
-					}
+					chunk.RefreshVisibilityCache(this);
+					Vector3 minCorner, maxCorner;
+					if (chunk.GetOpaqueOccluderBoxWS(minCorner, maxCorner))
+						m_softwareOccluder.RasterizeOccluderWorldAABB(minCorner, maxCorner);
 				}
 			}
-
+		}
+		if (!bIsShadowPass)
+		{
 			m_softwareOccluder.FinalizeHierarchy();
 			m_isVisibleChunkDirty = false;
-			return;
-		}
-
-		if (startIdxX > endIdxX || startIdxZ > endIdxZ)
-			return;
-
-		// Shadow pass: radial spiral walk bounded tightly to the shadow caster AABB, skipping empty / 0-face interior chunks.
-		int32 chunkViewRadius = (std::max<int32>)(static_cast<int32>(GetRenderDist() / 16), 1);
-		int32 maxShadowExtent = (std::max)(
-			(std::max)(std::abs(startIdxX - chunkX), std::abs(endIdxX - chunkX)),
-			(std::max)(std::abs(startIdxZ - chunkZ), std::abs(endIdxZ - chunkZ)));
-		int32 chunkViewSize = (std::min)(chunkViewRadius * 2, maxShadowExtent);
-
-		auto tryAddShadowChunk = [&](int32 cx, int32 cz, int32 dist) {
-			if (cx < startIdxX || cx > endIdxX || cz < startIdxZ || cz > endIdxZ)
-				return;
-			for (int32 cy = startIdxY; cy <= endIdxY; ++cy)
-			{
-				RenderableChunk& chunk = GetActiveChunk(static_cast<uint16>(cx), static_cast<uint16>(cy), static_cast<uint16>(cz));
-				if (!chunk.IsIntersect(sEyeSphere))
-					continue;
-				if (!chunk.IsDirty() && chunk.GetTotalFaceCount() == 0 && !chunk.ShouldRebuildRenderBuffer(this, false, true))
-					continue;
-
-				Vector3 vMin = BlockCommon::ConvertToRealPosition(static_cast<uint16>(cx * 16), static_cast<uint16>(cy * 16), static_cast<uint16>(cz * 16), 7);
-				vMin -= renderOrig;
-				Vector3 vMax = vMin + vChunkSize;
-
-				CShapeAABB box;
-				box.SetMinMax(vMin, vMax);
-				if (frustum->TestBox(&box) && chunk.IsNearbyChunksLoaded())
-				{
-					AddToVisibleChunk(chunk, dist, nRenderFrameCount);
-				}
-			}
-		};
-
-		tryAddShadowChunk(chunkX, chunkZ, 0);
-
-		int32 nIndex = 0;
-		int32 dx = 0;
-		int32 dz = 0;
-		for (int32 length = 1; length <= chunkViewSize; ++length)
-		{
-			for (int32 k = 1; k <= 2; ++k)
-			{
-				int32* dir = &(BlockCommon::g_xzDirectionsConst[(nIndex % 4)][0]);
-				nIndex++;
-				for (int32 i = 0; i < length; ++i)
-				{
-					dx += dir[0];
-					dz += dir[1];
-					tryAddShadowChunk(chunkX + dx, chunkZ + dz, length);
-				}
-			}
-		}
-
-		nIndex = (nIndex % 4);
-		for (int32 i = 1; i <= chunkViewSize; ++i)
-		{
-			dx += BlockCommon::g_xzDirectionsConst[nIndex][0];
-			dz += BlockCommon::g_xzDirectionsConst[nIndex][1];
-			tryAddShadowChunk(chunkX + dx, chunkZ + dz, chunkViewSize);
 		}
 	}
 
 	void BlockWorldClient::AddToVisibleChunk(RenderableChunk& chunk, int nViewDist, int nRenderFrameCount)
 	{
 		chunk.SetChunkViewDistance((int16)nViewDist);
-		chunk.SetViewIndex((int16)m_visibleChunks.size());
+		chunk.SetViewIndex(static_cast<int>(m_visibleChunks.size()));
 		chunk.SetRenderFrameCount(nRenderFrameCount);
 		m_visibleChunks.push_back(&chunk);
 	}
@@ -3262,19 +3042,11 @@ namespace ParaEngine
 				int32 chunkZ = GetEyeChunkId().z;
 				int32 nCacheRadius = GetAlwaysInVertexBufferChunkRadius();
 
-				for (int x = chunkX - nCacheRadius; x <= (chunkX + nCacheRadius); x++)
+				for (auto& entry : m_renderChunksByPosition)
 				{
-					for (int y = chunkY - nCacheRadius; y <= (chunkY + nCacheRadius); y++)
-					{
-						for (int z = chunkZ - nCacheRadius; z <= (chunkZ + nCacheRadius); z++)
-						{
-							if (x >= 0 && y >= 0 && z >= 0)
-							{
-								RenderableChunk& chunk = GetActiveChunk((uint16)x, (uint16)y, (uint16)z);
-								m_safeVisibleChunks.insert(&chunk);
-							}
-						}
-					}
+					const auto pos = entry.second->GetChunkPosWs();
+					if (abs(pos.x-chunkX) <= nCacheRadius && abs(pos.y-chunkY) <= nCacheRadius && abs(pos.z-chunkZ) <= nCacheRadius)
+						m_safeVisibleChunks.insert(entry.second);
 				}
 			}
 			int nCurrentVertexBufferSize = 0;
@@ -3293,44 +3065,30 @@ namespace ParaEngine
 				}
 			}
 
-			for (int z = 0; z < m_activeChunkDim; z++)
+			for (auto* pChunk : m_activeChunks)
 			{
-				int16_t curChunkWZ = m_minActiveChunkId_ws.z + z;
-				for (int x = 0; x < m_activeChunkDim; x++)
+			int nBufferSize = pChunk->GetVertexBufferBytes();
+			if (nBufferSize > 0 && m_safeVisibleChunks.find(pChunk) == m_safeVisibleChunks.end())
+			{
+				if (nCurrentVertexBufferSize < GetVertexBufferSizeLimit())
 				{
-					int16_t curChunkWX = m_minActiveChunkId_ws.x + x;
+					// visible chunks has not exceed memory limit, we will put unused chunks to a sorted queue according to render frame count.
+					if (m_removableChunks.empty() || m_removableChunks.back()->GetRenderFrameCount() > pChunk->GetRenderFrameCount() || (nCurrentRenderFrame == pChunk->GetRenderFrameCount() && m_removableChunks.back()->GetChunkViewDistance() < pChunk->GetChunkViewDistance()))
+						m_removableChunks.push_back(pChunk);
+					else
+						m_removableChunks.push_front(pChunk);
+				}
+				else
+				{
+					// visible chunks already consumes too much memory, we will remove everything else
+					if (nBytesToRemove > nBufferSize)
 					{
-						for (int y = 0; y < m_activeChunkDimY; y++)
-						{
-							int16_t curChunkWY = m_minActiveChunkId_ws.y + y;
-
-							RenderableChunk* pChunk = &GetActiveChunk(curChunkWX, curChunkWY, curChunkWZ);
-							int nBufferSize = pChunk->GetVertexBufferBytes();
-							if (nBufferSize > 0 && m_safeVisibleChunks.find(pChunk) == m_safeVisibleChunks.end())
-							{
-								if (nCurrentVertexBufferSize < GetVertexBufferSizeLimit())
-								{
-									// visible chunks has not exceed memory limit, we will put unused chunks to a sorted queue according to render frame count.
-									if (m_removableChunks.empty() || m_removableChunks.back()->GetRenderFrameCount() > pChunk->GetRenderFrameCount() || (nCurrentRenderFrame == pChunk->GetRenderFrameCount() && m_removableChunks.back()->GetChunkViewDistance() < pChunk->GetChunkViewDistance()))
-										m_removableChunks.push_back(pChunk);
-									else
-										m_removableChunks.push_front(pChunk);
-								}
-								else
-								{
-									// visible chunks already consumes too much memory, we will remove everything else
-									if (nBytesToRemove > nBufferSize)
-									{
-										nBytesToRemove -= nBufferSize;
-										pChunk->ClearChunkData();
-									}
-								}
-							}
-						}
+						nBytesToRemove -= nBufferSize;
+						pChunk->ClearChunkData();
 					}
 				}
 			}
-
+			}
 			// m_removableChunks is sorted from newest chunk to oldest chunk.
 			// we will remove oldest chunks first.
 			while (!m_removableChunks.empty())

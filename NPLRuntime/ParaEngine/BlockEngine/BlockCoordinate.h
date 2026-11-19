@@ -72,14 +72,14 @@ namespace ParaEngine
 	struct Uint16x3
 	{
 		uint16_t x;
-		uint16_t y;
+		int16_t y;
 		uint16_t z;
 
 		Uint16x3():x(0),y(0),z(0){}
 
 		Uint16x3(uint16_t v):x(v),y(v),z(v){}
 
-		Uint16x3(uint16_t ix,uint16_t iy,uint16_t iz)
+		Uint16x3(uint16_t ix,int16_t iy,uint16_t iz)
 			:x(ix),y(iy),z(iz)
 		{
 		}
@@ -115,7 +115,7 @@ namespace ParaEngine
 		uint32 AbsDistanceTo(const Uint16x3& v) const;
 
 		/** get simple hash code*/
-		DWORD GetHashCode() const { return ((x << 8) | y | (z << 20)); }
+		DWORD GetHashCode() const { return ((uint32_t(x) << 8) ^ uint16_t(y) ^ (uint32_t(z) << 20)); }
 		
 	};
 

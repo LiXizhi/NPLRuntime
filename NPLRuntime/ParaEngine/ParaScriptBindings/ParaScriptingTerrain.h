@@ -9,6 +9,7 @@
 #include "ParaScriptingGlobal.h"
 namespace ParaEngine {
 	class CTerrainTile;
+	class CBlockWorld;
 }
 
 namespace ParaScripting
@@ -409,11 +410,11 @@ namespace ParaScripting
 		//use 0 to delete a block.
 		static void SetBlockTemplateId(float x, float y, float z, uint16_t templateId);
 
-		static void SetBlockTemplateIdByIdx(uint16_t x, uint16_t y, uint16_t z, uint32_t templateId);
+		static void SetBlockTemplateIdByIdx(uint16_t x, int32_t y, uint16_t z, uint32_t templateId);
 
 		static uint32_t GetBlockTemplateId(float x, float y, float z);
 
-		static uint32_t GetBlockTemplateIdByIdx(uint16_t x, uint16_t y, uint16_t z);
+		static uint32_t GetBlockTemplateIdByIdx(uint16_t x, int32_t y, uint16_t z);
 
 		//user data is used to store per instance data e.g
 		//for two template block it means the blend factor of two template
@@ -422,23 +423,23 @@ namespace ParaScripting
 		//and unpack them according to pre-defined rules according to block type
 		static void SetBlockUserData(float x, float y, float z, uint32_t data);
 
-		static void SetBlockUserDataByIdx(uint16_t x, uint16_t y, uint16_t z, uint32_t data);
+		static void SetBlockUserDataByIdx(uint16_t x, int32_t y, uint16_t z, uint32_t data);
 
 		static uint32_t GetBlockUserData(float x, float y, float z);
 
-		static uint32_t GetBlockUserDataByIdx(uint16_t x, uint16_t y, uint16_t z);
+		static uint32_t GetBlockUserDataByIdx(uint16_t x, int32_t y, uint16_t z);
 
 		/** set block material from a block's face.
 		* @param nFaceIndex: if -1, we will remove all materials from the block
 		* @param nMaterialID: global unique material id in CBlockMaterialManager
 		*/
-		static bool SetBlockMaterial(uint16_t x, uint16_t y, uint16_t z, int16_t nFaceId, int32_t nMaterial);
+		static bool SetBlockMaterial(uint16_t x, int32_t y, uint16_t z, int16_t nFaceId, int32_t nMaterial);
 
 		/** get block's material of a given face
 		* @param nFaceIndex: if -1, we will remove all materials from the block
 		* @return -1 if not found
 		*/
-		static int32_t GetBlockMaterial(uint16_t x, uint16_t y, uint16_t z, int16_t nFaceId);
+		static int32_t GetBlockMaterial(uint16_t x, int32_t y, uint16_t z, int16_t nFaceId);
 		
 		//ray orignial should be positive value
 		//ray direction should be normalized value
@@ -469,6 +470,7 @@ namespace ParaScripting
 		* @param startChunkY, endChunkY: if negative, and startChunkY == endChunkY, -startChunkY will be used as verticalSectionFilter(a bitwise filter).
 		* @return {count,x{},y{},z{},tempId{}}
 		*/
+		static object GetBlocksInWorldRegion(CBlockWorld* world, int32_t startChunkX, int32_t startChunkY, int32_t startChunkZ, int32_t endChunkX, int32_t endChunkY, int32_t endChunkZ, uint32_t matchType, const object& result);
 		static object GetBlocksInRegion(int32_t startChunkX, int32_t startChunkY, int32_t startChunkZ, int32_t endChunkX, int32_t endChunkY, int32_t endChunkZ,
 			uint32_t matchType, const object& result);
 
@@ -483,8 +485,8 @@ namespace ParaScripting
 		@param isSelect : true to select block, false to de-select block
 		@param nGroupID: group id. 0 for highlight 1 for wireframe.
 		*/
-		static void SelectBlock(uint16_t x, uint16_t y, uint16_t z, bool isSelect);
-		static void SelectBlock1(uint16_t x, uint16_t y, uint16_t z, bool isSelect, int nGroupID);
+		static void SelectBlock(uint16_t x, int32_t y, uint16_t z, bool isSelect);
+		static void SelectBlock1(uint16_t x, int32_t y, uint16_t z, bool isSelect, int nGroupID);
 
 		/**
 		@param nGroupID: 0 for animated selection, 1 for wire frame selection.  -1 for all
@@ -496,7 +498,7 @@ namespace ParaScripting
 
 		//set damage block id
 		//@param x,y,z :world space block id;
-		static void SetDamagedBlock(uint16_t x, uint16_t y, uint16_t z);
+		static void SetDamagedBlock(uint16_t x, int32_t y, uint16_t z);
 
 		//set damage block degree
 		//@param damageDegree: [0,1] 0 means undamaged block,1 full damaged block
@@ -509,11 +511,11 @@ namespace ParaScripting
 		* @param nCategoryID: -1 means any category_id.  default to -1
 		* @return -1 if not found. otherwise distance to the first block that match in the side direction is returned.
 		*/
-		static int FindFirstBlock(uint16_t x, uint16_t y, uint16_t z, uint16_t nSide = 4, uint32_t max_dist = 32, uint32_t attrFilter = 0xffffffff, int nCategoryID = -1);
+		static int FindFirstBlock(uint16_t x, int32_t y, uint16_t z, uint16_t nSide = 4, uint32_t max_dist = 32, uint32_t attrFilter = 0xffffffff, int nCategoryID = -1);
 
 		/** get the y pos of the first block of nBlockID, start searching from x, y, z in the side direction
 		*/
-		static int GetFirstBlock(uint16_t x, uint16_t y, uint16_t z, int nBlockId, uint16_t nSide = 4, uint32_t max_dist = 32);
+		static int GetFirstBlock(uint16_t x, int32_t y, uint16_t z, int nBlockId, uint16_t nSide = 4, uint32_t max_dist = 32);
 
 		/** get the time stamp of for the given chunk column
 		0 means not available, >1 means loaded before
@@ -527,15 +529,21 @@ namespace ParaScripting
 		/**
 		* @param verticalSectionFilter: default to 0xffff.  each bit is for one of the 16 vertical sections.
 		*/
+		static object GetChunkSections(uint32_t x, uint32_t z, const object& result);
+		static uint32_t GetColumnLightHeights(uint32_t x, uint32_t z);
+		static void ApplyColumnLightHeights(uint32_t x, uint32_t z, uint32_t heights);
+		static std::string GetMapSectionData(uint32_t x, uint32_t z, const object& sections);
+		static object ApplyMapSectionData(uint32_t x, uint32_t z, const std::string& data, const object& result);
+		static object GetBlocksInSections(uint32_t x, uint32_t z, const object& sections, uint32_t matchType, const object& result);
 		static const std::string& GetMapChunkData(uint32_t chunkX, uint32_t chunkZ, bool bIncludeInit, uint32_t verticalSectionFilter);
 
 		static object ApplyMapChunkData(uint32_t chunkX, uint32_t chunkZ, uint32_t verticalSectionFilter, const std::string& chunkData, const object& out);
 
 		/** get block id and userdata at the given block position. */
-		static void GetBlockFullData(uint16_t x, uint16_t y, uint16_t z, uint16_t* pId, uint32_t* pUserData);
+		static void GetBlockFullData(uint16_t x, int32_t y, uint16_t z, uint16_t* pId, uint32_t* pUserData);
 
 		/** this function is only valid, when the block region is locked. this function is extremely fast. and it does not do light calculation. */
-		static void LoadBlockAsync(uint16_t x, uint16_t y, uint16_t z, uint16_t blockId, uint32_t userData);
+		static void LoadBlockAsync(uint16_t x, int32_t y, uint16_t z, uint16_t blockId, uint32_t userData);
 	};
 
 }
