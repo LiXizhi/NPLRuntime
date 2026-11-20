@@ -19,6 +19,7 @@
 namespace ParaEngine
 {
 	class GLProgram;
+	struct Uniform;
 	class IRHIShaderProgram;
 	struct FxSamplerDesc;
 	struct FxRenderStateAssignment;
@@ -162,6 +163,7 @@ namespace ParaEngine
 			int32_t psOffset = -1;
 			uint32_t psSize = 0;
 			uint32_t syncedRevision = 0;
+			const Uniform* glUniform = nullptr;
 		};
 
 		struct PassStateEntry
@@ -193,6 +195,7 @@ namespace ParaEngine
 		{
 			std::string name;
 			GLProgram* glProgram = nullptr;
+			uint64_t syncedGLRevision = 0;
 			IRHIShaderProgram* rhiProgram = nullptr;
 			std::vector<uint8_t> vsCBuffer;
 			std::vector<uint8_t> psCBuffer;
@@ -230,6 +233,7 @@ namespace ParaEngine
 		std::string m_filename;
 		std::vector<TechniqueRuntime> m_techniques;
 		std::vector<ParamSlot> m_paramSlots;
+		uint64_t m_paramRevision = 0;
 		std::unordered_map<std::string, int32_t> m_nameToSlot;
 		int32_t m_handleToSlot[k_max_param_handles];
 		bool m_textureUsed[16];

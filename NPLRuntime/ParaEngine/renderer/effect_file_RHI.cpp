@@ -556,6 +556,10 @@ namespace ParaEngine
 			pDevice->GetMaxSimultaneousTextures() >= 16)
 			fileBytes.insert(0, "#define TERRAIN_SEVEN_LAYERS 1\n");
 
+		if (resolvedName == ":IDR_FX_GUI_BATCH" && backend == ERHIBackend::OpenGL &&
+			pDevice->GetMaxSimultaneousTextures() >= 8)
+			fileBytes.insert(0, "#define GUI_BATCH_EIGHT_TEXTURES 1\n");
+
 		FxCompiledEffect compiledEffect;
 		if (IsPfxBinary(fileBytes))
 		{
@@ -807,10 +811,11 @@ namespace ParaEngine
 					// Create bindings for all effect slots present in this GLProgram
 					for (int32_t sIdx = 0; sIdx < static_cast<int32_t>(m_paramSlots.size()); ++sIdx)
 					{
-						if (prog->getUniform(m_paramSlots[sIdx].name) != nullptr)
+						if (const auto* uniform = prog->getUniform(m_paramSlots[sIdx].name))
 						{
 							PassParamBinding b;
 							b.slotIndex = sIdx;
+							b.glUniform = uniform;
 							rtPass.bindings.push_back(b);
 						}
 					}
@@ -1122,6 +1127,7 @@ namespace ParaEngine
 		{
 			std::memcpy(slot.data.data() + byteOffset, pData, byteCount);
 			++slot.revision;
+			++m_paramRevision;
 		}
 		(void)writeKind;
 		return true;
@@ -1135,6 +1141,13 @@ namespace ParaEngine
 			GLProgram* program = pass.glProgram;
 			if (!program)
 				return;
+			if (pass.syncedGLRevision == m_paramRevision)
+			{
+				// The program can still have pending direct uniform writes.
+				program->commit();
+				return;
+			}
+			pass.syncedGLRevision = m_paramRevision;
 
 			for (auto& b : pass.bindings)
 			{
@@ -1142,7 +1155,7 @@ namespace ParaEngine
 				if (slot.revision == 0 || b.syncedRevision == slot.revision)
 					continue;
 
-				Uniform* u = program->getUniform(slot.name);
+				const Uniform* u = b.glUniform;
 				if (u && !slot.data.empty())
 				{
 					const void* raw = slot.data.data();

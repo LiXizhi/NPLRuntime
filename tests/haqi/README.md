@@ -78,7 +78,7 @@ camera, resolution, and foreground state comparable. Do not measure during a bui
 
 ### Uncapped profiling
 
-The [Haqi plaza profile](plaza-profile-2026-11-20.md) compares native and NPL hot spots under matching uncapped conditions.
+The [Haqi plaza profile](plaza-profile-2026-11-20.md) compares native and NPL hot spots under matching uncapped conditions. The [HUD batching follow-up](plaza-hud-batching-2026-11-20.md) measures draw counts, screenshot equivalence, bone evaluation, static mesh submission and NPL logging.
 
 `ProfileUnlimitedFPS` defaults to false. Changes apply to the current process.
 Use either command from the NPL console while looking at the same scene:

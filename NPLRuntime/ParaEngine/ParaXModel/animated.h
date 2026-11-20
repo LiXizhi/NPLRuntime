@@ -1,4 +1,5 @@
 #pragma once
+#include <algorithm>
 #include <utility>
 #include <vector>
 
@@ -134,51 +135,26 @@ namespace ParaEngine
 				}
 				else if (range.first != range.second && time > times[range.first])
 				{
-					size_t pos = range.first; // this can be 0.
+					size_t pos = range.first;
+					if (range.second - range.first == 2)
+						pos += time >= times[pos + 1];
+					else if (range.second - range.first > 2)
 					{
-						/** by LiXizhi: use binary search for the time frame: 2005/09:
-						* modify the brutal force search by binary search
-						* and use interpolation.
-						1.  location = -1;
-						2.  while ((more than one item in list))
-						2A.  look at the middle item
-						2B.  if (middle item is target)
-						have found target
-						return location as the result
-						else
-						2C.  if (target < middle item)
-						list = first half of list
-						2D.  else (target > middle item)
-						list = last half of list
-						end while
-						*/
-						int nStart = (int)range.first;
-						int nEnd = (int)range.second - 1;
-						while (true)
+						// Neighboring tracks often share key times. Validate the hint
+						// against this track so seeks and unrelated rigs remain exact.
+						static thread_local size_t lastInterval = 0;
+						if (lastInterval >= range.first && lastInterval < range.second &&
+							times[lastInterval] <= time && time < times[lastInterval + 1])
 						{
-							if (nStart >= nEnd)
-							{ // if no item left.
-								pos = nStart;
-								break;
-							}
-							int nMid = (nStart + nEnd) / 2;
-							int startP = (times[nMid]);
-							int endP = (times[nMid + 1]);
-
-							if (startP <= time && time < endP)
-							{ // if (middle item is target)
-								pos = nMid;
-								break;
-							}
-							else if (time < startP)
-							{ // if (target < middle item)
-								nEnd = nMid;
-							}
-							else if (time >= endP)
-							{ // if (target >= middle item)
-								nStart = nMid + 1;
-							}
-						}// while(nStart<=nEnd)
+							pos = lastInterval;
+						}
+						else
+						{
+							auto end = times.begin() + range.second;
+							auto next = std::upper_bound(times.begin() + range.first + 1, end, time);
+							pos = static_cast<size_t>(next - times.begin() - 1);
+							lastInterval = pos;
+						}
 					}
 					int t1 = times[pos];
 					int t2 = times[pos + 1];

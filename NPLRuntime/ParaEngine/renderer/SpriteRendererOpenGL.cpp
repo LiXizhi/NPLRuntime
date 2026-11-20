@@ -336,16 +336,32 @@ void ParaEngine::CSpriteRendererOpenGL::FlushQuads()
 		vertex(3).tex = Vector2(u0, v1);
 		for (int j = 0; j < 4; ++j)
 			vertex(j).col = curSprite.color;
-		ParaVec3TransformCoordArray(&vertex(0).pos, stride, &vertex(0).pos, stride, &curSprite.transform, 4);
+		const auto& m = curSprite.transform;
+		if (m._12 == 0 && m._13 == 0 && m._14 == 0 && m._21 == 0 && m._23 == 0 && m._24 == 0 &&
+			m._31 == 0 && m._32 == 0 && m._34 == 0 && m._44 == 1)
+		{
+			// Axis-aligned HUD images and glyphs share two x and two y coordinates.
+			const float x0 = origin.x * m._11 + m._41, x1 = right * m._11 + m._41;
+			const float y0 = origin.y * m._22 + m._42, y1 = bottom * m._22 + m._42;
+			const float z = origin.z * m._33 + m._43;
+			vertex(0).pos = Vector3(x0, y0, z);
+			vertex(1).pos = Vector3(x1, y0, z);
+			vertex(2).pos = Vector3(x1, y1, z);
+			vertex(3).pos = Vector3(x0, y1, z);
+		}
+		else
+			ParaVec3TransformCoordArray(&vertex(0).pos, stride, &vertex(0).pos, stride, &m, 4);
 		vertex(4) = vertex(0);
 		vertex(5) = vertex(2);
 	};
 
-	// Consume only consecutive quads. A fifth texture starts the next draw.
+	// Keep translucent quads in submission order, including text between images.
+	constexpr int maxSlots = 8;
+	const int textureSlots = pRenderDevice->GetMaxSimultaneousTextures() >= maxSlots ? maxSlots : 4;
 	const bool batch = m_batchEffect && m_pEffectFile == pEffectMgr->GetCurrentEffectFile();
 	for (int start = 0, end; start < m_sprite_count; start = end)
 	{
-		DeviceTexturePtr_type textures[4] = {m_sprites[start].texture};
+		DeviceTexturePtr_type textures[maxSlots] = {m_sprites[start].texture};
 		int used = 1;
 		const auto& first = m_sprites[start];
 		for (end = start + 1; end < m_sprite_count; ++end)
@@ -357,7 +373,7 @@ void ParaEngine::CSpriteRendererOpenGL::FlushQuads()
 			auto* found = std::find(textures, textures + used, next.texture);
 			if (found == textures + used)
 			{
-				if (used == 4) break;
+				if (used == textureSlots) break;
 				textures[used++] = next.texture;
 			}
 		}
@@ -391,15 +407,22 @@ void ParaEngine::CSpriteRendererOpenGL::FlushQuads()
 				for (int j = 0; j < 6; ++j)
 					quad[j].slot = slot;
 			}
-			GLuint previous[4] = {};
-			for (int unit = 1; unit < 4; ++unit)
+			GLuint previous[maxSlots] = {};
+			// Native GL samples only slots referenced by the queued vertices.
+			// WebGL also validates texture completeness for inactive branches.
+#ifdef __EMSCRIPTEN__
+			const int boundSlots = textureSlots;
+#else
+			const int boundSlots = used;
+#endif
+			for (int unit = 1; unit < boundSlots; ++unit)
 			{
 				auto* texture = unit < used ? textures[unit] : first.texture;
 				previous[unit] = GL::bindTexture2DN(unit, static_cast<GLuint>(reinterpret_cast<uintptr_t>(texture->GetNativeHandle())));
 			}
 			pRenderDevice->SetVertexDeclaration(&declaration);
 			pRenderDevice->DrawPrimitiveUP(EPrimitiveType::TRIANGLELIST, 2 * (end - start), m_batchVertices.data(), sizeof(BatchVertex));
-			for (int unit = 1; unit < 4; ++unit) GL::bindTexture2DN(unit, previous[unit]);
+			for (int unit = 1; unit < boundSlots; ++unit) GL::bindTexture2DN(unit, previous[unit]);
 			pRenderDevice->SetTexture(0, first.texture);
 			pRenderDevice->SetVertexDeclaration(pEffectMgr->GetVertexDeclaration(EffectManager::S0_POS_TEX0_COLOR));
 			m_batchEffect->EndPass();

@@ -80,6 +80,26 @@ namespace
 		return m;
 	}
 
+	void TestAnimationKeyIntervals()
+	{
+		Animated<float> rotationWeight;
+		rotationWeight.times = {0, 4, 8, 12, 16, 20, 24, 28};
+		rotationWeight.data = {0, 8, 16, 24, 32, 40, 48, 56};
+		rotationWeight.ranges = {{0, 7}, {3, 5}};
+		Animated<float> opacity;
+		opacity.times = {0, 1, 2, 3, 4, 4, 8};
+		opacity.data = {0, 1, 2, 3, 4, 12, 20};
+		opacity.ranges = {{0, 6}};
+
+		// Seek backwards, switch tracks with different time grids and select a subrange.
+		TEST_CHECK(rotationWeight.getValue(0, 26) == 52.f);
+		TEST_CHECK(opacity.getValue(0, 4) == 12.f);
+		TEST_CHECK(rotationWeight.getValue(1, 14) == 28.f);
+		TEST_CHECK(opacity.getValue(0, 6) == 16.f);
+		TEST_CHECK(rotationWeight.getValue(1, 0) == 24.f);
+		TEST_CHECK(rotationWeight.getValue(1, 30) == 40.f);
+	}
+
 	void TestBlockHeightRange()
 	{
 		CBlockWorld world;
@@ -691,6 +711,7 @@ int main()
 	std::printf("=== Running World & Block Rendering Optimization Unit Tests ===\n");
 
 	CParaEngineAppBase application;
+	TestAnimationKeyIntervals();
 	TestBlockHeightRange();
 	TestSparseSkyLight();
 	TestSavedSectionValidity();
