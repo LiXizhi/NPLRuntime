@@ -7,7 +7,7 @@
 #include "ParaEngine.h"
 #include "IMovieCodec.h"
 #ifdef USE_FREEIMAGE
-#include <FreeImage.h>
+#include "ParaFreeImage.h"
 namespace
 {
 	void EnsureFreeImageInitialized()

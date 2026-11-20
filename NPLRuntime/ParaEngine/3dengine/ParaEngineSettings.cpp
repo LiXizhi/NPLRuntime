@@ -42,6 +42,7 @@
 #include <sys/sysctl.h>
 #elif defined(__linux__)
 #include <sys/sysinfo.h>
+#include <fstream>
 #include <dirent.h>
 #endif
 #endif

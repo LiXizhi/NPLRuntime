@@ -21,25 +21,15 @@ using namespace ParaEngine;
 
 @implementation AppDelegate
 
-- (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
-    // Store the command line for later use after engine initialization
-    if (launchOptions)
-    {
-        NSURL *url = [launchOptions objectForKey:UIApplicationLaunchOptionsURLKey];
-
-        if (url)
-        {
-            self.pendingCmdLine = [url relativeString];
-            NSLog(@"Pending command line: %@", self.pendingCmdLine);
-        }
+- (void)connectWindowScene:(UIWindowScene *)scene {
+    self.window = [[UIWindow alloc] initWithWindowScene:scene];
+    if (self.viewController) {
+        self.window.rootViewController = self.viewController;
+        [self.window makeKeyAndVisible];
+        return;
     }
-    
-    // Override point for customization after application launch.
-    UIScreen* mainScreen = [UIScreen mainScreen];
-    CGRect bounds = [mainScreen bounds];
 
-    self.window = [[UIWindow alloc] initWithFrame: bounds];
-
+    CGRect bounds = self.window.bounds;
     self.view = [[GLView alloc] initWithFrame: bounds];
     self.view.multipleTouchEnabled = YES;
 
@@ -49,20 +39,13 @@ using namespace ParaEngine;
     [[UIApplication sharedApplication] setIdleTimerDisabled: YES];
     [[UIApplication sharedApplication] setStatusBarHidden: YES];
 
-//    if ([[UIDevice currentDevice].systemVersion floatValue] < 16.0) {
-//        self.isNoNetToNet = NO;
-//        [self fetchProtocolVersionReq];
-//        
-//        return YES;
-//    }
-
     CTTelephonyNetworkInfo *networkInfo = [[CTTelephonyNetworkInfo alloc] init];
 
     if ([networkInfo subscriberCellularProvider] == nil) {
         self.isNoNetToNet = NO;
         [self fetchProtocolVersionReq];
 
-        return YES;
+        return;
     }
 
     self.isNoNetToNet = NO;
@@ -101,7 +84,6 @@ using namespace ParaEngine;
         }
     };
     
-    return YES;
 }
 
 - (void)fetchProtocolVersionReq
@@ -178,54 +160,44 @@ using namespace ParaEngine;
     self.app->DoWork();
 }
 
-- (BOOL)application:(UIApplication *)app openURL:(NSURL *)url options:(NSDictionary<UIApplicationOpenURLOptionsKey,id> *)options {
+- (void)openGameURL:(NSURL *)url {
     if (!url)
-        return NO;
-    
+        return;
     if (self.app)
-    {
-        // Engine is initialized, process command line immediately
-        const char* cmdline = [[url relativeString] UTF8String];
-        self.app->onCmdLine(cmdline);
-        
-        return YES;
-    }
+        self.app->onCmdLine(url.absoluteString.UTF8String);
     else
-    {
-        // Engine not initialized yet, store for later processing
-        self.pendingCmdLine = [url relativeString];
-        return YES;
-    }
-
+        self.pendingCmdLine = url.absoluteString;
 }
 
-- (void)applicationWillResignActive:(UIApplication *)application {
-    // Sent when the application is about to move from active to inactive state. This can occur for certain types of temporary interruptions (such as an incoming phone call or SMS message) or when the user quits the application and it begins the transition to the background state.
-    // Use this method to pause ongoing tasks, disable timers, and invalidate graphics rendering callbacks. Games should use this method to pause the game.
+@end
+
+@interface ParacraftSceneDelegate : UIResponder <UIWindowSceneDelegate>
+@end
+
+@implementation ParacraftSceneDelegate
+
+- (void)scene:(UIScene *)scene willConnectToSession:(UISceneSession *)session options:(UISceneConnectionOptions *)options {
+    AppDelegate *delegate = (AppDelegate *)UIApplication.sharedApplication.delegate;
+    [delegate openGameURL:options.URLContexts.anyObject.URL];
+    [delegate connectWindowScene:(UIWindowScene *)scene];
 }
 
-
-- (void)applicationDidEnterBackground:(UIApplication *)application {
-    // Use this method to release shared resources, save user data, invalidate timers, and store enough application state information to restore your application to its current state in case it is terminated later.
-    // If your application supports background execution, this method is called instead of applicationWillTerminate: when the user quits.
-    
-    self.app->OnPause();
+- (void)scene:(UIScene *)scene openURLContexts:(NSSet<UIOpenURLContext *> *)contexts {
+    AppDelegate *delegate = (AppDelegate *)UIApplication.sharedApplication.delegate;
+    for (UIOpenURLContext *context in contexts)
+        [delegate openGameURL:context.URL];
 }
 
-
-- (void)applicationWillEnterForeground:(UIApplication *)application {
-    // Called as part of the transition from the background to the active state; here you can undo many of the changes made on entering the background.
-    self.app->OnResume();
+- (void)sceneDidEnterBackground:(UIScene *)scene {
+    AppDelegate *delegate = (AppDelegate *)UIApplication.sharedApplication.delegate;
+    if (delegate.app)
+        delegate.app->OnPause();
 }
 
-
-- (void)applicationDidBecomeActive:(UIApplication *)application {
-    // Restart any tasks that were paused (or not yet started) while the application was inactive. If the application was previously in the background, optionally refresh the user interface.
-}
-
-
-- (void)applicationWillTerminate:(UIApplication *)application {
-    // Called when the application is about to terminate. Save data if appropriate. See also applicationDidEnterBackground:.
+- (void)sceneWillEnterForeground:(UIScene *)scene {
+    AppDelegate *delegate = (AppDelegate *)UIApplication.sharedApplication.delegate;
+    if (delegate.app)
+        delegate.app->OnResume();
 }
 
 @end

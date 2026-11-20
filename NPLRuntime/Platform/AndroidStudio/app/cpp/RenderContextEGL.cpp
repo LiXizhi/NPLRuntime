@@ -10,6 +10,7 @@
 #include "RenderWindowAndroid.h"
 #include "RenderDeviceOpenGL.h"
 #include "RenderDeviceEGL.h"
+#include "RenderSystem/rhi_core/RHIBackendRegistry.h"
 #include <EGL/egl.h>
 #include <android/log.h>
 
@@ -17,9 +18,20 @@
 #define LOGW(...) ((void)__android_log_print(ANDROID_LOG_WARN, "ParaEngine", __VA_ARGS__))
 
 namespace ParaEngine {
-    IRenderContext* IRenderContext::Create()
+    namespace
     {
-        return new RenderContextEGL();
+        IRenderContext* CreateRenderContextEGL()
+        {
+            return new RenderContextEGL();
+        }
+
+        struct AndroidBackendRegistrar
+        {
+            AndroidBackendRegistrar()
+            {
+                RHIBackendRegistry::GetInstance().RegisterBackend(ERHIBackend::OpenGL, "OpenGL", &CreateRenderContextEGL, 50);
+            }
+        } s_androidBackendRegistrar;
     }
 
     IRenderDevice* RenderContextEGL::CreateDevice(const RenderConfiguration & cfg)

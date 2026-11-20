@@ -14,7 +14,7 @@
 #include "TextureEntity.h"
 #include "ParaImage.h"
 #ifdef USE_FREEIMAGE
-#include <FreeImage.h>
+#include "ParaFreeImage.h"
 #endif
 
 

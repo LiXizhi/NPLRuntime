@@ -99,7 +99,7 @@ static void crash_handler_more(int sig, struct siginfo* info, void* buf) {
     fs::path destination(destinationPath);
 
     if (fs::exists(source) && fs::is_regular_file(source)) {
-        fs::copy_file(source, destination, fs::copy_option::overwrite_if_exists);
+        fs::copy_file(source, destination, fs::copy_options::overwrite_existing);
     }
 }
 

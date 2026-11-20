@@ -72,7 +72,7 @@ void ParacraftFramework_HandleMessage(const char* message);
         } @catch (NSException *exception) {
             OUTPUT_LOG("Unarchive of %s failed: %s\n", [service UTF8String], [[exception description] UTF8String]);
         } @finally {
-
+            CFRelease(keyData);
         }
     }
 
@@ -86,31 +86,15 @@ namespace ParaEngine {
 
     const std::string& ParaEngineSettings::GetMachineID()
     {
-        static std::string str = "";
-        
-        if (str.empty())
-        {
-            NSString *getUUIDInKeychain = [KeyChainHelper getString:kUUIDKey];
-
-            if (!getUUIDInKeychain || [getUUIDInKeychain isEqualToString:@""] || [getUUIDInKeychain isKindOfClass:[NSNull class]])
-            {
-                CFUUIDRef puuid = CFUUIDCreate(nil);
-                CFStringRef uuidString = CFUUIDCreateString(nil, puuid);
-                NSString *result = (NSString*)CFBridgingRelease(CFStringCreateCopy(nil, uuidString));
-                CFRelease(puuid);
-                CFRelease(uuidString);
-                
-                [KeyChainHelper saveString:result service:kUUIDKey];
-                
-                str = [[KeyChainHelper getString:kUUIDKey] UTF8String];
+        static const std::string machineID = [] {
+            NSString *uuid = [KeyChainHelper getString:kUUIDKey];
+            if (![uuid isKindOfClass:[NSString class]] || uuid.length == 0) {
+                uuid = [NSUUID UUID].UUIDString;
+                [KeyChainHelper saveString:uuid service:kUUIDKey];
             }
-            else
-            {
-                str = [getUUIDInKeychain UTF8String];
-            }
-        }
-        
-        return str;
+            return std::string(uuid.UTF8String);
+        }();
+        return machineID;
     }
 
     void ParaEngineSettings::SaveImageToGallery(const char* jsonChar)

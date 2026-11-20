@@ -257,7 +257,7 @@ bool ParaEngine::CParaFileUtilsAndroid::Move(const std::string& src, const std::
 		    fs::rename(sSrc, sDest);
 		    return true;
 		}
-		fs::copy_file(sSrc,sDest, fs::copy_option::overwrite_if_exists);
+		fs::copy_file(sSrc, sDest, fs::copy_options::overwrite_existing);
 		return fs::remove(sSrc);
 	}
 	catch (...)
