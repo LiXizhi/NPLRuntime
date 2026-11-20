@@ -60,6 +60,33 @@ using namespace ParaEngine;
 
 namespace ParaEngine
 {
+	// A buffer can outlive the device. Share only its binding cache so destruction
+	// can always drop stale pointers without calling back into the device.
+	struct GLBufferBindings
+	{
+		struct Stream
+		{
+			IRHIBuffer* buffer = nullptr;
+			uint32_t offsetInBytes = 0;
+			uint32_t stride = 0;
+			uint32_t frequencyDivider = 0;
+		};
+
+		Stream streams[CVertexDeclaration::MAX_STREAMS];
+		IRHIBuffer* indexBuffer = nullptr;
+
+		void Forget(const IRHIBuffer* buffer)
+		{
+			for (auto& stream : streams)
+			{
+				if (stream.buffer == buffer)
+					stream.buffer = nullptr;
+			}
+			if (indexBuffer == buffer)
+				indexBuffer = nullptr;
+		}
+	};
+
 	namespace
 	{
 		void UploadUnusedBufferRange(GLenum target, GLintptr offset, GLsizeiptr size, const void* data)
@@ -175,8 +202,9 @@ namespace ParaEngine
 		class GLBuffer : public IRHIBuffer
 		{
 		public:
-			GLBuffer(uint32_t byteSize, bool isIndexBuffer, ERHIBufferUsage usage, const void* initialData)
-				: m_bufferId(0)
+			GLBuffer(const std::shared_ptr<GLBufferBindings>& bindings, uint32_t byteSize, bool isIndexBuffer, ERHIBufferUsage usage, const void* initialData)
+				: m_bindings(bindings)
+				, m_bufferId(0)
 				, m_target(isIndexBuffer ? GL_ELEMENT_ARRAY_BUFFER : GL_ARRAY_BUFFER)
 				, m_byteSize(byteSize)
 				, m_isIndexBuffer(isIndexBuffer)
@@ -207,6 +235,7 @@ namespace ParaEngine
 
 			~GLBuffer() override
 			{
+				m_bindings->Forget(this);
 				if (m_bufferId != 0)
 				{
 					glDeleteBuffers(1, &m_bufferId);
@@ -281,6 +310,7 @@ namespace ParaEngine
 			}
 
 		private:
+			std::shared_ptr<GLBufferBindings> m_bindings;
 			GLuint m_bufferId;
 			GLenum m_target;
 			uint32_t m_byteSize;
@@ -1007,8 +1037,7 @@ namespace ParaEngine
 		, m_CCWStencilPass(RSV_STENCILOP_KEEP)
 		, m_StencilDirty(false)
 		, m_CurrentVertexDeclaration(nullptr)
-		, m_CurrentVertexBuffer(nullptr)
-		, m_CurrentIndexBuffer(nullptr)
+		, m_BufferBindings(std::make_shared<GLBufferBindings>())
 	{
 	}
 
@@ -1390,7 +1419,7 @@ namespace ParaEngine
 	{
 		if (byteSize == 0)
 			return nullptr;
-		return new GLBuffer(byteSize, isIndexBuffer, usage, initialData);
+		return new GLBuffer(m_BufferBindings, byteSize, isIndexBuffer, usage, initialData);
 	}
 
 	IRHIRenderTarget* RenderDeviceOpenGL::CreateRenderTarget(uint32_t width, uint32_t height, PixelFormat colorFormat, PixelFormat depthFormat, uint32_t colorTargetCount, uint32_t /*msaaSamples*/)
@@ -1730,9 +1759,9 @@ namespace ParaEngine
 	{
 		if (streamNumber >= CVertexDeclaration::MAX_STREAMS)
 			return false;
-		if (m_Streams[streamNumber].frequencyDivider != divider)
+		if (m_BufferBindings->streams[streamNumber].frequencyDivider != divider)
 		{
-			m_Streams[streamNumber].frequencyDivider = divider;
+			m_BufferBindings->streams[streamNumber].frequencyDivider = divider;
 			if (m_CurrentVertexDeclaration && streamNumber > 0)
 				ApplyGLVertexDeclaration(m_CurrentVertexDeclaration, nullptr);
 		}
@@ -1763,14 +1792,15 @@ namespace ParaEngine
 		}
 		else
 #endif
-		if (baseVertexIndex != 0 && m_CurrentVertexDeclaration && m_Streams[0].buffer != nullptr)
+		if (baseVertexIndex != 0 && m_CurrentVertexDeclaration && m_BufferBindings->streams[0].buffer != nullptr)
 		{
-			uint32_t origOffset = m_Streams[0].offsetInBytes;
-			uint32_t stride = m_Streams[0].stride ? m_Streams[0].stride : m_CurrentVertexDeclaration->GetStride(0);
-			m_Streams[0].offsetInBytes = static_cast<uint32_t>(static_cast<int32_t>(origOffset) + baseVertexIndex * static_cast<int32_t>(stride));
+			auto& stream = m_BufferBindings->streams[0];
+			uint32_t origOffset = stream.offsetInBytes;
+			uint32_t stride = stream.stride ? stream.stride : m_CurrentVertexDeclaration->GetStride(0);
+			stream.offsetInBytes = static_cast<uint32_t>(static_cast<int32_t>(origOffset) + baseVertexIndex * static_cast<int32_t>(stride));
 			ApplyGLVertexDeclaration(m_CurrentVertexDeclaration, nullptr);
 			glDrawElementsInstanced(mode, count, GL_UNSIGNED_SHORT, indexOffset, static_cast<GLsizei>(instanceCount));
-			m_Streams[0].offsetInBytes = origOffset;
+			stream.offsetInBytes = origOffset;
 			ApplyGLVertexDeclaration(m_CurrentVertexDeclaration, nullptr);
 		}
 		else
@@ -2135,7 +2165,7 @@ namespace ParaEngine
 			}
 			else if (elem.Stream < CVertexDeclaration::MAX_STREAMS)
 			{
-				const auto& sb = m_Streams[elem.Stream];
+				const auto& sb = m_BufferBindings->streams[elem.Stream];
 				targetVbo = sb.buffer ? static_cast<GLuint>(reinterpret_cast<uintptr_t>(sb.buffer->GetNativeHandle())) : 0u;
 #ifdef USE_USER_POINTER_VBO
 				if (targetVbo == 0 && elem.Stream == 0)
@@ -2182,11 +2212,10 @@ namespace ParaEngine
 #ifdef USE_USER_POINTER_VBO
 		g_userPointerIndexBuffer.UploadUserPointer(static_cast<int>(indexCount * indexElemBytes), pIndexData);
 		g_userPointerVertexBuffer.UploadUserPointer(static_cast<int>(NumVertices * VertexStreamZeroStride), pVertexStreamZeroData, static_cast<int>(MinVertexIndex * VertexStreamZeroStride));
-		m_CurrentIndexBuffer = nullptr;
-		m_CurrentVertexBuffer = nullptr;
-		m_Streams[0].buffer = nullptr;
-		m_Streams[0].offsetInBytes = 0;
-		m_Streams[0].stride = VertexStreamZeroStride;
+		m_BufferBindings->indexBuffer = nullptr;
+		m_BufferBindings->streams[0].buffer = nullptr;
+		m_BufferBindings->streams[0].offsetInBytes = 0;
+		m_BufferBindings->streams[0].stride = VertexStreamZeroStride;
 		if (m_CurrentVertexDeclaration)
 			ApplyGLVertexDeclaration(m_CurrentVertexDeclaration, nullptr, VertexStreamZeroStride);
 		pIndexData = nullptr;
@@ -2194,9 +2223,9 @@ namespace ParaEngine
 		(void)MinVertexIndex;
 		(void)NumVertices;
 		(void)indexElemBytes;
-		if (m_CurrentIndexBuffer != nullptr)
+		if (m_BufferBindings->indexBuffer != nullptr)
 			SetIndices(nullptr);
-		if (m_CurrentVertexBuffer != nullptr)
+		if (m_BufferBindings->streams[0].buffer != nullptr)
 			SetStreamSource(0, nullptr, 0, 0);
 		if (m_CurrentVertexDeclaration)
 			ApplyGLVertexDeclaration(m_CurrentVertexDeclaration, pVertexStreamZeroData, VertexStreamZeroStride);
@@ -2238,16 +2267,15 @@ namespace ParaEngine
 		int nOffset = 0;
 #ifdef USE_USER_POINTER_VBO
 		nOffset = g_userPointerVertexBuffer.UploadUserPointerRingBuffer(vertCount, pVertexStreamZeroData, static_cast<int>(VertexStreamZeroStride));
-		m_CurrentVertexBuffer = nullptr;
-		m_Streams[0].buffer = nullptr;
-		m_Streams[0].offsetInBytes = 0;
-		m_Streams[0].stride = VertexStreamZeroStride;
+		m_BufferBindings->streams[0].buffer = nullptr;
+		m_BufferBindings->streams[0].offsetInBytes = 0;
+		m_BufferBindings->streams[0].stride = VertexStreamZeroStride;
 		if (m_CurrentVertexDeclaration)
 			ApplyGLVertexDeclaration(m_CurrentVertexDeclaration, nullptr, VertexStreamZeroStride);
 #else
-		if (m_CurrentIndexBuffer != nullptr)
+		if (m_BufferBindings->indexBuffer != nullptr)
 			SetIndices(nullptr);
-		if (m_CurrentVertexBuffer != nullptr)
+		if (m_BufferBindings->streams[0].buffer != nullptr)
 			SetStreamSource(0, nullptr, 0, 0);
 		if (m_CurrentVertexDeclaration)
 			ApplyGLVertexDeclaration(m_CurrentVertexDeclaration, pVertexStreamZeroData, VertexStreamZeroStride);
@@ -2285,9 +2313,9 @@ namespace ParaEngine
 
 	bool RenderDeviceOpenGL::SetIndices(IndexBufferDevicePtr_type pIndexData)
 	{
-		if (pIndexData != m_CurrentIndexBuffer)
+		if (pIndexData != m_BufferBindings->indexBuffer)
 		{
-			m_CurrentIndexBuffer = pIndexData;
+			m_BufferBindings->indexBuffer = pIndexData;
 			GLuint ibo = pIndexData ? static_cast<GLuint>(reinterpret_cast<uintptr_t>(pIndexData->GetNativeHandle())) : 0u;
 #ifdef USE_USER_POINTER_VBO
 			if (ibo == 0)
@@ -2304,14 +2332,11 @@ namespace ParaEngine
 		if (StreamNumber >= CVertexDeclaration::MAX_STREAMS)
 			return false;
 
-		auto& sb = m_Streams[StreamNumber];
+		auto& sb = m_BufferBindings->streams[StreamNumber];
 		const bool changed = (sb.buffer != pStreamData) || (sb.offsetInBytes != OffsetInBytes) || (sb.stride != Stride);
 		sb.buffer = pStreamData;
 		sb.offsetInBytes = OffsetInBytes;
 		sb.stride = Stride;
-
-		if (StreamNumber == 0)
-			m_CurrentVertexBuffer = pStreamData;
 
 		if (changed)
 		{
@@ -2421,9 +2446,9 @@ namespace ParaEngine
 
 	bool RenderDeviceOpenGL::DrawIndexedPrimitive(EPrimitiveType Type, int BaseVertexIndex, uint32_t /*MinIndex*/, uint32_t /*NumVertices*/, uint32_t indexStart, uint32_t PrimitiveCount)
 	{
-		if ((m_Streams[0].frequencyDivider & 0x40000000u) != 0)
+		if ((m_BufferBindings->streams[0].frequencyDivider & 0x40000000u) != 0)
 		{
-			uint32_t instanceCount = m_Streams[0].frequencyDivider & 0x3FFFFFFFu;
+			uint32_t instanceCount = m_BufferBindings->streams[0].frequencyDivider & 0x3FFFFFFFu;
 			if (instanceCount > 0)
 				return DrawIndexedInstanced(Type, BaseVertexIndex, indexStart, PrimitiveCount, instanceCount);
 		}
@@ -2446,14 +2471,15 @@ namespace ParaEngine
 			return true;
 		}
 #endif
-		if (BaseVertexIndex != 0 && m_CurrentVertexDeclaration && m_Streams[0].buffer != nullptr)
+		if (BaseVertexIndex != 0 && m_CurrentVertexDeclaration && m_BufferBindings->streams[0].buffer != nullptr)
 		{
-			uint32_t origOffset = m_Streams[0].offsetInBytes;
-			uint32_t stride = m_Streams[0].stride ? m_Streams[0].stride : m_CurrentVertexDeclaration->GetStride(0);
-			m_Streams[0].offsetInBytes = static_cast<uint32_t>(static_cast<int32_t>(origOffset) + BaseVertexIndex * static_cast<int32_t>(stride));
+			auto& stream = m_BufferBindings->streams[0];
+			uint32_t origOffset = stream.offsetInBytes;
+			uint32_t stride = stream.stride ? stream.stride : m_CurrentVertexDeclaration->GetStride(0);
+			stream.offsetInBytes = static_cast<uint32_t>(static_cast<int32_t>(origOffset) + BaseVertexIndex * static_cast<int32_t>(stride));
 			ApplyGLVertexDeclaration(m_CurrentVertexDeclaration, nullptr);
 			glDrawElements(mode, indexCount, GL_UNSIGNED_SHORT, indexOffset);
-			m_Streams[0].offsetInBytes = origOffset;
+			stream.offsetInBytes = origOffset;
 			ApplyGLVertexDeclaration(m_CurrentVertexDeclaration, nullptr);
 		}
 		else

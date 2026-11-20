@@ -1,4 +1,5 @@
 #pragma once
+#include <memory>
 #include <string>
 #include "RenderDevice.h"
 #include "Framework/Interface/Render/IRenderDevice.h"
@@ -8,6 +9,7 @@
 namespace ParaEngine
 {
 	class GLProgram;
+	struct GLBufferBindings;
 
 	class RenderDeviceOpenGL : public IRenderDevice
 	{
@@ -90,14 +92,6 @@ namespace ParaEngine
 		void ApplyGLVertexDeclaration(CVertexDeclaration* pDecl, const void* streamZeroUserPtr, uint32_t streamZeroStrideOverride = 0);
 
 	private:
-		struct StreamBinding
-		{
-			IRHIBuffer* buffer = nullptr;
-			uint32_t offsetInBytes = 0;
-			uint32_t stride = 0;
-			uint32_t frequencyDivider = 0;
-		};
-
 		mutable RHIDeviceCaps m_Caps;
 		mutable std::string m_AdapterName;
 		mutable bool m_CapsInitialized = false;
@@ -129,9 +123,7 @@ namespace ParaEngine
 		bool m_StencilDirty;
 
 		CVertexDeclaration* m_CurrentVertexDeclaration;
-		StreamBinding m_Streams[4];
-		VertexBufferDevicePtr_type m_CurrentVertexBuffer;
-		IndexBufferDevicePtr_type m_CurrentIndexBuffer;
+		std::shared_ptr<GLBufferBindings> m_BufferBindings;
 		uint32_t m_AttribDivisors[16] = {};
 
 		GLuint m_DefaultFBO = 0;
