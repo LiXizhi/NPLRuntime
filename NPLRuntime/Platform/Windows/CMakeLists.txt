@@ -113,7 +113,10 @@ endif()
 
 set_property(GLOBAL PROPERTY WindowsApplicationName WindowsApplication)
 
-if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+if(CMAKE_VS_PLATFORM_NAME STREQUAL "ARM64" OR
+   (NOT CMAKE_VS_PLATFORM_NAME AND CMAKE_SIZEOF_VOID_P EQUAL 8 AND CMAKE_SYSTEM_PROCESSOR MATCHES "^(ARM64|arm64|aarch64)$"))
+    set(_D3D_REDIST_ARCH "arm64")
+elseif(CMAKE_SIZEOF_VOID_P EQUAL 8)
     set(_D3D_REDIST_ARCH "x64")
 else()
     set(_D3D_REDIST_ARCH "x86")
@@ -127,6 +130,9 @@ find_file(D3DCOMPILER_47_REDIST_DLL
         "C:/Program Files/Windows Kits/10/Redist/D3D/${_D3D_REDIST_ARCH}"
     NO_DEFAULT_PATH
 )
+if((NPLRUNTIME_ENABLE_D3D11 OR NPLRUNTIME_ENABLE_D3D12) AND NOT EXISTS "${D3DCOMPILER_47_REDIST_DLL}")
+    message(FATAL_ERROR "Install the Windows SDK D3D redist or set D3DCOMPILER_47_REDIST_DLL to the ${_D3D_REDIST_ARCH} d3dcompiler_47.dll")
+endif()
 
 # Copy files Link the executable to the libraries. 
 ADD_CUSTOM_COMMAND(

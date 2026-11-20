@@ -283,7 +283,7 @@ namespace ParaEngine
 			case D3DDECLTYPE_FLOAT2:    return DXGI_FORMAT_R32G32_FLOAT;
 			case D3DDECLTYPE_FLOAT3:    return DXGI_FORMAT_R32G32B32_FLOAT;
 			case D3DDECLTYPE_FLOAT4:    return DXGI_FORMAT_R32G32B32A32_FLOAT;
-			case D3DDECLTYPE_D3DCOLOR:  return DXGI_FORMAT_B8G8R8A8_UNORM;
+			case D3DDECLTYPE_D3DCOLOR:  return fl < D3D_FEATURE_LEVEL_10_0 ? DXGI_FORMAT_R8G8B8A8_UNORM : DXGI_FORMAT_B8G8R8A8_UNORM;
 			case D3DDECLTYPE_UBYTE4:    return (fl >= D3D_FEATURE_LEVEL_10_0) ? DXGI_FORMAT_R8G8B8A8_UINT : DXGI_FORMAT_R8G8B8A8_UNORM;
 			case D3DDECLTYPE_SHORT2:    return (fl >= D3D_FEATURE_LEVEL_10_0) ? DXGI_FORMAT_R16G16_SINT : DXGI_FORMAT_R16G16_SNORM;
 			case D3DDECLTYPE_SHORT4:    return (fl >= D3D_FEATURE_LEVEL_10_0) ? DXGI_FORMAT_R16G16B16A16_SINT : DXGI_FORMAT_R16G16B16A16_SNORM;
@@ -295,6 +295,30 @@ namespace ParaEngine
 			case D3DDECLTYPE_FLOAT16_2: return DXGI_FORMAT_R16G16_FLOAT;
 			case D3DDECLTYPE_FLOAT16_4: return DXGI_FORMAT_R16G16B16A16_FLOAT;
 			default:                    return DXGI_FORMAT_R32G32B32_FLOAT;
+			}
+		}
+
+		// FL9 has no BGRA vertex input format. Preserve D3DCOLOR's byte order for
+		// existing shaders, including precompiled effects, when uploading to RGBA.
+		void CopyVertexBytes(void* destination, const void* source, uint32_t size, CVertexDeclaration* decl,
+			uint32_t stream, uint32_t stride, uint32_t firstVertex)
+		{
+			std::memcpy(destination, source, size);
+			if (!decl)
+				return;
+			auto* dst = static_cast<uint8_t*>(destination);
+			const auto* src = static_cast<const uint8_t*>(source);
+			for (const auto& element : decl->GetElements())
+			{
+				if (element.Stream != stream || element.Type != D3DDECLTYPE_D3DCOLOR)
+					continue;
+				for (size_t i = size_t(firstVertex) + element.Offset; i + 4 <= size; i += stride)
+				{
+					dst[i] = src[i + 2];
+					dst[i + 2] = src[i];
+					if (!stride)
+						break;
+				}
 			}
 		}
 
@@ -444,6 +468,7 @@ namespace ParaEngine
 			, m_context(context)
 			, m_byteSize(byteSize)
 			, m_isIndexBuffer(isIndexBuffer)
+			, m_legacyVertex(!isIndexBuffer && owner->GetFeatureLevel() < D3D_FEATURE_LEVEL_10_0)
 			, m_isDynamic(HasFlag(usage, ERHIBufferUsage::Dynamic) || HasFlag(usage, ERHIBufferUsage::Stream))
 			, m_mappedHardware(false)
 			, m_mappedShadow(false)
@@ -482,7 +507,7 @@ namespace ParaEngine
 				}
 				pInit = &initSub;
 
-				if (!HasFlag(usage, ERHIBufferUsage::WriteOnly))
+				if (m_legacyVertex || !HasFlag(usage, ERHIBufferUsage::WriteOnly))
 				{
 					m_cpuShadow.resize(byteSize);
 					std::memcpy(m_cpuShadow.data(), initialData, byteSize);
@@ -503,6 +528,42 @@ namespace ParaEngine
 		virtual void* GetNativeHandle() const override { return static_cast<void*>(m_buffer.Get()); }
 		ID3D11Buffer* GetD3DBuffer() const { return m_buffer.Get(); }
 
+		ID3D11Buffer* GetLegacyVertexView(CVertexDeclaration* decl, uint32_t stream, uint32_t stride, uint32_t offset)
+		{
+			const auto& elements = decl->GetElements();
+			if (m_cpuShadow.empty() || std::none_of(elements.begin(), elements.end(), [stream](const auto& e) {
+				return e.Stream == stream && e.Type == D3DDECLTYPE_D3DCOLOR;
+			}))
+				return m_buffer.Get();
+
+			uint32_t phase = stride ? offset % stride : offset;
+			uint64_t key = decl->GetHash();
+			HashCombineU32(key, stream);
+			HashCombineU32(key, stride);
+			HashCombineU32(key, phase);
+			auto& view = m_colorViews[key];
+			if (!view.buffer)
+			{
+				D3D11_BUFFER_DESC desc = {};
+				desc.ByteWidth = (std::max)(m_byteSize, 16u);
+				desc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+				desc.Usage = D3D11_USAGE_DYNAMIC;
+				desc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+				if (FAILED(m_device->CreateBuffer(&desc, nullptr, view.buffer.GetAddressOf())))
+					return nullptr;
+			}
+			if (view.dirty)
+			{
+				D3D11_MAPPED_SUBRESOURCE mapped = {};
+				if (FAILED(m_context->Map(view.buffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped)))
+					return nullptr;
+				CopyVertexBytes(mapped.pData, m_cpuShadow.data(), m_byteSize, decl, stream, stride, phase);
+				m_context->Unmap(view.buffer.Get(), 0);
+				view.dirty = false;
+			}
+			return view.buffer.Get();
+		}
+
 		virtual void* Map(uint32_t offset, uint32_t size, ERHIMapMode mode) override
 		{
 			if (!m_buffer || offset >= m_byteSize)
@@ -514,7 +575,7 @@ namespace ParaEngine
 			m_mapMode = mode;
 
 			// Direct hardware map fast path for WriteDiscard (offset 0) & WriteNoOverwrite on dynamic buffers
-			if (m_isDynamic && m_context &&
+			if (!m_legacyVertex && m_isDynamic && m_context &&
 				((mode == ERHIMapMode::WriteDiscard && offset == 0) || mode == ERHIMapMode::WriteNoOverwrite))
 			{
 				D3D11_MAPPED_SUBRESOURCE mapped = {};
@@ -549,6 +610,8 @@ namespace ParaEngine
 
 			if (m_mapMode == ERHIMapMode::Read || !m_context || !m_buffer || m_mapSize == 0)
 				return;
+			for (auto& view : m_colorViews)
+				view.second.dirty = true;
 
 			if (m_isDynamic)
 			{
@@ -580,7 +643,7 @@ namespace ParaEngine
 			if (!data || size == 0 || offset + size > m_byteSize || !m_context || !m_buffer)
 				return false;
 
-			if (m_isDynamic && offset == 0 && size == m_byteSize && m_cpuShadow.empty())
+			if (!m_legacyVertex && m_isDynamic && offset == 0 && size == m_byteSize && m_cpuShadow.empty())
 			{
 				D3D11_MAPPED_SUBRESOURCE mapped = {};
 				if (SUCCEEDED(m_context->Map(m_buffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped)) && mapped.pData)
@@ -606,7 +669,14 @@ namespace ParaEngine
 		ComPtr<ID3D11Buffer> m_buffer;
 		std::vector<uint8_t> m_cpuShadow;
 		uint32_t m_byteSize;
+		struct ColorView
+		{
+			ComPtr<ID3D11Buffer> buffer;
+			bool dirty = true;
+		};
+		std::unordered_map<uint64_t, ColorView> m_colorViews;
 		bool m_isIndexBuffer;
+		bool m_legacyVertex;
 		bool m_isDynamic;
 		bool m_mappedHardware;
 		bool m_mappedShadow;
@@ -2476,7 +2546,7 @@ namespace ParaEngine
 			HRESULT hr = m_device->CreateInputLayout(elems.data(), static_cast<UINT>(elems.size()), bc.data(), bc.size(), layout.GetAddressOf());
 			if (FAILED(hr))
 			{
-				OUTPUT_LOG("WARN: D3D11 CreateInputLayout failed (hr=0x%08X, elems=%zu)\n", static_cast<unsigned int>(hr), elems.size());
+				OUTPUT_LOG("WARN: D3D11 CreateInputLayout failed (hr=0x%08X, elems=%zu, shader=%s)\n", static_cast<unsigned int>(hr), elems.size(), program->GetDebugName().c_str());
 			}
 		}
 		m_inputLayouts[key] = layout;
@@ -2732,7 +2802,7 @@ namespace ParaEngine
 					sd.BorderColor[2] = static_cast<float>(border & 0xFFu) / 255.0f;
 					sd.BorderColor[3] = static_cast<float>((border >> 24) & 0xFFu) / 255.0f;
 					sd.MinLOD = 0.0f;
-					sd.MaxLOD = (mipF == 0) ? 0.0f : D3D11_FLOAT32_MAX;
+					sd.MaxLOD = (mipF == 0 && m_featureLevel >= D3D_FEATURE_LEVEL_10_0) ? 0.0f : D3D11_FLOAT32_MAX;
 
 					ComPtr<ID3D11SamplerState> ss;
 					m_device->CreateSamplerState(&sd, ss.GetAddressOf());
@@ -2821,6 +2891,19 @@ namespace ParaEngine
 		// 6. Input layout + fallback default attribute slot 15
 		if (m_currentVertexDecl && m_currentProgram)
 		{
+			if (m_featureLevel < D3D_FEATURE_LEVEL_10_0)
+			{
+				for (uint32_t stream = 0; stream < 4; ++stream)
+				{
+					const auto& binding = m_streams[stream];
+					if (binding.buffer)
+					{
+						auto* buffer = static_cast<D3D11Buffer*>(binding.buffer);
+						auto* vb = buffer->GetLegacyVertexView(m_currentVertexDecl, stream, binding.stride, binding.offsetInBytes);
+						m_context->IASetVertexBuffers(stream, 1, &vb, &binding.stride, &binding.offsetInBytes);
+					}
+				}
+			}
 			ID3D11InputLayout* layout = GetOrCreateInputLayout(m_currentVertexDecl, m_currentProgram);
 			m_context->IASetInputLayout(layout);
 			if (m_featureLevel >= D3D_FEATURE_LEVEL_10_0 && m_defaultAttrVB)
@@ -2929,7 +3012,8 @@ namespace ParaEngine
 		D3D11_MAPPED_SUBRESOURCE mapped = {};
 		if (FAILED(m_context->Map(vb, 0, mapMode, 0, &mapped)) || !mapped.pData)
 			return false;
-		std::memcpy(static_cast<uint8_t*>(mapped.pData) + alignedOffset, pVertexStreamZeroData, byteCount);
+		CopyVertexBytes(static_cast<uint8_t*>(mapped.pData) + alignedOffset, pVertexStreamZeroData, byteCount,
+			m_featureLevel < D3D_FEATURE_LEVEL_10_0 ? m_currentVertexDecl : nullptr, 0, VertexStreamZeroStride, 0);
 		m_context->Unmap(vb, 0);
 		m_upVertexOffset = alignedOffset + byteCount;
 
@@ -3006,7 +3090,8 @@ namespace ParaEngine
 		D3D11_MAPPED_SUBRESOURCE vbMapped = {};
 		if (FAILED(m_context->Map(vb, 0, vbMapMode, 0, &vbMapped)) || !vbMapped.pData)
 			return false;
-		std::memcpy(static_cast<uint8_t*>(vbMapped.pData) + vbAlignedOffset, pVertexStreamZeroData, vbBytes);
+		CopyVertexBytes(static_cast<uint8_t*>(vbMapped.pData) + vbAlignedOffset, pVertexStreamZeroData, vbBytes,
+			m_featureLevel < D3D_FEATURE_LEVEL_10_0 ? m_currentVertexDecl : nullptr, 0, VertexStreamZeroStride, 0);
 		m_context->Unmap(vb, 0);
 		m_upVertexOffset = vbAlignedOffset + vbBytes;
 
