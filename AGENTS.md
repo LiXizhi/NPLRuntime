@@ -158,6 +158,10 @@ See [`README.md`](README.md) for the full Host × Target build & run matrix acro
   ./build_linux.sh web build               # Emscripten WASM -> web/auto_generate_files/
   ```
 
+### Android emulator and iOS Simulator
+
+For a standalone mobile build or smoke test on Apple Silicon, start with [Build and test Paracraft on Android and iOS](docs/mobile-emulator-testing.md). It gives the exact Gradle flavor, Xcode target, asset staging commands and expected runtime results. Use [the dependency recipes](docs/mobile-dependencies.md) on a fresh host. Verify Android touch and OpenGL ES, or create a local world with Metal on iOS, then background and resume the app on the selected emulator.
+
 ---
 
 ## Coding & Portability Conventions

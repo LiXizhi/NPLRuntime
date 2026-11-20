@@ -39,7 +39,7 @@ Run `build_win32.bat --help` (Windows) or `./build_linux.sh --help` (Linux/macOS
    - **Linux:** GCC 10+ or Clang 12+, OpenGL/X11 dev headers, and `libsdl2-dev` (for desktop client).
    - **macOS / iOS:** Xcode 14+ & Command Line Tools.
    - **WebAssembly:** Emscripten SDK (`~/emsdk/emsdk`, verified with Emscripten `7.0+`) + Boost 1.85 built with `toolset=emscripten` + Python `>= 3.10` (for the local-disk dev server).
-   - **Android / PICO VR:** JDK 17+, Android SDK & NDK, and Android-cross-compiled Boost (`local.properties`: `android.boost.root=/path/to/boost`).
+   - **Android / PICO VR:** JDK 17, Android SDK & NDK, and Android-cross-compiled Boost. For the standalone APK, export `BOOST_ROOT` with the target libraries staged under `android-build/stage/<abi>/lib`.
    - **HarmonyOS:** DevEco Studio 5.0+ (HarmonyOS SDK API 12) + Node.js 16+.
 
 ---
@@ -172,9 +172,11 @@ See [`docs/web-dev-workflow.md`](docs/web-dev-workflow.md) for Boost Emscripten 
 
 ### 5. Mobile & Standalone XR (Android, PICO VR, iOS, HarmonyOS)
 
+On Apple Silicon, use the [Android and iOS emulator guide](docs/mobile-emulator-testing.md) to build the ARM64 APK or standalone simulator app, package Paracraft assets, and verify input, rendering and resume. A fresh setup also needs the [target-specific dependency recipes](docs/mobile-dependencies.md).
+
 - **Android (`NPLRuntime/Platform/AndroidStudio`):**
   ```bash
-  # Configure android.boost.root=/path/to/boost in NPLRuntime/Platform/AndroidStudio/local.properties
+  # Export BOOST_ROOT pointing to the Boost source tree with Android libraries.
   ./build_linux.sh android assembleDebug      # Linux/macOS
   build_win32.bat android assembleDebug       # Windows
   ```

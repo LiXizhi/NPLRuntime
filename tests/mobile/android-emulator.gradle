@@ -1,0 +1,18 @@
+// Apply only to the emulator build with Gradle's --init-script flag.
+beforeProject { project ->
+    project.plugins.withId("com.android.application") {
+        project.androidComponents.finalizeDsl { android ->
+            def assets = System.getenv("PARACRAFT_ASSETS")
+            if (!assets || !new File(assets, "main.pkg").isFile()) {
+                throw new GradleException("Set PARACRAFT_ASSETS to the directory containing main.pkg")
+            }
+            def boostRoot = System.getenv("BOOST_ROOT")
+            if (!boostRoot || !new File(boostRoot, "boost/version.hpp").isFile()) {
+                throw new GradleException("Set BOOST_ROOT to the Boost source tree with Android libraries")
+            }
+            android.sourceSets.debug.assets.srcDir(assets)
+            android.defaultConfig.externalNativeBuild.cmake.arguments "-DBOOST_ROOT=${boostRoot}"
+            android.defaultConfig.externalNativeBuild.cmake.targets "Paracraft"
+        }
+    }
+}
