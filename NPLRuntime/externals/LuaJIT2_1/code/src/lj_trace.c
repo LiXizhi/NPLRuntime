@@ -631,7 +631,8 @@ static int trace_abort(jit_State *J)
   L->top--;  /* Remove error object */
   if (e == LJ_TRERR_DOWNREC)
     return trace_downrec(J);
-  else if (e == LJ_TRERR_MCODEAL)
+  /* With no code area to reclaim, flushing only discards the retry penalties. */
+  else if (e == LJ_TRERR_MCODEAL && J->mcarea)
     lj_trace_flushall(L);
   return 0;
 }

@@ -78,7 +78,8 @@ bool Bone::calcMatrix(Bone* allbones, const AnimIndex& CurrentAnim, const AnimIn
 	if (IsStaticTransform() && IsTransformationNode())
 	{
 		if (parent >= 0) {
-			allbones[parent].calcMatrix(allbones, CurrentAnim, BlendingAnim, blendingFactor, pAnimInstance);
+			if (!allbones[parent].calc)
+				allbones[parent].calcMatrix(allbones, CurrentAnim, BlendingAnim, blendingFactor, pAnimInstance);
 			mat = matTransform * allbones[parent].mat;
 			if (allbones[parent].IsDummyNode() && !IsDummyNode())
 			{
@@ -297,7 +298,8 @@ bool Bone::calcMatrix(Bone* allbones, const AnimIndex& CurrentAnim, const AnimIn
 		}
 
 		if (parent >= 0) {
-			allbones[parent].calcMatrix(allbones, CurrentAnim, BlendingAnim, blendingFactor, pAnimInstance);
+			if (!allbones[parent].calc)
+				allbones[parent].calcMatrix(allbones, CurrentAnim, BlendingAnim, blendingFactor, pAnimInstance);
 			mat = m * allbones[parent].mat;
 		}
 		else
@@ -607,7 +609,8 @@ bool Bone::calcMatrix(Bone* allbones, const AnimIndex& CurrentAnim, const AnimIn
 
 
 		if (parent >= 0) {
-			allbones[parent].calcMatrix(allbones, CurrentAnim, BlendingAnim, blendingFactor, pAnimInstance);
+			if (!allbones[parent].calc)
+				allbones[parent].calcMatrix(allbones, CurrentAnim, BlendingAnim, blendingFactor, pAnimInstance);
 			mat = m * allbones[parent].mat;
 		}
 		else

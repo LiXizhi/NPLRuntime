@@ -230,7 +230,7 @@ namespace NPL
 		* @param nTickCount: it should be ::GetTickCount() in millisecond. if 0, we will call the system ::GetTickCount() to get the current tick count. 
 		* @return true if timer is activated. 
 		*/
-		bool Tick(NPLRuntimeState_ptr runtime_state, DWORD nTickCount = 0);
+		bool Tick(const NPLRuntimeState_ptr& runtime_state, DWORD nTickCount = 0);
 	};
 
 	/**

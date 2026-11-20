@@ -13,5 +13,7 @@ namespace ParaEngine
         
     private:
         NSOpenGLContext* m_GLContext;
+        id m_frameObserver;
+        id m_backingObserver;
     };
 }

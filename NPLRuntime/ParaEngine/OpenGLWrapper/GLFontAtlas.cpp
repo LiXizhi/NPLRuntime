@@ -181,7 +181,6 @@ void GLFontAtlas::conversionU16TOGB2312(const std::u16string& u16Text, std::unor
 void GLFontAtlas::findNewCharacters(const std::u16string& u16Text, std::unordered_map<unsigned short, unsigned short>& charCodeMap)
 {
     std::u16string newChars;
-    FT_Encoding charEncoding = _fontFreeType->getEncoding();
 
     //find new characters
     if (_letterDefinitions.empty())
@@ -204,12 +203,13 @@ void GLFontAtlas::findNewCharacters(const std::u16string& u16Text, std::unordere
     else
     {
         auto length = u16Text.length();
-        newChars.reserve(length);
         for (size_t i = 0; i < length; ++i)
         {
             auto outIterator = _letterDefinitions.find(u16Text[i]);
             if (outIterator == _letterDefinitions.end())
             {
+                if (newChars.empty())
+                    newChars.reserve(length - i);
                 newChars.push_back(u16Text[i]);
             }
         }
@@ -217,6 +217,7 @@ void GLFontAtlas::findNewCharacters(const std::u16string& u16Text, std::unordere
 
     if (!newChars.empty())
     {
+        FT_Encoding charEncoding = _fontFreeType->getEncoding();
         switch (charEncoding)
         {
         case FT_ENCODING_UNICODE:

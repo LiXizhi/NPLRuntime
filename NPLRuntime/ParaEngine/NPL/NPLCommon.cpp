@@ -174,7 +174,7 @@ void NPL::NPLTimer::Change( int dueTime, int period )
 	m_lastTick = ::GetTickCount() + dueTime-m_nInterval;
 }
 
-bool NPL::NPLTimer::Tick(NPLRuntimeState_ptr runtime_state, DWORD nTickCount)
+bool NPL::NPLTimer::Tick(const NPLRuntimeState_ptr& runtime_state, DWORD nTickCount)
 {
 	if(nTickCount == 0)
 	{

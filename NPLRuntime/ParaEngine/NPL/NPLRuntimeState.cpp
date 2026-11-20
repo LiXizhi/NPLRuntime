@@ -1019,10 +1019,11 @@ int NPL::CNPLRuntimeState::TickTimers(DWORD nTickCount)
 	int nCount = (int)(m_temp_timer_pool.size());
 	if (nCount > 0)
 	{
+		const auto runtimeState = shared_from_this();
 		NPLTimer_TempPool_Type::iterator itCur, itEnd = m_temp_timer_pool.end();
 		for (itCur = m_temp_timer_pool.begin(); itCur != itEnd; ++itCur)
 		{
-			(*itCur)->Tick(shared_from_this(), nTickCount);
+			(*itCur)->Tick(runtimeState, nTickCount);
 		}
 		m_temp_timer_pool.clear();
 	}

@@ -62,6 +62,24 @@ namespace ParaEngine
 {
 	namespace
 	{
+		void UploadUnusedBufferRange(GLenum target, GLintptr offset, GLsizeiptr size, const void* data)
+		{
+#if defined(__APPLE__) && !defined(PARAENGINE_MOBILE)
+			// Apple's GL driver synchronizes glBufferSubData against the whole
+			// resource, even for unused ranges. Callers append to disjoint
+			// ranges or allocate fresh storage before reusing them.
+			void* mapped = glMapBufferRange(target, offset, size,
+				GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_RANGE_BIT | GL_MAP_UNSYNCHRONIZED_BIT);
+			if (mapped)
+			{
+				std::memcpy(mapped, data, size);
+				if (glUnmapBuffer(target) == GL_TRUE)
+					return;
+			}
+#endif
+			glBufferSubData(target, offset, size, data);
+		}
+
 		class CDynamicBufferObject
 		{
 		public:
@@ -101,13 +119,13 @@ namespace ParaEngine
 					else
 					{
 						glBufferData(m_nBufferType, nTotalSize, nullptr, m_bUseRingBuffer ? GL_STREAM_DRAW : GL_DYNAMIC_DRAW);
-						UploadRange(nFrom, nCountBytes, pData);
+						UploadUnusedBufferRange(m_nBufferType, nFrom, nCountBytes, pData);
 					}
 					m_nCurrentSize = nTotalSize;
 				}
 				else
 				{
-					UploadRange(nFrom, nCountBytes, pData);
+					UploadUnusedBufferRange(m_nBufferType, nFrom, nCountBytes, pData);
 				}
 				PE_CHECK_GL_ERROR_DEBUG();
 				m_nNextFreeIndex = m_bUseRingBuffer ? nSize : 0;
@@ -143,24 +161,6 @@ namespace ParaEngine
 			}
 
 		private:
-			void UploadRange(int offset, int size, const void* data)
-			{
-#if defined(__APPLE__) && !defined(PARAENGINE_MOBILE)
-				// Apple's GL driver synchronizes glBufferSubData against the whole
-				// resource, even for unused ranges. Appends are disjoint and wraps
-				// orphan the storage above, so an unsynchronized map is safe here.
-				void* mapped = glMapBufferRange(m_nBufferType, offset, size,
-					GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_RANGE_BIT | GL_MAP_UNSYNCHRONIZED_BIT);
-				if (mapped)
-				{
-					std::memcpy(mapped, data, size);
-					glUnmapBuffer(m_nBufferType);
-					return;
-				}
-#endif
-				glBufferSubData(m_nBufferType, offset, size, data);
-			}
-
 			GLenum m_nBufferType;
 			int m_nCurrentSize;
 			int m_nNextFreeIndex;
@@ -243,15 +243,17 @@ namespace ParaEngine
 				GLint prevBinding = 0;
 				glGetIntegerv(m_isIndexBuffer ? GL_ELEMENT_ARRAY_BUFFER_BINDING : GL_ARRAY_BUFFER_BINDING, &prevBinding);
 				glBindBuffer(m_target, m_bufferId);
-				if (m_mapMode == ERHIMapMode::WriteDiscard && m_mapOffset == 0 && m_mapSize == m_byteSize)
-				{
+				const bool stream = m_glUsage == GL_STREAM_DRAW;
+				const bool discard = m_mapMode == ERHIMapMode::WriteDiscard && m_mapOffset == 0 &&
+					(stream || m_mapSize == m_byteSize);
+				if (discard)
 					glBufferData(m_target, static_cast<GLsizeiptr>(m_byteSize), nullptr, m_glUsage);
-					glBufferSubData(m_target, 0, static_cast<GLsizeiptr>(m_mapSize), m_cpuShadow.data());
-				}
+
+				const void* src = m_cpuShadow.data() + m_mapOffset;
+				if (stream && (discard || m_mapMode == ERHIMapMode::WriteNoOverwrite))
+					UploadUnusedBufferRange(m_target, m_mapOffset, m_mapSize, src);
 				else
-				{
-					glBufferSubData(m_target, static_cast<GLintptr>(m_mapOffset), static_cast<GLsizeiptr>(m_mapSize), m_cpuShadow.data() + m_mapOffset);
-				}
+					glBufferSubData(m_target, static_cast<GLintptr>(m_mapOffset), static_cast<GLsizeiptr>(m_mapSize), src);
 				glBindBuffer(m_target, static_cast<GLuint>(prevBinding));
 			}
 

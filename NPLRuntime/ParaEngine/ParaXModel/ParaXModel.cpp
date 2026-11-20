@@ -823,6 +823,11 @@ void CParaXModel::calcBones(CharacterPose* pPose, const AnimIndex& CurrentAnim, 
 		bones[i].MakeDirty();
 	}
 
+	// Most instances have no scripted bone overrides. Check once per pose
+	// before the per-bone rotation, translation and scale lookups.
+	if (pAnimInstance && pAnimInstance->GetDynamicFieldCount() == 0)
+		pAnimInstance = nullptr;
+
 	if (pPose)
 	{
 		// TODO: check if this is an valid character model.
@@ -894,27 +899,27 @@ void CParaXModel::calcBones(CharacterPose* pPose, const AnimIndex& CurrentAnim, 
 #ifdef PERFOAMRNCE_TEST_calcBones
 	PERF1("calcBones");
 #endif
-	vector<Matrix4> lower_mats;
-	vector<Matrix4> upper_mats;
-	lower_mats.reserve(nBones);
-	for (uint32 i = 0; i < nBones; i++) {
+	for (uint32 i = 0; i < nBones; ++i) {
 		bones[i].calcMatrix(bones, CurrentAnim, BlendingAnim, blendingFactor, pAnimInstance);
-		lower_mats.push_back(bones[i].mat);
 	}
 	if (upperAnim.IsValid())
 	{
-		for (uint32 i = 0; i < nBones; i++) {
+		// Keep the upper pose in place. Restore lower-body bones only after
+		// all children have inherited their parents' upper-pose transforms.
+		vector<Matrix4> lowerMatrices;
+		lowerMatrices.reserve(nBones);
+		for (uint32 i = 0; i < nBones; ++i) {
+			if (!bones[i].mIsUpper)
+				lowerMatrices.push_back(bones[i].mat);
 			bones[i].MakeDirty();
 		}
-		for (uint32 i = 0; i < nBones; i++) {
+		for (uint32 i = 0; i < nBones; ++i) {
 			bones[i].calcMatrix(bones, upperAnim, upperBlendingAnim, upperBlendingFactor, pAnimInstance);
-			upper_mats.push_back(bones[i].mat);
 		}
-		for (uint32 i = 0; i < nBones; i++) {
-			if (bones[i].mIsUpper)
-				bones[i].mat = upper_mats[i];
-			else
-				bones[i].mat = lower_mats[i];
+		size_t lowerIndex = 0;
+		for (uint32 i = 0; i < nBones; ++i) {
+			if (!bones[i].mIsUpper)
+				bones[i].mat = lowerMatrices[lowerIndex++];
 		}
 	}
 	PostCalculateBoneMatrix(nBones);

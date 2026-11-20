@@ -46,7 +46,7 @@ HRESULT DynamicVertexBufferEntityOpenGL::RestoreDeviceObjects()
 		auto* pDev = CGlobals::GetRenderDevice();
 		if (pDev && m_dwDiscard * m_nUnitSize > 0)
 		{
-			m_gpuBuffer = pDev->CreateBuffer(m_dwDiscard * m_nUnitSize, false, ERHIBufferUsage::Dynamic | ERHIBufferUsage::WriteOnly, nullptr);
+			m_gpuBuffer = pDev->CreateBuffer(m_dwDiscard * m_nUnitSize, false, ERHIBufferUsage::Dynamic | ERHIBufferUsage::Stream | ERHIBufferUsage::WriteOnly, nullptr);
 		}
 	}
 	return S_OK;
@@ -105,7 +105,18 @@ void DynamicVertexBufferEntityOpenGL::Unlock()
 		uint32_t sizeBytes = m_lockedCount * m_nUnitSize;
 		if (offsetBytes + sizeBytes <= m_lpVB.size())
 		{
-			m_gpuBuffer->UpdateData(offsetBytes, sizeBytes, (&(m_lpVB[0])) + offsetBytes);
+			// The instance stream appends disjoint ranges until Lock wraps to zero.
+			const auto mode = offsetBytes == 0 ? ERHIMapMode::WriteDiscard : ERHIMapMode::WriteNoOverwrite;
+			const char* src = m_lpVB.data() + offsetBytes;
+			if (void* dst = m_gpuBuffer->Map(offsetBytes, sizeBytes, mode))
+			{
+				std::memcpy(dst, src, sizeBytes);
+				m_gpuBuffer->Unmap();
+			}
+			else
+			{
+				m_gpuBuffer->UpdateData(offsetBytes, sizeBytes, src);
+			}
 		}
 	}
 	m_lockedCount = 0;

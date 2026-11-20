@@ -762,15 +762,10 @@ bool CNPLRuntime::NPL_KillTimer(NPLRuntimeState_ptr runtime_state, int nIDEvent)
 
 bool CNPLRuntime::NPL_SetTimer(NPLRuntimeState_ptr runtime_state, int nIDEvent, float fElapse, const char* sNeuronFile)
 {
-	{
-		ParaEngine::Lock lock(m_mutex);
-		NPLRuntime_Pool_Type::iterator iter = m_runtime_states_with_timers.find(runtime_state);
-		if(iter == m_runtime_states_with_timers.end())
-		{
-			m_runtime_states_with_timers.insert(runtime_state);
-		}
-	}
-	return runtime_state->SetTimer(nIDEvent, fElapse, sNeuronFile);
+	const bool result = runtime_state->SetTimer(nIDEvent, fElapse, sNeuronFile);
+	ParaEngine::Lock lock(m_mutex);
+	m_runtime_states_with_timers.insert(runtime_state);
+	return result;
 }
 
 bool CNPLRuntime::NPL_ChangeTimer(NPLRuntimeState_ptr runtime_state, int nIDEvent, int dueTime, int period )
@@ -907,13 +902,16 @@ void CNPLRuntime::Run(bool bToEnd)
 		{
 			if((*itCur)->TickTimers(TimeTicks) == 0)
 			{
-				m_runtime_states_with_timers.erase((*itCur));
+				// SetTimer may have added a timer since TickTimers took its snapshot.
+				ParaEngine::Lock lock_(m_mutex);
+				if ((*itCur)->GetTimerCount() == 0)
+					m_runtime_states_with_timers.erase(*itCur);
 			}
 		}
 		{
 			// frame move ticks
 			ParaEngine::Lock lock_(m_mutex);
-			for (auto pState : m_runtime_states)
+			for (const auto& pState : m_runtime_states)
 			{
 				pState->SendTick();
 			}
