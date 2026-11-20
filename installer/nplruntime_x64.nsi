@@ -119,7 +119,7 @@ Section "" ;No components page, name is not important
 	File "..\ParaWorld\bin64\libcurl.dll"
 	File "..\ParaWorld\bin64\lua.dll"
 	File /nonfatal "..\ParaWorld\bin64\ParaSqlite.dll"
-	File /nonfatal "..\ParaWorld\bin64\d3dcompiler_47.dll"
+	File "..\ParaWorld\bin64\d3dcompiler_47.dll"
 	; File "..\ParaWorld\bin64\luasql.dll"
 	; File "..\ParaWorld\bin64\sqlite.dll"
 	File "..\ParaWorld\bin64\PhysicsBT.dll"

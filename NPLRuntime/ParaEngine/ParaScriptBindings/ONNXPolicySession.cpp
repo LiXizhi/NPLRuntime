@@ -2,6 +2,13 @@
 
 #ifdef USE_ONNXRUNTIME
 
+#ifdef _WIN32
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#include <windows.h>
+#define ORT_API_MANUAL_INIT
+#endif
 #include <onnxruntime_cxx_api.h>
 #define NPL_ROBOT_NO_MUJOCO_HEADER 1
 #include "RobotResourcePath.h"
@@ -12,9 +19,49 @@
 
 namespace ParaScripting
 {
+#ifdef _WIN32
+	// The current ONNX runtime requires a newer Windows version than the game.
+	// Initialize its API only when a world actually requests policy inference.
+	static void InitializePolicyRuntime()
+	{
+		static const bool initialized = [] {
+			static const wchar_t moduleAnchor = 0;
+			HMODULE host = nullptr;
+			if (!GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
+				&moduleAnchor, &host))
+				throw std::runtime_error("Cannot locate the ONNX policy host module");
+			std::wstring path(32768, L'\0');
+			DWORD length = GetModuleFileNameW(host, &path[0], static_cast<DWORD>(path.size()));
+			if (!length || length >= path.size())
+				throw std::runtime_error("Cannot locate the ONNX policy runtime directory");
+			path.resize(length);
+			path.resize(path.find_last_of(L"\\/") + 1);
+			HMODULE library = nullptr;
+#ifdef _DEBUG
+			library = LoadLibraryExW((path + L"onnxruntime_d.dll").c_str(), nullptr, LOAD_WITH_ALTERED_SEARCH_PATH);
+#endif
+			if (!library)
+				library = LoadLibraryExW((path + L"onnxruntime.dll").c_str(), nullptr, LOAD_WITH_ALTERED_SEARCH_PATH);
+			if (!library)
+				throw std::runtime_error("Cannot load the ONNX policy runtime (Windows error " + std::to_string(GetLastError()) + ")");
+			auto getBase = reinterpret_cast<decltype(&OrtGetApiBase)>(GetProcAddress(library, "OrtGetApiBase"));
+			const OrtApiBase* base = getBase ? getBase() : nullptr;
+			const OrtApi* api = base ? base->GetApi(ORT_API_VERSION) : nullptr;
+			if (!api)
+			{
+				FreeLibrary(library);
+				throw std::runtime_error("Incompatible ONNX policy runtime API");
+			}
+			// Ort objects retain these function pointers for their lifetime.
+			Ort::InitApi(api);
+			return true;
+		}();
+		(void)initialized;
+	}
+#endif
 	struct ONNXPolicySession::Impl
 	{
-		Impl() : env(ORT_LOGGING_LEVEL_WARNING, "ParaEnginePolicy"), inputCount(0), outputCount(0), recurrent(false) {}
+		Impl() : env(nullptr), inputCount(0), outputCount(0), recurrent(false) {}
 
 		Ort::Env env;
 		std::unique_ptr<Ort::Session> session;
@@ -37,6 +84,11 @@ namespace ParaScripting
 		Unload();
 		try
 		{
+#ifdef _WIN32
+			InitializePolicyRuntime();
+#endif
+			if (!m_impl->env)
+				m_impl->env = Ort::Env(ORT_LOGGING_LEVEL_WARNING, "ParaEnginePolicy");
 			Ort::SessionOptions options;
 			options.SetExecutionMode(ExecutionMode::ORT_SEQUENTIAL);
 			options.SetIntraOpNumThreads(1);
