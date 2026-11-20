@@ -19,6 +19,9 @@ namespace ParaEngine
         virtual ~RenderDeviceEGL();
 
         void Reset();
+#ifndef PICO_VR
+        void SetProfilingPresentation(bool enabled) override;
+#endif
         virtual bool Present() override;
     };
 }

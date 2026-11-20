@@ -1198,6 +1198,35 @@ namespace ParaEngine
 		m_caps.needsHalfPixelOffset = false;
 	}
 
+#if defined(WGPUINTERNAL_HAVE_EMDAWNWEBGPU_HEADER)
+	void RenderDeviceWebGPU::SetProfilingPresentation(bool enabled)
+	{
+		WGPUPresentMode mode = WGPUPresentMode_Fifo;
+		if (enabled && m_surface && m_adapter)
+		{
+			WGPUSurfaceCapabilities caps = {};
+			if (PARA_WGPU_CALL(m_wgpu, wgpuSurfaceGetCapabilities, m_surface, m_adapter, &caps) != WGPUStatus_Success)
+				return;
+			for (size_t i = 0; i < caps.presentModeCount; ++i)
+			{
+				if (caps.presentModes[i] == WGPUPresentMode_Immediate)
+				{
+					mode = WGPUPresentMode_Immediate;
+					break;
+				}
+				if (caps.presentModes[i] == WGPUPresentMode_Mailbox)
+					mode = WGPUPresentMode_Mailbox;
+			}
+			PARA_WGPU_CALL(m_wgpu, wgpuSurfaceCapabilitiesFreeMembers, caps);
+		}
+		if (mode != m_profilePresentMode)
+		{
+			m_profilePresentMode = mode;
+			ResizeSwapChain(m_backBufferWidth, m_backBufferHeight, m_vsync);
+		}
+	}
+#endif
+
 	bool RenderDeviceWebGPU::ConfigureSurface(uint32_t width, uint32_t height, bool vsync)
 	{
 		if (!m_surface || !m_device)
@@ -1240,6 +1269,10 @@ namespace ParaEngine
 		surfCfg.width = (std::max)(1u, width);
 		surfCfg.height = (std::max)(1u, height);
 		surfCfg.presentMode = vsync ? WGPUPresentMode_Fifo : WGPUPresentMode_Immediate;
+#if defined(WGPUINTERNAL_HAVE_EMDAWNWEBGPU_HEADER)
+		if (m_profilePresentMode != WGPUPresentMode_Fifo)
+			surfCfg.presentMode = m_profilePresentMode;
+#endif
 		PARA_WGPU_CALL(m_wgpu, wgpuSurfaceConfigure, m_surface, &surfCfg);
 		return true;
 	}

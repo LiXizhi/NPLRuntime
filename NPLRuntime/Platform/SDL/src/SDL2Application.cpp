@@ -262,6 +262,18 @@ namespace ParaEngine
 	{
 	}
 
+#ifndef __EMSCRIPTEN__
+	void CSDL2Application::OnProfilingFrameRateChanged(bool enabled)
+	{
+		if (m_pRenderDevice && m_pRenderDevice->GetBackendType() == ERHIBackend::OpenGL && SDL_GL_GetCurrentContext())
+		{
+			if (enabled)
+				m_savedSwapInterval = SDL_GL_GetSwapInterval();
+			SDL_GL_SetSwapInterval(enabled ? 0 : m_savedSwapInterval);
+		}
+	}
+#endif
+
 	void CSDL2Application::SetRefreshTimer(float fTimeInterval, int nFrameRateControl /*= 0*/)
 	{
 #ifdef EMSCRIPTEN_SINGLE_THREAD
@@ -455,7 +467,7 @@ namespace ParaEngine
 				{
 					const double elapsed = std::chrono::duration<double>(
 						std::chrono::steady_clock::now() - frameStart).count();
-					NextLoop(GetRemainingFrameDelayMs(GetRefreshTimer(), elapsed),
+					NextLoop(GetRemainingFrameDelayMs(GetRefreshTimer(), elapsed, m_profileUnlimitedFPS),
 						&CSDL2Application::handle_mainloop_timer, this);
 				}
 				else

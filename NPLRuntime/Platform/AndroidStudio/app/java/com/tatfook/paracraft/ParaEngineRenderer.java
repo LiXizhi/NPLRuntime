@@ -32,7 +32,8 @@ public class ParaEngineRenderer implements GLSurfaceView.Renderer {
     private static native void nativeTouchesMove(final int[] ids, final float[] xs, final float[] ys);
     private static native void nativeTouchesCancel(final int[] ids, final float[] xs, final float[] ys);
     private static native boolean nativeKeyEvent(final int keyCode,boolean isPressed);
-    private static native void nativeRender();
+    private static native boolean nativeRender();
+    private boolean mProfileUnlimitedFPS;
     private static native void nativeInit(final int width, final int height);
     private static native void nativeTermWindow();
     private static native void nativeOnSurfaceChanged(final int width, final int height);
@@ -72,8 +73,8 @@ public class ParaEngineRenderer implements GLSurfaceView.Renderer {
          * since onDrawFrame() was called by system 60 times per second by default.
          */
 
-        if (ParaEngineRenderer.sAnimationInterval <= 1.0f / 60f * ParaEngineRenderer.NANOSECONDSPERSECOND) {
-            ParaEngineRenderer.nativeRender();
+        if (mProfileUnlimitedFPS || ParaEngineRenderer.sAnimationInterval <= 1.0f / 60f * ParaEngineRenderer.NANOSECONDSPERSECOND) {
+            mProfileUnlimitedFPS = ParaEngineRenderer.nativeRender();
         } else {
             final long now = System.nanoTime();
             final long interval = now - this.mLastTickInNanoSeconds;
@@ -89,7 +90,7 @@ public class ParaEngineRenderer implements GLSurfaceView.Renderer {
              * Render time MUST be counted in, or the FPS will slower than appointed.
              */
             this.mLastTickInNanoSeconds = System.nanoTime();
-            ParaEngineRenderer.nativeRender();
+            mProfileUnlimitedFPS = ParaEngineRenderer.nativeRender();
         }
     }
 

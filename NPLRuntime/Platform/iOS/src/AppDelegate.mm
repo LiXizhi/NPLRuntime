@@ -158,6 +158,7 @@ using namespace ParaEngine;
     self.app->InitApp(renderWindow, cmdline);
 
     self.displayLink = [CADisplayLink displayLinkWithTarget:self selector:@selector(update)];
+    self.app->SetDisplayLink((__bridge void*)self.displayLink);
     self.displayLink.paused = NO;
     [self.displayLink addToRunLoop:[NSRunLoop currentRunLoop] forMode:NSRunLoopCommonModes];
 

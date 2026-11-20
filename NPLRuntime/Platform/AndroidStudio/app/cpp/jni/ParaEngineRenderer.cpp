@@ -9,6 +9,7 @@
 #include "ParaEngineActivity.h"
 #include "JniHelper.h"
 #include "AppDelegate.h"
+#include "ParaEngineSettings.h"
 
 #include <jni.h>
 
@@ -107,9 +108,10 @@ extern "C" {
     }
 
 
-    JNIEXPORT void JNICALL Java_com_tatfook_paracraft_ParaEngineRenderer_nativeRender(JNIEnv* env, jclass clazz)
+    JNIEXPORT jboolean JNICALL Java_com_tatfook_paracraft_ParaEngineRenderer_nativeRender(JNIEnv* env, jclass clazz)
     {
         AppDelegate::getInstance().handle_mainloop();
+        return ParaEngineSettings::GetSingleton().GetProfileUnlimitedFPS();
     }
 
     JNIEXPORT void JNICALL Java_com_tatfook_paracraft_ParaEngineRenderer_nativeOnPause(JNIEnv* env, jclass clazz)

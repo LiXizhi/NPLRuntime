@@ -11,6 +11,8 @@ namespace ParaEngine
 		virtual bool Present() override;
 
 	private:
+		void SetProfilingPresentation(bool enabled) override;
+		int m_savedSwapInterval = 0;
 		HDC m_WGLContext;
 	};
 }

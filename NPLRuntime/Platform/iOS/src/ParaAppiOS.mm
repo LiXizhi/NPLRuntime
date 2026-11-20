@@ -5,6 +5,7 @@
 //-----------------------------------------------------------------------------
 
 #import "KeyboardiOS.h"
+#import <QuartzCore/CADisplayLink.h>
 
 #include "ParaAppiOS.h"
 #include "RenderWindowiOS.h"
@@ -39,6 +40,17 @@ namespace ParaEngine {
         {
             inout_x = (int)(inout_x * [UIScreen mainScreen].scale);
             inout_y = (int)(inout_y * [UIScreen mainScreen].scale);
+        }
+    }
+
+    void CParaEngineAppiOS::OnProfilingFrameRateChanged(bool enabled)
+    {
+        CADisplayLink* link = (__bridge CADisplayLink*)m_displayLink;
+        if (@available(iOS 10.3, *))
+        {
+            if (enabled)
+                m_savedPreferredFPS = (int)link.preferredFramesPerSecond;
+            link.preferredFramesPerSecond = enabled ? [UIScreen mainScreen].maximumFramesPerSecond : m_savedPreferredFPS;
         }
     }
 

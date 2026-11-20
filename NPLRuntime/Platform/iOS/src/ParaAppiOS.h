@@ -63,6 +63,7 @@ namespace ParaEngine
     {
     public:
         CParaEngineAppiOS();
+        void SetDisplayLink(void* link) { m_displayLink = link; }
         virtual void GameToClient(int& inout_x, int & inout_y, bool bInBackbuffer = true) override;
         virtual void ClientToGame(int& inout_x, int & inout_y, bool bInBackbuffer = true) override;
         virtual void SetRefreshTimer(float fTimeInterval, int nFrameRateControl = 0) override;
@@ -81,6 +82,9 @@ namespace ParaEngine
         virtual void Exit(int nReturnCode /*= 0*/) override;
         virtual void GetVisibleSize(Vector2* pOut);
     protected:
+        void OnProfilingFrameRateChanged(bool enabled) override;
+        void* m_displayLink = nullptr;
+        int m_savedPreferredFPS = 0;
 
     };
 }

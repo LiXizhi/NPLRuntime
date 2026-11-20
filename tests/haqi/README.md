@@ -76,26 +76,36 @@ interval instead of adding a fixed 10 ms wait after every frame.
 When measuring, check `debug.gethook()` and `jit.status()` and keep the scene,
 camera, resolution, and foreground state comparable. Do not measure during a build.
 
-### Uncapped profiling on macOS
+### Uncapped profiling
 
-Launch Haqi with `tests/haqi/run_haqi_mac.sh --profile-unlimited-fps`, or pass
-`profile_unlimited_fps=true` directly to the macOS client. The option lasts
-for that process. To compare modes in a running game, execute these lines
-separately from the NPL console:
+The [Haqi plaza profile](plaza-profile-2026-11-20.md) compares native and NPL hot spots under matching uncapped conditions.
+
+`ProfileUnlimitedFPS` defaults to false. Changes apply to the current process.
+Use either command from the NPL console while looking at the same scene:
 
 ```lua
 ParaEngine.GetAttributeObject():SetField("ProfileUnlimitedFPS", true)
 ParaEngine.GetAttributeObject():SetField("ProfileUnlimitedFPS", false)
 ```
 
-The switch takes effect on the next frame. It bypasses the frame controller's
-work gate and the host timer delay, and disables display sync on macOS OpenGL
-and Metal. Switching it off restores the earlier display-sync setting and uses
-the latest requested `RefreshTimer`. For comparisons, keep the camera and
-window size fixed and read `ParaEngine.GetAttributeObject():GetField("FPS", 0)`
-after a few seconds.
-This counter measures rendered frames per second. The monitor still presents
-at its physical refresh rate.
+For a repeatable launch, pass `profile_unlimited_fps=true` in the engine command
+line. Both native Haqi launcher wrappers also accept `--profile-unlimited-fps`.
+Read `ParaEngine.GetAttributeObject():GetField("FPS", 0)` a few seconds after
+switching. The counter measures rendered frames. The physical display and
+compositor determine how many become visible.
+
+| Graphical host | Behavior during profiling |
+|---|---|
+| macOS OpenGL and Metal | Removes the host timer delay and requests unsynchronized presentation. |
+| Windows and native SDL | Removes the foreground timer delay. WGL and SDL OpenGL request swap interval zero. D3D11/12 already submit with interval zero. Vulkan selects an available mailbox or immediate mode, with FIFO fallback. The Windows background throttle still applies when enabled. |
+| Browser | Requests immediate Emscripten callbacks while the page is visible and active. WebXR retains its own frame callbacks. WebGPU backends with surface capability queries use an advertised immediate or mailbox mode when available. The legacy WebGPU backend keeps its configured presentation mode. |
+| Android | Bypasses the renderer's optional Java sleep and requests EGL swap interval zero on the GLSurfaceView render thread. EGL implementations can impose a minimum interval. |
+| iOS app and embedded framework | Requests the screen maximum on the existing display link. Actual rates depend on the device, power policy and the host app's ProMotion setting in its Info.plist (`CADisableMinimumFrameDurationOnPhone`). |
+| PICO OpenXR | Bypasses the engine frequency gate. The headset runtime continues to schedule XR frames. |
+
+Switching the field off resumes the current `RefreshTimer` policy and restores
+the host's ordinary presentation settings. Headless servers expose no profiling
+field. The HarmonyOS scaffold has no active graphical frame loop to exercise.
 
 ### Platform scope
 
@@ -108,7 +118,7 @@ at its physical refresh rate.
   graphics backends have their own buffer upload implementations.
 - macOS and native SDL frame scheduling subtract elapsed frame work from the
   requested interval and update the base frame controller when it changes.
-  The single-threaded browser loop retains its existing animation-frame controls.
+  The browser uses animation-frame scheduling by default.
 - macOS and iOS relative file lookups honor the configured writable-directory
   override, so downloaded assets can be found and renamed in that directory.
 - The native launcher has macOS and Windows wrappers. macOS gameplay was verified;

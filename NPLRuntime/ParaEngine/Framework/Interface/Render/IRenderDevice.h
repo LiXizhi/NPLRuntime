@@ -200,6 +200,8 @@ namespace ParaEngine
 
 		virtual bool Present() = 0;
 		virtual void Flush() = 0;
+		// Only called on profiling transitions. Backends with fixed presentation modes keep them.
+		virtual void SetProfilingPresentation(bool enabled) {}
 
 
 		/** check render error and print to log. only call this in debug mode, since it breaks parallelism between gpu and cpu. */

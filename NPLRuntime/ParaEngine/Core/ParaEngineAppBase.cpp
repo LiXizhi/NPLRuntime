@@ -40,6 +40,7 @@
 #include "2dengine/GUIRoot.h"
 #include "2dengine/GUIMouseVirtual.h"
 #include "FrameRateController.h"
+#include "FramePacing.h"
 #include "FileLogger.h"
 #include "Render/IRenderContext.h"
 #include "RHIBackendRegistry.h"
@@ -154,6 +155,10 @@ bool ParaEngine::CParaEngineAppBase::InitApp(IRenderWindow* pWindow, const char*
 	m_pRenderWindow = pWindow;
 
 	InitCommandLineParams();
+#ifndef NPLRUNTIME_SERVER
+	CGlobals::GetSettings().SetProfileUnlimitedFPS(
+		strcmp(GetAppCommandLineByParam("profile_unlimited_fps", "false"), "true") == 0);
+#endif
 
 	CStaticInitRes::StaticInit();
 
@@ -741,6 +746,8 @@ void ParaEngine::CParaEngineAppBase::OnRendererRecreated(IRenderWindow * renderW
 	cfg.renderWindow = m_pRenderWindow;
 	m_pRenderDevice = m_pRenderContext->CreateDevice(cfg);
 	CGlobals::SetRenderDevice(m_pRenderDevice);
+	if (m_pRenderDevice && m_profileUnlimitedFPS)
+		m_pRenderDevice->SetProfilingPresentation(true);
 
 	ParaViewport vp;
 	vp.X = 0; vp.Y = 0;
@@ -992,13 +999,24 @@ HRESULT ParaEngine::CParaEngineAppBase::DoWork()
 	CoroutineThread::Tick();
 #endif
 
+	const double previousTime = m_fTime;
 	m_fTime = m_Timer->GetAppTime();
 	if (m_pRenderWindow == nullptr && Is3DRenderingEnabled())
 		return S_FALSE;
 	
-	auto d = m_doWorkFRC.FrameMove(m_fTime);
-
-	if (d > 0)
+	const bool unlimited = CGlobals::GetSettings().GetProfileUnlimitedFPS();
+	if (unlimited != m_profileUnlimitedFPS)
+	{
+		m_profileUnlimitedFPS = unlimited;
+		OnProfilingFrameRateChanged(unlimited);
+		if (m_pRenderDevice)
+			m_pRenderDevice->SetProfilingPresentation(unlimited);
+		OUTPUT_LOG("Profiling unlimited FPS %s\n", unlimited ? "enabled" : "disabled");
+	}
+	// Advance the configured controller even during profiling so its clock and
+	// script-selected policy are current when normal pacing resumes.
+	const auto d = m_doWorkFRC.FrameMove(m_fTime);
+	if (ShouldRunFrame(d, unlimited, previousTime, m_fTime, m_doWorkFRC.IsPaused()))
 	{
 		FrameMove(m_fTime);
         if (getRenderEnabled() && Is3DRenderingEnabled() && m_pRenderDevice)

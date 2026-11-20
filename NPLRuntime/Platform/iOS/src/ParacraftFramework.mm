@@ -155,6 +155,7 @@ int ParacraftFramework_Start(void) {
             
             s_handler = [[SimpleDisplayLinkHandler alloc] init];
             s_displayLink = [CADisplayLink displayLinkWithTarget:s_handler selector:@selector(update)];
+            g_pParaApp->SetDisplayLink((__bridge void*)s_displayLink);
             s_displayLink.paused = NO;
             [s_displayLink addToRunLoop:[NSRunLoop currentRunLoop] forMode:NSRunLoopCommonModes];
             

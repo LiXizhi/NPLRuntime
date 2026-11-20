@@ -958,6 +958,10 @@ namespace ParaEngine
 		{
 			nextWaitMs = 50;
 		}
+		else if (m_profileUnlimitedFPS)
+		{
+			nextWaitMs = 0;
+		}
 		else if (GetRefreshTimer() <= 0.0f)
 		{
 			nextWaitMs = 1;

@@ -205,6 +205,10 @@ namespace ParaEngine
 		bool m_supportsBC = false;
 		bool m_supportsFloat32Filterable = false;
 		bool m_vsync = true;
+#if defined(WGPUINTERNAL_HAVE_EMDAWNWEBGPU_HEADER)
+		void SetProfilingPresentation(bool enabled) override;
+		WGPUPresentMode m_profilePresentMode = WGPUPresentMode_Fifo;
+#endif
 		std::string m_adapterNameStr;
 		RHIDeviceCaps m_caps;
 

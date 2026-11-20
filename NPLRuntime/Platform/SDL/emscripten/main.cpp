@@ -106,6 +106,10 @@ public:
     {
         m_renderWindow.OnKey((EVirtualKey)(keycode), EKeyState::RELEASE);
     }
+    bool IsRenderingPaused() const
+    {
+        return !getRenderEnabled();
+    }
     void SetPaused(bool paused)
     {
         setRenderEnabled(!paused);
@@ -146,8 +150,23 @@ void mainloop(void* arg)
             if (Module.HideLoading != undefined) Module.HideLoading();
         });
     }
+    auto* viewports = CGlobals::GetViewportManager();
+    auto* webXR = viewports ? static_cast<IParaWebXR*>(viewports->GetChildAttributeObject("WebXR")) : nullptr;
+    const bool xr = webXR && webXR->GetIsXR();
+    const bool immediate = CGlobals::GetSettings().GetProfileUnlimitedFPS() && !xr && !app->m_paused
+        && !app->IsRenderingPaused() && !EM_ASM_INT({ return typeof document !== "undefined" && document.hidden; });
+    static bool profilingTiming = false;
+    static int previousMode, previousValue;
+    if (immediate != profilingTiming)
+    {
+        if (immediate)
+            emscripten_get_main_loop_timing(&previousMode, &previousValue);
+        if (emscripten_set_main_loop_timing(immediate ? EM_TIMING_SETIMMEDIATE : previousMode,
+                                            immediate ? 0 : previousValue) == 0)
+            profilingTiming = immediate;
+    }
     if (app->m_paused) return;
-    if (!((IParaWebXR *)CGlobals::GetViewportManager()->GetChildAttributeObject("WebXR"))->GetIsXR()) {
+    if (!xr) {
         app->RunLoopOnce();
     }
 

@@ -137,6 +137,8 @@ namespace ParaEngine
 		IRenderContext* m_pRenderContext;
 		IRenderDevice* m_pRenderDevice;
 		IRenderWindow* m_pRenderWindow;
+		virtual void OnProfilingFrameRateChanged(bool enabled) {}
+		bool m_profileUnlimitedFPS = false;
 		CFrameRateController m_doWorkFRC;
 		float			  m_fRefreshTimerInterval; //  in seconds. 
 		int				  m_nFrameRateControl;

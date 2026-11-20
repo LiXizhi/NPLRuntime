@@ -108,6 +108,10 @@ namespace ParaEngine
 		inline void SetWpsOfficeApp(bool is_wps_office_app) { m_is_wps_office_app = is_wps_office_app; }
 		
 	protected:
+#ifndef __EMSCRIPTEN__
+		void OnProfilingFrameRateChanged(bool enabled) override;
+		int m_savedSwapInterval = 0;
+#endif
 		void LoadAndApplySettings();
 		bool UpdateScreenDevice();
 		bool UpdateViewPort();

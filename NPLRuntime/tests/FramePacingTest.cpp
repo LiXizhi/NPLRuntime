@@ -38,5 +38,15 @@ int main()
                 return 1;
         }
     }
+    // A 30 Hz request remains in force on either side of a profiling run.
+    for (bool profiling : {false, true, false})
+    {
+        if (ParaEngine::GetRemainingFrameDelayMs(1.0 / 30.0, 0.004, profiling) != (profiling ? 0 : 29) ||
+            ParaEngine::ShouldRunFrame(0, profiling, 1.0, 1.004, false) != profiling ||
+            !ParaEngine::ShouldRunFrame(0.033, profiling, 1.0, 1.033, false) ||
+            ParaEngine::ShouldRunFrame(0, profiling, 1.0, 1.0, false) ||
+            ParaEngine::ShouldRunFrame(0, profiling, 1.0, 1.004, true))
+            return 1;
+    }
     return 0;
 }

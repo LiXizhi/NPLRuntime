@@ -59,7 +59,6 @@ namespace ParaEngine
 		virtual bool InitApp(IRenderWindow* pWindow, const char* sCommandLine = nullptr) override;
 		virtual void GameToClient(int& inout_x, int & inout_y, bool bInBackbuffer = true) override;
 		virtual void ClientToGame(int& inout_x, int & inout_y, bool bInBackbuffer = true) override;
-		virtual void SetRefreshTimer(float fTimeInterval, int nFrameRateControl = 0) override;
 		virtual bool AppHasFocus() override;
 		virtual void GetStats(string& output, DWORD dwFields) override;
 		virtual bool WriteRegStr(const string& root_key, const string& sSubKey, const string& name, const string& value) override;
@@ -87,8 +86,7 @@ namespace ParaEngine
 
         void handle_mainloop_timer(const boost::system::error_code& err);
 	protected:
-        void UpdateProfilingFrameRate();
-        bool m_profileUnlimitedFPS = false;
+        void OnProfilingFrameRateChanged(bool enabled) override;
         int m_savedSwapInterval = 0;
 		bool m_bAutoLowerFrameRateWhenNotFocused = false;
 		bool m_bToggleSoundWhenNotFocused = false;
