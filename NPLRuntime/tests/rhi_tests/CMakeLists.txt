@@ -26,7 +26,8 @@ if(WIN32)
             NAME rhi_shader_verify_all_37
             COMMAND "$<TARGET_FILE:parafxc>" --verify-dir "${PROJECT_SOURCE_DIR}/ParaEngine/shaders/fx"
         )
-        set_tests_properties(rhi_shader_verify_all_37 PROPERTIES TIMEOUT 120)
+        # Compiling the full shader set is slower on shared Windows CI workers.
+        set_tests_properties(rhi_shader_verify_all_37 PROPERTIES TIMEOUT 600)
     endif()
 
     if(NOT NPLRUNTIME_SERVER AND TARGET ParaEngine)

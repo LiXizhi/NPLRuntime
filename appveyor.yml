@@ -1,0 +1,15 @@
+image: Visual Studio 2022
+clone_depth: 1
+skip_branch_with_pr: true
+
+environment:
+  BOOST_ROOT: C:\Libraries\boost_1_85_0
+
+# The full client runs on GitHub Actions. Build the independent targets here
+# so a cold checkout fits within AppVeyor's one-hour job limit.
+build_script:
+  - cmd: cmake -S NPLRuntime -B build-win64 -G "Visual Studio 17 2022" -A x64 -DBOOST_ROOT="%BOOST_ROOT%" -DBoost_LIBRARY_DIR_RELEASE="%BOOST_ROOT%\lib64-msvc-14.3" -DNPLRUNTIME_ENABLE_ROBOTICS=OFF -DNPLRUNTIME_MUJOCO=OFF -DNPLRUNTIME_ONNXRUNTIME=OFF
+  - cmd: cmake --build build-win64 --config Release --parallel 2 --target FramePacingTest AdaptiveCharacterBudgetTest test_texture_compression parafxc
+
+test_script:
+  - cmd: ctest --test-dir build-win64 -C Release --output-on-failure --no-tests=error -R "^(frame_pacing_unit|adaptive_character_budget_unit|texture_compression_unit|rhi_static_macro_audit|rhi_shader_verify_all_37)$"

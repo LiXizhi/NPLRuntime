@@ -1,0 +1,54 @@
+name: Windows client
+
+on:
+  pull_request:
+    branches: [unified-crossplatform]
+  push:
+    branches: [unified-crossplatform]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: windows-client-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  release:
+    runs-on: windows-2022
+    timeout-minutes: 180
+    env:
+      BOOST_ROOT: C:\local\boost_1_85_0
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Windows x64 SDKs
+        shell: pwsh
+        run: |
+          $PSNativeCommandUseErrorActionPreference = $true
+          function Get-VerifiedFile($url, $file, $algorithm, $hash) {
+            curl.exe --fail --silent --show-error --location --retry 3 $url --output $file
+            if ((Get-FileHash -LiteralPath $file -Algorithm $algorithm).Hash -ne $hash) {
+              throw "Unexpected checksum for $file"
+            }
+          }
+
+          Set-Location $env:RUNNER_TEMP
+          Get-VerifiedFile 'https://archives.boost.io/release/1.85.0/binaries/boost_1_85_0-msvc-14.3-64.exe' boost.exe SHA256 '7b43d7d20f30ce6680f8f6d382ae33b6ed62de14fe78f65edef3f2698d24eb8a'
+          $installer = Start-Process .\boost.exe -ArgumentList "/VERYSILENT /SUPPRESSMSGBOXES /NORESTART /DIR=$env:BOOST_ROOT" -WindowStyle Hidden -Wait -PassThru
+          if ($installer.ExitCode -ne 0) { throw "Boost installer exited with $($installer.ExitCode)" }
+
+          Get-VerifiedFile 'https://api.nuget.org/v3-flatcontainer/microsoft.ml.onnxruntime/1.27.1/microsoft.ml.onnxruntime.1.27.1.nupkg' ort.nupkg SHA512 'B210DCA911D50CAA40FB87B9FFFCF69F3398AD3B7438C62911684607AA7F42BAB236D9B07D3D83ABBA56492658986D4EB692E63B16C26F3582703FE8568F2260'
+          7z x ort.nupkg -oort 'build\native\include\*' 'runtimes\win-x64\native\onnxruntime.*' -r
+          Move-Item ort\build\native\include ort\include
+          Move-Item ort\runtimes\win-x64\native ort\lib
+
+          Get-VerifiedFile 'https://github.com/google-deepmind/mujoco/releases/download/3.10.0/mujoco-3.10.0-windows-x86_64.zip' mujoco.zip SHA256 '5D938C7558490D6F7332307212A41C9C5D5BF39009590E4CA5CF1FF0762DA91C'
+          7z x mujoco.zip -omujoco 'include\*' 'lib\*' 'bin\mujoco.dll' -r
+      - name: Configure x64 Release
+        shell: cmd
+        run: cmake -S NPLRuntime -B build-win64 -G "Visual Studio 17 2022" -A x64 -DBOOST_ROOT="%BOOST_ROOT%" -DBoost_LIBRARY_DIR_RELEASE="%BOOST_ROOT%\lib64-msvc-14.3" -DONNXRUNTIME_ROOT="%RUNNER_TEMP%\ort" -DMUJOCO_ROOT="%RUNNER_TEMP%\mujoco"
+      - name: Build the client and tests
+        run: cmake --build build-win64 --config Release --parallel 4 -- /verbosity:minimal
+      - name: Run CTest
+        # The screenshot comparison needs a desktop with all graphics backends.
+        run: ctest --test-dir build-win64 -C Release --output-on-failure --no-tests=error -E "^rhi_multi_backend_and_subsystems$"
