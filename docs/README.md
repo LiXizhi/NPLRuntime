@@ -6,6 +6,7 @@ Internal architecture and component reference for the NPLRuntime / ParaEngine co
 
 | Document | Description |
 |----------|-------------|
+| [haqi-testing.md](haqi-testing.md) | Run 魔法哈奇, repeat a signed-in plaza profile, and verify the Web game and official homepage |
 | [paraengine-client.md](paraengine-client.md) | **Deep dive:** legacy `Client/trunk/ParaEngineClient` → modern `NPLRuntime/ParaEngine`, every module, startup flow |
 | [npl-ecosystem.md](npl-ecosystem.md) | NPL language, packages, Paracraft scripts, Code Wiki, wiki-derived context |
 | [architecture.md](architecture.md) | High-level system design, data flow, client vs server |

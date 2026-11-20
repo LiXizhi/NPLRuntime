@@ -10,6 +10,10 @@ Guidance for AI coding agents working in `NPLRuntimeUnified` (`unified-crossplat
 - **Web (WebAssembly):** `ParaCraftSingleThread.{js,wasm}` built with **Emscripten 7.0+** (WebGL2 + SDL2 + MuJoCo + ONNX Runtime 1.27.1), mounting local Paracraft files directly from disk without `.data` bundles or external `webparacraft` repo clones.
 - **Mobile:** Android, iOS, HarmonyOS
 
+## Haqi / 魔法哈奇
+
+For Haqi native or browser launches, remembered login, C++ and NPL profiling in the same plaza, or testing the official homepage and downloads, start with [Running and testing Haqi](docs/haqi-testing.md). It identifies the repository for each layer and links the launchers, fixtures and reference captures. The Project 530 workflow below uses the Paracraft shell.
+
 ## Repository Layout
 
 ```text
