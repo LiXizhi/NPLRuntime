@@ -314,46 +314,32 @@ void ParaEngine::CSpriteRendererOpenGL::FlushQuads()
 		}
 	}
 #endif
-	m_vertices.resize(6 * m_sprite_count);
-
-	for (int i = 0; i < m_sprite_count; ++i)
+	auto writeQuad = [](const SpriteQuad& curSprite, auto vertex, size_t stride)
 	{
-		SpriteQuad& curSprite = m_sprites[i];
-		float spritewidth = (float)Math::Abs(curSprite.rect.right - curSprite.rect.left);
-		float spriteheight = (float)Math::Abs(curSprite.rect.bottom - curSprite.rect.top);
-		int nBaseIndex = 6 * i;
-		m_vertices[nBaseIndex].pos.x = curSprite.pos.x - curSprite.center.x;
-		m_vertices[nBaseIndex].pos.y = curSprite.pos.y - curSprite.center.y;
-		m_vertices[nBaseIndex].pos.z = curSprite.pos.z - curSprite.center.z;
-		m_vertices[nBaseIndex + 1].pos.x = spritewidth + curSprite.pos.x - curSprite.center.x;
-		m_vertices[nBaseIndex + 1].pos.y = m_vertices[nBaseIndex].pos.y;
-		m_vertices[nBaseIndex + 1].pos.z = m_vertices[nBaseIndex].pos.z;
-		m_vertices[nBaseIndex + 2].pos.x = m_vertices[nBaseIndex + 1].pos.x;
-		m_vertices[nBaseIndex + 2].pos.y = spriteheight + curSprite.pos.y - curSprite.center.y;
-		m_vertices[nBaseIndex + 2].pos.z = m_vertices[nBaseIndex].pos.z;
-		m_vertices[nBaseIndex + 3].pos.x = m_vertices[nBaseIndex].pos.x;
-		m_vertices[nBaseIndex + 3].pos.y = m_vertices[nBaseIndex + 2].pos.y;
-		m_vertices[nBaseIndex + 3].pos.z = m_vertices[nBaseIndex].pos.z;
-		m_vertices[nBaseIndex].col = curSprite.color;
-		m_vertices[nBaseIndex + 1].col = curSprite.color;
-		m_vertices[nBaseIndex + 2].col = curSprite.color;
-		m_vertices[nBaseIndex + 3].col = curSprite.color;
-		m_vertices[nBaseIndex].tex.x = (float)curSprite.rect.left / (float)curSprite.texw;
-		m_vertices[nBaseIndex].tex.y = (float)curSprite.rect.top / (float)curSprite.texh;
-		m_vertices[nBaseIndex + 1].tex.x = (float)curSprite.rect.right / (float)curSprite.texw;
-		m_vertices[nBaseIndex + 1].tex.y = m_vertices[nBaseIndex].tex.y;
-		m_vertices[nBaseIndex + 2].tex.x = m_vertices[nBaseIndex + 1].tex.x;
-		m_vertices[nBaseIndex + 2].tex.y = (float)curSprite.rect.bottom / (float)curSprite.texh;
-		m_vertices[nBaseIndex + 3].tex.x = m_vertices[nBaseIndex].tex.x;
-		m_vertices[nBaseIndex + 3].tex.y = m_vertices[nBaseIndex + 2].tex.y;
+		const float width = (float)Math::Abs(curSprite.rect.right - curSprite.rect.left);
+		const float height = (float)Math::Abs(curSprite.rect.bottom - curSprite.rect.top);
+		const Vector3 origin = curSprite.pos - curSprite.center;
+		const float right = width + curSprite.pos.x - curSprite.center.x;
+		const float bottom = height + curSprite.pos.y - curSprite.center.y;
+		vertex(0).pos = origin;
+		vertex(1).pos = Vector3(right, origin.y, origin.z);
+		vertex(2).pos = Vector3(right, bottom, origin.z);
+		vertex(3).pos = Vector3(origin.x, bottom, origin.z);
 
-		ParaVec3TransformCoordArray(&m_vertices[nBaseIndex].pos, sizeof(sprite_vertex),
-			&m_vertices[nBaseIndex].pos, sizeof(sprite_vertex), &curSprite.transform, 4);
-
-
-		m_vertices[nBaseIndex + 4] = m_vertices[nBaseIndex];
-		m_vertices[nBaseIndex + 5] = m_vertices[nBaseIndex + 2];
-	}
+		const float u0 = (float)curSprite.rect.left / curSprite.texw;
+		const float v0 = (float)curSprite.rect.top / curSprite.texh;
+		const float u1 = (float)curSprite.rect.right / curSprite.texw;
+		const float v1 = (float)curSprite.rect.bottom / curSprite.texh;
+		vertex(0).tex = Vector2(u0, v0);
+		vertex(1).tex = Vector2(u1, v0);
+		vertex(2).tex = Vector2(u1, v1);
+		vertex(3).tex = Vector2(u0, v1);
+		for (int j = 0; j < 4; ++j)
+			vertex(j).col = curSprite.color;
+		ParaVec3TransformCoordArray(&vertex(0).pos, stride, &vertex(0).pos, stride, &curSprite.transform, 4);
+		vertex(4) = vertex(0);
+		vertex(5) = vertex(2);
+	};
 
 	// Consume only consecutive quads. A fifth texture starts the next draw.
 	const bool batch = m_batchEffect && m_pEffectFile == pEffectMgr->GetCurrentEffectFile();
@@ -393,13 +379,17 @@ void ParaEngine::CSpriteRendererOpenGL::FlushQuads()
 				D3DDECL_END()
 			};
 			static CVertexDeclaration declaration(layout);
-			m_batchVertices.resize(6 * (end - start));
+			const size_t vertexCount = 6 * (end - start);
+			if (m_batchVertices.size() < vertexCount)
+				m_batchVertices.resize(vertexCount);
 			for (int i = start; i < end; ++i)
 			{
 				const int unit = static_cast<int>(std::find(textures, textures + used, m_sprites[i].texture) - textures);
 				const float slot = float(unit + 1) * (m_sprites[i].bClampAddress ? -1.f : 1.f);
+				auto* quad = &m_batchVertices[6 * (i - start)];
+				writeQuad(m_sprites[i], [quad](int j) -> sprite_vertex& { return quad[j].sprite; }, sizeof(BatchVertex));
 				for (int j = 0; j < 6; ++j)
-					m_batchVertices[6 * (i - start) + j] = {m_vertices[6 * i + j], slot};
+					quad[j].slot = slot;
 			}
 			GLuint previous[4] = {};
 			for (int unit = 1; unit < 4; ++unit)
@@ -430,7 +420,15 @@ void ParaEngine::CSpriteRendererOpenGL::FlushQuads()
 			}
 			if (batch) m_pEffectFile->CommitChanges();
 			if (i != start) pRenderDevice->SetTexture(0, m_sprites[i].texture);
-			DrawTriangles(&m_vertices[6 * i], 2 * (j - i));
+			const size_t vertexCount = 6 * (j - i);
+			if (m_vertices.size() < vertexCount)
+				m_vertices.resize(vertexCount);
+			for (int k = i; k < j; ++k)
+			{
+				auto* quad = &m_vertices[6 * (k - i)];
+				writeQuad(m_sprites[k], [quad](int n) -> sprite_vertex& { return quad[n]; }, sizeof(sprite_vertex));
+			}
+			DrawTriangles(m_vertices.data(), 2 * (j - i));
 		}
 	}
 
@@ -438,7 +436,6 @@ void ParaEngine::CSpriteRendererOpenGL::FlushQuads()
 	pRenderDevice->SetSamplerState(0, ESamplerStateType::MAGFILTER, savedMagFilter);
 	pRenderDevice->SetSamplerState(0, ESamplerStateType::ADDRESSU, savedAddressU);
 	pRenderDevice->SetSamplerState(0, ESamplerStateType::ADDRESSV, savedAddressV);
-	m_vertices.clear();
 	/*if (!(m_flags & D3DXSPRITE_DO_NOT_ADDREF_TEXTURE))
 	for (int i = 0; i < m_sprite_count; i++)
 		IDirect3DTexture9_Release(m_sprites[i].texture);*/

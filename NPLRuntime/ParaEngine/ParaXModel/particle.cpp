@@ -174,6 +174,8 @@ void ParticleSystem::update(SceneState* pSceneState, float dt)
 					// Very tricky: apply the outer world transform: to change the pos, origin and speed(direction) into absolute world space. 
 					// transform to world coordinate system, suppose that the world transform is in device already
 					p.pos = p.pos * mWorld;
+					if (billboard)
+						instancePS->m_positionSum += p.pos;
 					p.origin = p.origin * mWorld;
 					p.speed = p.speed.TransformNormal(mWorld);
 				}
@@ -194,6 +196,8 @@ bool ParticleSystem::AnimateExistingParticles(float dt, const Vector3& vOffset, 
 	float grav = gravity.getValue(manim, mtime);
 	float mspeed = 1.0f;
 
+	Vector3 positionSum(0, 0, 0);
+	const bool sumPositions = billboard && instancePS->m_bUseAbsCord;
 	ParticleListType::iterator it;
 	for (it = particles.begin(); it != particles.end(); ) {
 		Particle& p = *it;
@@ -241,8 +245,13 @@ bool ParticleSystem::AnimateExistingParticles(float dt, const Vector3& vOffset, 
 		if (rlife >= 1.0f)
 			it = particles.erase(it);
 		else
+		{
+			if (sumPositions)
+				positionSum += p.pos;
 			++it;
+		}
 	}
+	instancePS->m_positionSum = positionSum;
 	return (particles.size() > 0);
 }
 
@@ -434,12 +443,7 @@ void ParticleSystem::DrawInstanceSub(ParticleList* instancePS)
 		if (instancePS->m_bUseAbsCord)
 		{
 			// use average position(gravity point) of the particle system.
-			Vector3 basePos(0, 0, 0);
-			ParticleListType::const_iterator it, itEnd = particles.end();
-			for (it = particles.begin(); it != itEnd; ++it)
-			{
-				basePos += (*it).pos;
-			}
+			Vector3 basePos = instancePS->m_positionSum;
 			float fM = (float)(particles.size());
 			basePos.x /= fM;
 			basePos.y /= fM;

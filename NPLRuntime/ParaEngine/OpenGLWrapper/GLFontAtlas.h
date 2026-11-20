@@ -26,6 +26,7 @@ namespace ParaEngine
 		void addLetterDefinition(char16_t utf16Char, const FontLetterDefinition &letterDefinition);
 		bool getLetterDefinitionForChar(char16_t utf16Char, FontLetterDefinition &letterDefinition);
 
+		uint64_t getLayoutRevision() const { return _layoutRevision; }
 		bool prepareLetterDefinitions(const std::u16string& utf16String);
 
 		inline const std::unordered_map<size_t, GLTexture2D*>& getTextures() const { return _atlasTextures; }
@@ -80,6 +81,7 @@ namespace ParaEngine
 
 		std::unordered_map<size_t, GLTexture2D*> _atlasTextures;
 		std::unordered_map<char16_t, FontLetterDefinition> _letterDefinitions;
+		uint64_t _layoutRevision = 0;
 		float _lineHeight;
 		Font* _font;
 		FontFreeType* _fontFreeType;

@@ -1722,23 +1722,13 @@ void Terrain::Render()
 				pEffectFile->setParameter(CEffectFile::k_posScaleOffset, Vector3(0,0,0).ptr());
 				if(pEffectFile->BeginPass(0))
 				{
-					/** 
-					* render the terrain by texture groups
-					*/
-					int nTextureGroupCount = (int)(textureGroups.size()) - 1;
-					for(int nTextureID =0;nTextureID<nTextureGroupCount;++nTextureID)
+					// All textured groups occupy a contiguous prefix. The last group is fog.
+					const int triangles = textureGroups.empty() ? 0 : textureGroups.back().nStartIndex;
+					if (triangles > 0)
 					{
-						/** 
-						* for each texture group, we will use multi-texture stage to render blended textures at the same time 
-						*/
-						TextureGroup& texGroup = textureGroups[nTextureID];
-						if(texGroup.nNumTriangles>0)
-						{
-							// render triangles for the current texture group 
-							pEffectFile->CommitChanges();
-							CGlobals::GetRenderDevice()->DrawPrimitive( EPrimitiveType::TRIANGLELIST, texGroup.nStartIndex*3, texGroup.nNumTriangles);
-						}
-					}//for( itCurCP = 
+						pEffectFile->CommitChanges();
+						pRenderDevice->DrawPrimitive(EPrimitiveType::TRIANGLELIST, 0, triangles);
+					}
 					pEffectFile->EndPass();
 				}
 				pEffectFile->end();

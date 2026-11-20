@@ -32,6 +32,7 @@ it represents the instance of the particle system.
 struct  ParticleList
 {
 	ParticleListType particles;
+	Vector3 m_positionSum{0, 0, 0};
 	/** whether to use absolute world coordinate system, so that when particles leave its source, it will be 
 	* an independent object in the world coordinate system.*/
 	bool m_bUseAbsCord:1;

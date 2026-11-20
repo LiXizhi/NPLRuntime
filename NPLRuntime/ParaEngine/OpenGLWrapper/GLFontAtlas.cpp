@@ -47,6 +47,7 @@ GLFontAtlas::~GLFontAtlas()
 
 void GLFontAtlas::reset()
 {
+    ++_layoutRevision;
     releaseTextures();
 
     _currLineHeight = 0;
@@ -80,11 +81,13 @@ void GLFontAtlas::purgeTexturesAtlas()
 
 void GLFontAtlas::addLetterDefinition(char16_t utf16Char, const FontLetterDefinition &letterDefinition)
 {
+    ++_layoutRevision;
     _letterDefinitions[utf16Char] = letterDefinition;
 }
 
 void GLFontAtlas::scaleFontLetterDefinition(float scaleFactor)
 {
+    ++_layoutRevision;
     for (auto&& fontDefinition : _letterDefinitions) {
         auto& letterDefinition = fontDefinition.second;
         letterDefinition.width *= scaleFactor;

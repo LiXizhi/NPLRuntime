@@ -1887,11 +1887,7 @@ namespace ParaEngine
 					}
 				}
 
-				while((hr = pQueries->CheckForFirstResult(&pixelsVisible, (void**)(&tileID))) == S_OK)
-				{
-					ocean_tile_occlusion_result[(int)tileID] = pixelsVisible;
-				}
-
+				// Consume newly issued queries on the next visit. Unknown tiles stay visible.
 				bool bRenderOceanReflection_lastframe = m_bRenderOceanReflection;
 				m_bRenderOceanReflection = false;
 				for (float y=y0; y<y1; y=y+1.0f)

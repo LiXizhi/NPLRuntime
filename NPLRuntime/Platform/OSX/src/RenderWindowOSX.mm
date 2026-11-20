@@ -714,15 +714,11 @@ void RenderWindowOSX::PollEvents()
 {
     if (m_window == nullptr || ShouldClose()) return;
 
-    if (CGlobals::GetApp() && CGlobals::GetApp()->GetAppState() == PEAppState_Ready)
+    if (m_startupLuaSyncFrames > 0 && CGlobals::GetApp() &&
+        CGlobals::GetApp()->GetAppState() == PEAppState_Ready)
     {
-        bool forceStartupSync = false;
-        if (m_startupLuaSyncFrames > 0)
-        {
-            --m_startupLuaSyncFrames;
-            forceStartupSync = true;
-        }
-        UpdateAutoUIScaling(forceStartupSync);
+        --m_startupLuaSyncFrames;
+        UpdateAutoUIScaling(true);
     }
 
     NSEvent *event;

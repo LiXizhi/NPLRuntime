@@ -42,6 +42,8 @@ namespace ParaEngine
 		int m_nRealFontSize;
 		float m_fFontScaling;
 		bool m_bUseCustomShader;
+		uint64_t m_layoutAtlasRevision = 0;
+		DWORD m_layoutFormat = 0;
 		// Most recently used first. Keep glyphs across alternating label scales,
 		// but bound the number of retained sizes when the camera keeps zooming.
 		std::list<std::pair<int, GLFontAtlas*>> m_scaledFontAtlases;

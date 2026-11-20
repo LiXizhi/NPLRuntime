@@ -435,7 +435,11 @@ ParaEngine::CFontRendererOpenGL::~CFontRendererOpenGL()
 
 void ParaEngine::CFontRendererOpenGL::SetUTF16Text(const char16_t* strText)
 {
-	_currentUTF16String = strText;
+	if (_currentUTF16String != strText)
+	{
+		_currentUTF16String = strText;
+		_contentDirty = true;
+	}
 }
 
 
@@ -446,7 +450,8 @@ bool ParaEngine::CFontRendererOpenGL::DrawTextW(CSpriteRenderer* pSprite, const 
 		return false;
 	SetUTF16Text(strText);
 	// remove all '\r', since cocos font rendering only support '\n', not "\r\n"
-	_currentUTF16String.erase(std::remove(_currentUTF16String.begin(), _currentUTF16String.end(), '\r'), _currentUTF16String.end());
+	if (_contentDirty)
+		_currentUTF16String.erase(std::remove(_currentUTF16String.begin(), _currentUTF16String.end(), '\r'), _currentUTF16String.end());
 
 	if (!pSprite) return false;
 	int nWidth = CGUIBase::RectWidth(rect);
@@ -557,6 +562,10 @@ bool ParaEngine::CFontRendererOpenGL::UpdateLetterSprites(DWORD dwTextFormat)
 		return false;
 	}
 
+	if (!_contentDirty && m_layoutFormat == dwTextFormat &&
+		m_layoutAtlasRevision == _fontAtlas->getLayoutRevision() && !_fontAtlas->getTextures().empty())
+		return true;
+
 	computeStringNumLines();
 	if (_fontAtlas)
 	{
@@ -572,6 +581,10 @@ bool ParaEngine::CFontRendererOpenGL::UpdateLetterSprites(DWORD dwTextFormat)
 	if (_labelWidth > 0 || (_currNumLines > 1 && _hAlignment != TextHAlignment::LEFT))
 		LabelTextFormatter::alignText(this);
 
+	m_layoutAtlasRevision = _fontAtlas->getLayoutRevision();
+	m_layoutFormat = dwTextFormat;
+	// Wrapping can insert line breaks into the working string.
+	_contentDirty = (dwTextFormat & DT_WORDBREAK) && !(dwTextFormat & DT_SINGLELINE);
 	return true;
 }
 
