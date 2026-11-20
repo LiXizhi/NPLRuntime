@@ -1,0 +1,32 @@
+image: Visual Studio 2022
+clone_depth: 1
+
+environment:
+  BOOST_ROOT: C:\Libraries\boost_1_85_0
+
+install:
+  # Use the release SDKs so the CI worker can build the robotics-enabled client
+  # without recompiling ONNX Runtime and MuJoCo from source on every checkout.
+  - cmd: mkdir ci-deps
+  - cmd: appveyor DownloadFile https://api.nuget.org/v3-flatcontainer/microsoft.ml.onnxruntime/1.27.1/microsoft.ml.onnxruntime.1.27.1.nupkg -FileName ci-deps\ort.nupkg
+  - ps: |
+      if ((Get-FileHash ci-deps\ort.nupkg -Algorithm SHA512).Hash -ne 'B210DCA911D50CAA40FB87B9FFFCF69F3398AD3B7438C62911684607AA7F42BAB236D9B07D3D83ABBA56492658986D4EB692E63B16C26F3582703FE8568F2260') {
+        throw 'Unexpected ONNX Runtime package checksum'
+      }
+  - cmd: 7z x ci-deps\ort.nupkg -oci-deps\ort build\native\include\* runtimes\win-x64\native\onnxruntime.* -r
+  - cmd: move ci-deps\ort\build\native\include ci-deps\ort\include
+  - cmd: move ci-deps\ort\runtimes\win-x64\native ci-deps\ort\lib
+  - cmd: appveyor DownloadFile https://github.com/google-deepmind/mujoco/releases/download/3.10.0/mujoco-3.10.0-windows-x86_64.zip -FileName ci-deps\mujoco.zip
+  - ps: |
+      if ((Get-FileHash ci-deps\mujoco.zip).Hash -ne '5D938C7558490D6F7332307212A41C9C5D5BF39009590E4CA5CF1FF0762DA91C') {
+        throw 'Unexpected MuJoCo package checksum'
+      }
+  - cmd: 7z x ci-deps\mujoco.zip -oci-deps\mujoco include\* lib\* bin\mujoco.dll -r
+
+build_script:
+  - cmd: cmake -S NPLRuntime -B build-win64 -G "Visual Studio 17 2022" -A x64 -DBOOST_ROOT="%BOOST_ROOT%" -DBoost_LIBRARY_DIR_RELEASE="%BOOST_ROOT%\lib64-msvc-14.3" -DONNXRUNTIME_ROOT="%CD%\ci-deps\ort" -DMUJOCO_ROOT="%CD%\ci-deps\mujoco"
+  - cmd: cmake --build build-win64 --config Release --parallel 2 -- /verbosity:minimal
+
+test_script:
+  # The screenshot comparison requires a desktop with all hardware backends.
+  - cmd: ctest --test-dir build-win64 -C Release --output-on-failure --no-tests=error -E "^rhi_multi_backend_and_subsystems$"
