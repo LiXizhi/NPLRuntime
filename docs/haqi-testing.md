@@ -22,6 +22,22 @@ On Windows, build with `build_win32.bat` and run `tests\haqi\run_haqi_native.bat
 
 The launcher prints the runtime path, asset manifest hash and client PID. Inspect `log.txt` and `stdout.log` there. To test package preparation alone, pass `--prepare-only --runtime-dir <scratch-directory>`. Keep login state in the local runtime. Omit credentials and token-bearing URLs from commands, shared logs and screenshots.
 
+## Mobile movement and the Creative Space HUD
+
+1. In Haqi Town, stand on open ground and keep the camera still. Drag the pad toward the bottom of the screen. The character should turn toward the camera and walk forward. Test left and right, rotate the camera and repeat.
+2. Enter a local flat Creative Space from Haqi. Drag through all eight directions, cross the center from left to right, then drag back to the center and hold. Movement should follow the drag and stop at the center. While moving, tap jump with a second finger and release it. The first finger should still control movement.
+3. In landscape, check that the Haqi build tools sit above the world and the inventory and build buttons remain accessible along the bottom. Tap the gear, tap **系统设置**, switch a tab and close the dialog. Exit the creative world and check the pad again in Haqi Town.
+
+For a native desktop spot check, enter the plaza first, then run the following in the NPL console of a disposable session. This enables the touch UI for that session. Record the host and input method with your results. A phone run also exercises the OS touch delivery and screen layout.
+
+```lua
+System.options.IsTouchDevice = true
+System.options.IsMobilePlatform = true
+ParaCamera.GetAttributeObject():SetField("IsShiftMoveSwitched", true)
+NPL.load("(gl)script/apps/Aries/Desktop/Dock/AriesMobilePage.lua")
+MyCompany.Aries.Dock.AriesMobilePage.ShowPage(true)
+```
+
 ## Compare C++ and NPL in the same plaza
 
 1. Start the native launcher with `--renderer opengl --profile-unlimited-fps` for **both** builds. The default remains capped according to the host policy. For a live switch use `ParaEngine.GetAttributeObject():SetField("ProfileUnlimitedFPS", true)` in the NPL console. Set it back to `false` after the run.
