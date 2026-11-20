@@ -2262,6 +2262,12 @@ void EffectManager::SetDefaultEffectMapping(int nLevel)
 		if (!CGlobals::GetSettings().IsLowEndRenderDevice())
 		{
 			pEffect = GetEffectByName("character_skinned");
+#if PARA_TARGET_PLATFORM == PARA_PLATFORM_MAC
+			auto* device = CGlobals::GetRenderDevice();
+			if (nLevel == 20 && device && device->GetBackendType() == ERHIBackend::OpenGL &&
+				device->GetCaps().maxVertexUniformVectors >= 384)
+				pEffect = CGlobals::GetAssetManager()->LoadEffectFile("character_skinned_low", ":IDR_FX_CHARACTER_SKINNED_LOW");
+#endif
 			MapHandleToEffect(TECH_CHARACTER_SKINNED, pEffect);
 
 			pEffect = GetEffectByName("bmax_model_skinned");

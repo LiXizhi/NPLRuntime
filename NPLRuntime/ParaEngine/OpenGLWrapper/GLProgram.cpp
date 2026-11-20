@@ -239,6 +239,16 @@ void GLProgram::bindPredefinedVertexAttribs()
 		{ GLProgram::ATTRIBUTE_NAME_NORMAL, GLProgram::VERTEX_ATTRIB_NORMAL },
 	};
 
+	// Blend streams use fixed locations in the RHI vertex declaration. GLES2
+	// devices can expose only the first eight attributes.
+	GLint maxAttribs = 0;
+	glGetIntegerv(GL_MAX_VERTEX_ATTRIBS, &maxAttribs);
+	if (maxAttribs > VERTEX_ATTRIB_BLEND_INDEX)
+	{
+		glBindAttribLocation(_program, VERTEX_ATTRIB_BLEND_WEIGHT, ATTRIBUTE_NAME_BLEND_WEIGHT);
+		glBindAttribLocation(_program, VERTEX_ATTRIB_BLEND_INDEX, ATTRIBUTE_NAME_BLEND_INDEX);
+	}
+
 	const int size = sizeof(attribute_locations) / sizeof(attribute_locations[0]);
 
 	for (int i = 0; i<size;i++) {

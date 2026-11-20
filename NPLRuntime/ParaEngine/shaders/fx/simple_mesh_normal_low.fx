@@ -74,16 +74,62 @@ float4 InstancePosition(float4 pos, float4 x, float4 y, float4 z)
     return float4(dot(pos, x), dot(pos, y), dot(pos, z), 1.0);
 }
 #endif
+#ifdef CHARACTER_SKINNED_LOW
+// CPU skinning uses the scale-free normal transform calculated by each bone.
+float4 g_mWorldMatrixArray[174] : WORLDMATRIXARRAY;
+float4 g_boneNormals[174];
+
+float3 BonePosition(float4 pos, int i)
+{
+    return float3(dot(pos, g_mWorldMatrixArray[i]), dot(pos, g_mWorldMatrixArray[i+1]), dot(pos, g_mWorldMatrixArray[i+2]));
+}
+
+float3 BoneNormal(float3 norm, int i)
+{
+    return float3(dot(norm, g_boneNormals[i].xyz), dot(norm, g_boneNormals[i+1].xyz), dot(norm, g_boneNormals[i+2].xyz));
+}
+
+void SkinVertex(inout float4 pos, inout float3 norm, float4 weights, float4 indices)
+{
+    int4 i = (int4)(indices * 255.0 + 0.5) * 3;
+    float3 p = BonePosition(pos, i.x) * weights.x;
+    float3 n = BoneNormal(norm, i.x) * weights.x;
+    if (weights.y > 0.0)
+    {
+        p += BonePosition(pos, i.y) * weights.y;
+        n += BoneNormal(norm, i.y) * weights.y;
+        if (weights.z > 0.0)
+        {
+            p += BonePosition(pos, i.z) * weights.z;
+            n += BoneNormal(norm, i.z) * weights.z;
+            if (weights.w > 0.0)
+            {
+                p += BonePosition(pos, i.w) * weights.w;
+                n += BoneNormal(norm, i.w) * weights.w;
+            }
+        }
+    }
+    pos = float4(p, 1.0);
+    norm = n;
+}
+#endif
 Interpolants vertexShader(	float4	Pos			: POSITION,
 #ifdef STATIC_MESH_INSTANCED
     float4 instanceX : TEXCOORD1,
     float4 instanceY : TEXCOORD2,
     float4 instanceZ : TEXCOORD3,
 #endif
+#ifdef CHARACTER_SKINNED_LOW
+    float4 weights : BLENDWEIGHT,
+    float4 indices : BLENDINDICES,
+#endif
     float3	Norm		: NORMAL,
 							float2	Tex			: TEXCOORD0)
 {
 	Interpolants o = (Interpolants)0;
+#ifdef CHARACTER_SKINNED_LOW
+    SkinVertex(Pos, Norm, weights, indices);
+#endif
 #ifdef STATIC_MESH_INSTANCED
     float4 worldPos = InstancePosition(Pos, instanceX, instanceY, instanceZ);
     o.positionSS = mul(worldPos, mViewProj);
@@ -197,6 +243,10 @@ void VertShadow( float4	Pos			: POSITION,
     float4 instanceY : TEXCOORD2,
     float4 instanceZ : TEXCOORD3,
 #endif
+#ifdef CHARACTER_SKINNED_LOW
+    float4 weights : BLENDWEIGHT,
+    float4 indices : BLENDINDICES,
+#endif
     float3	Norm		: NORMAL,
 				 float2	Tex			: TEXCOORD0,
                  out float4 oPos	: POSITION,
@@ -206,6 +256,9 @@ void VertShadow( float4	Pos			: POSITION,
 #ifdef STATIC_MESH_INSTANCED
     oPos = mul(InstancePosition(Pos, instanceX, instanceY, instanceZ), mViewProj);
 #else
+#ifdef CHARACTER_SKINNED_LOW
+    SkinVertex(Pos, Norm, weights, indices);
+#endif
     oPos = mul( Pos, mWorldViewProj );
 #endif
     outTex = Tex;

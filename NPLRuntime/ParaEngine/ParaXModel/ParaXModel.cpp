@@ -1732,10 +1732,18 @@ bool CParaXModel::CanUseGpuSkinning() const
 	auto* pDevice = CGlobals::GetRenderDevice();
 	if (!pDevice)
 		return false;
-	// Legacy ParaX characters set animGeometry for bone-deformed vertices too.
-	// Their software pass skins m_origVertices with the same palette as the shader.
-	if (animGeometry && (pDevice->GetBackendType() != ERHIBackend::WebGPU || m_header.type == PARAX_MODEL_BMAX))
-		return false;
+	// Legacy ParaX characters also set animGeometry for skeletal deformation.
+	if (animGeometry)
+	{
+		if (m_header.type == PARAX_MODEL_BMAX)
+			return false;
+		bool supportsLegacyGeometry = pDevice->GetBackendType() == ERHIBackend::WebGPU;
+#if PARA_TARGET_PLATFORM == PARA_PLATFORM_MAC
+		supportsLegacyGeometry |= pDevice->GetBackendType() == ERHIBackend::OpenGL;
+#endif
+		if (!supportsLegacyGeometry)
+			return false;
+	}
 	const int maxGpuBones = pDevice->GetCaps().GetMaxGpuSkinningBones();
 	return maxGpuBones > 0 && static_cast<int>(m_objNum.nBones) <= maxGpuBones;
 }
@@ -1749,6 +1757,22 @@ bool CParaXModel::EnsureGpuSkinBuffers()
 
 	m_pGpuSkinVB.ReleaseBuffer();
 	m_pGpuSkinIB.ReleaseBuffer();
+
+#if PARA_TARGET_PLATFORM == PARA_PLATFORM_MAC
+	// Rigid passes apply a per-pass world transform to the unskinned vertices.
+	// Keep that path for legacy meshes mixing rigid and weighted passes.
+	if (animGeometry && CGlobals::GetRenderDevice()->GetBackendType() == ERHIBackend::OpenGL)
+	{
+		for (const auto& pass : passes)
+		{
+			if (pass.indexCount > 0 && pass.is_rigid_body)
+			{
+				m_bGpuSkinBufferFailed = true;
+				return false;
+			}
+		}
+	}
+#endif
 
 	const uint32 nVerts = m_objNum.nVertices;
 	const uint32 nIndices = m_objNum.nIndices;
@@ -1848,6 +1872,19 @@ void CParaXModel::UploadBonePalette(CEffectFile* pEffect) const
 		palette[i * 3 + 2] = Vector4(m._13, m._23, m._33, m._43);
 	}
 	pEffect->setVectorArray(CEffectFile::k_worldMatrixArray, palette, nBones * 3);
+#if PARA_TARGET_PLATFORM == PARA_PLATFORM_MAC
+	if (pEffect->GetFileName() == ":IDR_FX_CHARACTER_SKINNED_LOW")
+	{
+		for (uint32 i = 0; i < nBones; ++i)
+		{
+			const Matrix4& m = bones[i].mrot;
+			palette[i * 3] = Vector4(m._11, m._21, m._31, 0.f);
+			palette[i * 3 + 1] = Vector4(m._12, m._22, m._32, 0.f);
+			palette[i * 3 + 2] = Vector4(m._13, m._23, m._33, 0.f);
+		}
+		pEffect->SetRawValue("g_boneNormals", palette, 0, nBones * 3 * sizeof(Vector4));
+	}
+#endif
 }
 
 void CParaXModel::RenderShaderAnim(SceneState* pSceneState, CParameterBlock* pMaterialParams)
@@ -2326,7 +2363,19 @@ void CParaXModel::drawModel(SceneState* pSceneState, CParameterBlock* pMaterialP
 	{
 		if (nRenderMethod == SOFT_ANIM || nRenderMethod == SHADER_ANIM)
 		{
-			if ((nPrevTechHandle == TECH_CHARACTER || nPrevTechHandle == TECH_SIMPLE_MESH_NORMAL || nPrevTechHandle == TECH_CHARACTER_SKINNED) &&
+			bool compatible = true;
+#if PARA_TARGET_PLATFORM == PARA_PLATFORM_MAC
+			if (animGeometry && CGlobals::GetRenderDevice()->GetBackendType() == ERHIBackend::OpenGL)
+			{
+				// Preserve the active shader's material, including RGB-only texture animation.
+				nRenderMethod = SOFT_ANIM;
+				const auto* skinned = pEffectMgr->GetEffectByHandle(TECH_CHARACTER_SKINNED);
+				compatible = skinned && skinned->GetFileName() == ":IDR_FX_CHARACTER_SKINNED_LOW" &&
+					pEffectMgr->GetCurrentEffectFile()->GetFileName() == ":IDR_FX_SIMPLE_MESH_NORMAL_LOW" &&
+					GetRenderPass(pMaterialParam) == 0;
+			}
+#endif
+			if (compatible && (nPrevTechHandle == TECH_CHARACTER || nPrevTechHandle == TECH_SIMPLE_MESH_NORMAL || nPrevTechHandle == TECH_CHARACTER_SKINNED) &&
 				EnsureGpuSkinBuffers())
 			{
 				if (nPrevTechHandle != TECH_CHARACTER_SKINNED)
