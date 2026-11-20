@@ -25,6 +25,7 @@ namespace ParaEngine
 	{
 		GLvoid*         value;       // value
 		unsigned int    location;    // Key
+		unsigned int    insertionIndex;
 		UT_hash_handle  hh;          // hash entry
 		unsigned int	size;
 		GLenum			type;
@@ -101,7 +102,6 @@ GLProgram::GLProgram()
 	, _vertShader(0)
 	, _fragShader(0)
 	, _hashForUniforms(nullptr)
-	, _dirty(false)
 	, _colorOutputMask(0x1u)
 {
 	memset(_builtInUniforms, 0, sizeof(_builtInUniforms));
@@ -147,6 +147,7 @@ GLProgram::~GLProgram()
 
 bool GLProgram::initWithByteArrays(const GLchar* vShaderByteArray, const GLchar* fShaderByteArray)
 {
+	_firstDirty = _lastDirty = nullptr;
 	_colorOutputMask = 0x1u;
 	if (fShaderByteArray)
 	{
@@ -753,66 +754,38 @@ bool GLProgram::updateUniformLocation(GLint location, const GLvoid* data, unsign
 		return false;
 	}
 
-	bool updated = true;
 	tHashUniformEntry *element = nullptr;
 	HASH_FIND_INT(_hashForUniforms, &location, element);
-
 	if (!element)
 	{
 		element = (tHashUniformEntry*)malloc(sizeof(*element));
-
-		// key
 		element->location = location;
-
-		// size
-		element->size = bytes;
-
-		// 
+		element->insertionIndex = HASH_COUNT(_hashForUniforms);
 		element->type = type;
-
-		if (!direct)
-		{
-			//
-			element->dirty = true;
-			_dirty = true;
-		}
-		else
-		{
-			element->dirty = false;
-		}
-
-		// value
+		element->size = bytes;
 		element->value = malloc(bytes);
-		memcpy(element->value, data, bytes);
-
 		HASH_ADD_INT(_hashForUniforms, location, element);
 	}
-	else
+	else if (bytes != element->size)
 	{
-		if (bytes == element->size && memcmp(element->value, data, bytes) == 0)
-		{
-			updated = false;
-		}
-		else
-		{
-			element->value = realloc(element->value, bytes);
-			element->size = bytes;
-
-			if (!direct)
-			{
-				element->dirty = true;
-				_dirty = true;
-			}
-			else
-			{
-				element->dirty = false;
-			}
-
-			memcpy(element->value, data, bytes);
-		}
+		element->value = realloc(element->value, bytes);
+		element->size = bytes;
+	}
+	else if (memcmp(element->value, data, bytes) == 0)
+	{
+		return false;
 	}
 
-	return updated;
+	memcpy(element->value, data, bytes);
+	element->dirty = !direct;
+	if (!direct)
+	{
+		if (!_firstDirty || element->insertionIndex < _firstDirty->insertionIndex)
+			_firstDirty = element;
+		if (!_lastDirty || element->insertionIndex > _lastDirty->insertionIndex)
+			_lastDirty = element;
+	}
+	return true;
 }
 
 GLint GLProgram::getUniformLocationForName(const char* name) const
@@ -1096,19 +1069,15 @@ void GLProgram::setUniformLocationWithMatrix4fv(GLint location, const GLfloat* m
 
 void GLProgram::commit()
 {
-	if (!_dirty)
+	if (!_firstDirty || !IsOpenGLActiveForProgram() || !_program)
 		return;
-	if (!IsOpenGLActiveForProgram() || !_program)
-	{
-		_dirty = false;
-		return;
-	}
 
 #ifdef PARA_ENABLE_OPENGL
-	tHashUniformEntry *current_element, *tmp;
-
-	// Purge uniform hash
-	HASH_ITER(hh, _hashForUniforms, current_element, tmp)
+	// Preserve insertion order for overlapping array locations. Entries outside
+	// this range have no deferred writes, even when a direct write cancels one.
+	auto* end = static_cast<tHashUniformEntry*>(_lastDirty->hh.next);
+	for (auto* current_element = _firstDirty; current_element != end;
+		current_element = static_cast<tHashUniformEntry*>(current_element->hh.next))
 	{
 		if (!current_element->dirty)
 			continue;
@@ -1267,7 +1236,7 @@ void GLProgram::commit()
 	}
 #endif
 
-	_dirty = false;
+	_firstDirty = _lastDirty = nullptr;
 }
 
 
@@ -1293,5 +1262,5 @@ void GLProgram::reset()
 	}
 	_hashForUniforms = nullptr;
 
-	_dirty = false;
+	_firstDirty = _lastDirty = nullptr;
 }

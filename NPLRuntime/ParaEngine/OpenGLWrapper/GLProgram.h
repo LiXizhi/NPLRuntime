@@ -272,7 +272,7 @@ namespace ParaEngine
 
 
 		void commit();
-		bool isDirty() const { return _dirty; };
+		bool isDirty() const { return _firstDirty != nullptr; };
 	protected:
 		bool updateUniformLocation(GLint location, const GLvoid* data, unsigned int bytes, GLenum type, bool direct = false);
 
@@ -290,7 +290,8 @@ namespace ParaEngine
 		GLint             _builtInUniforms[UNIFORM_MAX];
 		struct _hashUniformEntry* _hashForUniforms;
 		bool              _hasShaderCompiler;
-		bool			  _dirty;
+		_hashUniformEntry* _firstDirty = nullptr;
+		_hashUniformEntry* _lastDirty = nullptr;
 		uint8_t           _colorOutputMask;
 		static uint8_t    s_currentColorOutputMask;
 
