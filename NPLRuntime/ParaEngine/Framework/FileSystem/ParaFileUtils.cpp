@@ -9,6 +9,7 @@
 #include "ParaFileUtils.h"
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
+#include "WebFileMove.h"
 #endif
 #include "StringHelper.h"
 
@@ -156,8 +157,7 @@ bool ParaEngine::CParaFileUtils::Move(const std::string& src, const std::string&
 	try
 	{
 #ifdef __EMSCRIPTEN__
-		if (src == dest) return true;
-		return std::rename(src.c_str(), dest.c_str()) == 0;
+		return MoveWebFile(src, dest);
 #else
 #if defined(WIN32) && defined(DEFAULT_FILE_ENCODING)
 		std::wstring src16 = StringHelper::MultiByteToWideChar(src.c_str(), DEFAULT_FILE_ENCODING);
