@@ -47,6 +47,7 @@ namespace ParaEngine
 		void UpdateLayerContentsScale(float scale);
 
 		void DeferRelease(void* retainedObjcPtr);
+		void NotifyBufferDestroyed(MetalBuffer* buffer);
 		void ExecuteAndSyncGPU();
 		bool AllocateUpload(uint32_t byteSize, uint32_t alignment, void*& outCpuPtr, void*& outMtlBuffer, uint32_t& outOffset);
 

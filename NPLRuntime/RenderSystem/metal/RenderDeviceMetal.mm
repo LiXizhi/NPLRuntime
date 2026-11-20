@@ -481,8 +481,11 @@ namespace ParaEngine
 
 		~MetalBuffer() override
 		{
-			if (m_owner && m_buffer)
+			if (m_owner)
+			{
+				m_owner->NotifyBufferDestroyed(this);
 				m_owner->DeferRelease(reinterpret_cast<void*>(m_buffer));
+			}
 			m_buffer = nil;
 		}
 
@@ -1053,6 +1056,17 @@ namespace ParaEngine
 			layer.drawableSize = CGSizeMake(width, height);
 
 		return CreateDefaultResources(width, height);
+	}
+
+	void RenderDeviceMetal::NotifyBufferDestroyed(MetalBuffer* buffer)
+	{
+		for (auto& stream : m_streams)
+		{
+			if (stream.buffer == buffer)
+				stream.buffer = nullptr;
+		}
+		if (m_currentIndexBuffer == buffer)
+			m_currentIndexBuffer = nullptr;
 	}
 
 	void RenderDeviceMetal::DeferRelease(void* retainedObjcPtr)
