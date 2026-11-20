@@ -87,6 +87,9 @@ namespace ParaEngine
 
         void handle_mainloop_timer(const boost::system::error_code& err);
 	protected:
+        void UpdateProfilingFrameRate();
+        bool m_profileUnlimitedFPS = false;
+        int m_savedSwapInterval = 0;
 		bool m_bAutoLowerFrameRateWhenNotFocused = false;
 		bool m_bToggleSoundWhenNotFocused = false;
 	};

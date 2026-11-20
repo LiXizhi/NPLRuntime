@@ -9,6 +9,7 @@ namespace ParaEngine
         RenderDeviceAGL(NSOpenGLContext* context);
         ~RenderDeviceAGL();
         
+        NSOpenGLContext* GetGLContext() const { return m_GLContext; }
         virtual bool Present() override;
         
     private:

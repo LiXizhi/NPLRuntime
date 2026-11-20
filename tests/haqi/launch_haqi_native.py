@@ -127,6 +127,9 @@ def main():
     parser.add_argument("--exe", type=Path, default=os.environ.get("PARAENGINE_EXE"))
     parser.add_argument("--renderer", default="opengl" if sys.platform == "darwin" else "auto")
     parser.add_argument("--prepare-only", action="store_true", help="Refresh files without launching the client")
+    if sys.platform == "darwin":
+        parser.add_argument("--profile-unlimited-fps", action="store_true",
+                            help="Start the macOS client with frame pacing and display sync disabled")
     args = parser.parse_args()
     try:
         runtime = args.runtime_dir.resolve()
@@ -149,6 +152,8 @@ def main():
                    "noupdate=true", "isDevEnv=true", "debug=main", "mc=false",
                    "bootstrapper=script/apps/Aries/main_loop.lua",
                    "config=config/TaoMee.GameClient.config.xml"]
+        if sys.platform == "darwin" and args.profile_unlimited_fps:
+            command.append("profile_unlimited_fps=true")
         with (runtime / "stdout.log").open("a") as output:
             process = subprocess.Popen(command, cwd=runtime, env=env, stdout=output,
                                        stderr=subprocess.STDOUT, start_new_session=True)

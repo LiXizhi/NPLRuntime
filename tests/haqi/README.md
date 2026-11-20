@@ -76,6 +76,27 @@ interval instead of adding a fixed 10 ms wait after every frame.
 When measuring, check `debug.gethook()` and `jit.status()` and keep the scene,
 camera, resolution, and foreground state comparable. Do not measure during a build.
 
+### Uncapped profiling on macOS
+
+Launch Haqi with `tests/haqi/run_haqi_mac.sh --profile-unlimited-fps`, or pass
+`profile_unlimited_fps=true` directly to the macOS client. The option lasts
+for that process. To compare modes in a running game, execute these lines
+separately from the NPL console:
+
+```lua
+ParaEngine.GetAttributeObject():SetField("ProfileUnlimitedFPS", true)
+ParaEngine.GetAttributeObject():SetField("ProfileUnlimitedFPS", false)
+```
+
+The switch takes effect on the next frame. It bypasses the frame controller's
+work gate and the host timer delay, and disables display sync on macOS OpenGL
+and Metal. Switching it off restores the earlier display-sync setting and uses
+the latest requested `RefreshTimer`. For comparisons, keep the camera and
+window size fixed and read `ParaEngine.GetAttributeObject():GetField("FPS", 0)`
+after a few seconds.
+This counter measures rendered frames per second. The monitor still presents
+at its physical refresh rate.
+
 ### Platform scope
 
 - Buffer storage is discarded before overlapping uploads in the shared OpenGL

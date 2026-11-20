@@ -4,6 +4,8 @@
 #import "MidiPlayer/ParaEngineMediaPlayer.h"
 #include "MidiMsg.h"
 #include "FramePacing.h"
+#import <QuartzCore/CAMetalLayer.h>
+#include "RenderDeviceAGL.h"
 #include <chrono>
 
 using namespace  ParaEngine;
@@ -23,6 +25,9 @@ bool ParaEngine::CParaEngineAppOSX::InitApp(IRenderWindow* pWindow, const char* 
 {
     if (!CParaEngineAppBase::InitApp(pWindow, sCommandLine))
         return false;
+
+    if (strcmp(GetAppCommandLineByParam("profile_unlimited_fps", "false"), "true") == 0)
+        CGlobals::GetSettings().SetProfileUnlimitedFPS(true);
 
     if (auto* osxWindow = static_cast<RenderWindowOSX*>(pWindow))
     {
@@ -44,6 +49,8 @@ void ParaEngine::CParaEngineAppOSX::ClientToGame(int& inout_x, int & inout_y, bo
 void ParaEngine::CParaEngineAppOSX::SetRefreshTimer(float fTimeInterval, int nFrameRateControl /*= 0*/)
 {
     CParaEngineAppBase::SetRefreshTimer(fTimeInterval, nFrameRateControl);
+    if (m_profileUnlimitedFPS)
+        m_doWorkFRC.SetType(CFrameRateController::FRC_NONE);
 }
 
 bool ParaEngine::CParaEngineAppOSX::AppHasFocus()
@@ -142,6 +149,38 @@ bool ParaEngine::CParaEngineAppOSX::GetToggleSoundWhenNotFocused()
     return m_bToggleSoundWhenNotFocused;
 }
 
+void ParaEngine::CParaEngineAppOSX::UpdateProfilingFrameRate()
+{
+    const bool enabled = CGlobals::GetSettings().GetProfileUnlimitedFPS();
+    if (enabled == m_profileUnlimitedFPS)
+        return;
+
+    m_profileUnlimitedFPS = enabled;
+    // Keep script changes to RefreshTimer and its control mode for when profiling ends.
+    m_doWorkFRC.SetType(!enabled && m_nFrameRateControl == 1
+        ? CFrameRateController::FRC_CONSTANT_OR_BELOW : CFrameRateController::FRC_NONE);
+    if (m_pRenderDevice && m_pRenderDevice->GetBackendType() == ERHIBackend::OpenGL)
+    {
+        NSOpenGLContext* context = static_cast<RenderDeviceAGL*>(m_pRenderDevice)->GetGLContext();
+        if (enabled)
+            [context getValues:&m_savedSwapInterval forParameter:NSOpenGLContextParameterSwapInterval];
+        GLint interval = enabled ? 0 : m_savedSwapInterval;
+        [context setValues:&interval forParameter:NSOpenGLContextParameterSwapInterval];
+    }
+    else if (m_pRenderDevice && m_pRenderDevice->GetBackendType() == ERHIBackend::Metal)
+    {
+        NSWindow* window = (NSWindow*)m_pRenderWindow->GetNativeHandle();
+        CAMetalLayer* layer = (CAMetalLayer*)window.contentView.layer;
+        if ([layer respondsToSelector:@selector(setDisplaySyncEnabled:)])
+        {
+            if (enabled)
+                m_savedSwapInterval = layer.displaySyncEnabled;
+            layer.displaySyncEnabled = enabled ? NO : (m_savedSwapInterval != 0);
+        }
+    }
+    OUTPUT_LOG("Profiling unlimited FPS %s\n", enabled ? "enabled" : "disabled");
+}
+
 void ParaEngine::CParaEngineAppOSX::handle_mainloop_timer(const boost::system::error_code& err)
 {
     if (!err)
@@ -169,13 +208,14 @@ void ParaEngine::CParaEngineAppOSX::handle_mainloop_timer(const boost::system::e
                     pWindow->UpdateAutoUIScaling(true);
                 }
             }
+            UpdateProfilingFrameRate();
             this->DoWork();
 
             // Render/Present may already consume the frame budget (including
             // display sync). Wait only for the remainder, not another 10 ms.
             const double elapsed = std::chrono::duration<double>(
                 std::chrono::steady_clock::now() - frameStart).count();
-            const int delayMs = GetRemainingFrameDelayMs(GetRefreshTimer(), elapsed);
+            const int delayMs = m_profileUnlimitedFPS ? 0 : GetRemainingFrameDelayMs(GetRefreshTimer(), elapsed);
             NextLoop(delayMs, &CParaEngineAppOSX::handle_mainloop_timer, this);
         }
         else

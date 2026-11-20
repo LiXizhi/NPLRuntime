@@ -1897,6 +1897,10 @@ int ParaEngineSettings::InstallFields(CAttributeClass* pClass, bool bOverride)
 	pClass->AddField("AsyncLoaderBytesReceived", FieldType_Int, NULL, (void*)GetAsyncLoaderBytesReceived_s, NULL, NULL, bOverride);
 	pClass->AddField("AsyncLoaderRemainingBytes", FieldType_Int, NULL, (void*)GetAsyncLoaderRemainingBytes_s, NULL, NULL, bOverride);
 
+#if PARA_TARGET_PLATFORM == PARA_PLATFORM_MAC && !defined(NPLRUNTIME_SERVER)
+	pClass->AddField("ProfileUnlimitedFPS", FieldType_Bool, (void*)SetProfileUnlimitedFPS_s, (void*)GetProfileUnlimitedFPS_s,
+		NULL, "Disable frame pacing and display sync for this profiling session", bOverride);
+#endif
 	pClass->AddField("RefreshTimer", FieldType_Float, (void*)SetRefreshTimer_s, (void*)GetRefreshTimer_s, NULL, NULL, bOverride);
 	
 	pClass->AddField("AllocConsole", FieldType_void, (void*)AllocConsole_s, NULL, NULL, NULL, bOverride);

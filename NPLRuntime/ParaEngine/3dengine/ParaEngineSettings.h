@@ -1,4 +1,6 @@
 #pragma once
+#include <atomic>
+#include "Core/ParaPlatformConfig.h"
 
 #include "IAttributeFields.h"
 #include "util/NetworkAdapter.h"
@@ -161,6 +163,12 @@ namespace ParaEngine
         ATTRIBUTE_METHOD1(ParaEngineSettings, GetVertexShaderVersion_s, int*)	{*p1 = cls->GetVertexShaderVersion(); return S_OK;}
         ATTRIBUTE_METHOD1(ParaEngineSettings, GetPixelShaderVersion_s, int*)	{*p1 = cls->GetPixelShaderVersion(); return S_OK;}
         
+#if PARA_TARGET_PLATFORM == PARA_PLATFORM_MAC
+        bool GetProfileUnlimitedFPS() const { return m_profileUnlimitedFPS; }
+        void SetProfileUnlimitedFPS(bool enabled) { m_profileUnlimitedFPS = enabled; }
+        ATTRIBUTE_METHOD1(ParaEngineSettings, GetProfileUnlimitedFPS_s, bool*) { *p1 = cls->GetProfileUnlimitedFPS(); return S_OK; }
+        ATTRIBUTE_METHOD1(ParaEngineSettings, SetProfileUnlimitedFPS_s, bool) { cls->SetProfileUnlimitedFPS(p1); return S_OK; }
+#endif
         ATTRIBUTE_METHOD1(ParaEngineSettings, GetRefreshTimer_s, float*)	{*p1 = cls->GetRefreshTimer(); return S_OK;}
         ATTRIBUTE_METHOD1(ParaEngineSettings, SetRefreshTimer_s, float)	{cls->SetRefreshTimer(p1); return S_OK;}
         
@@ -807,6 +815,9 @@ namespace ParaEngine
 
         float m_ctorHeight;
         float m_ctorSpeed;
+#if PARA_TARGET_PLATFORM == PARA_PLATFORM_MAC
+        std::atomic<bool> m_profileUnlimitedFPS{false};
+#endif
         bool m_bEditingMode;
         /** if true, IO is restricted to current working directory and writable directory.  Under win32, this is true by default. */
         static bool m_bSandboxMode;
