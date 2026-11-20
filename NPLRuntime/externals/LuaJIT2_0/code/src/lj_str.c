@@ -201,8 +201,14 @@ char * LJ_FASTCALL lj_str_bufint(char *p, int32_t k)
 GCstr * LJ_FASTCALL lj_str_fromnum(lua_State *L, const lua_Number *np)
 {
   char buf[LJ_STR_NUMBUF];
-  size_t len = lj_str_bufnum(buf, (TValue *)np);
-  return lj_str_new(L, buf, len);
+  lua_Number n = *np;
+  /* Every int32 fits in %.14g without rounding or an exponent. Keep -0. */
+  if (n >= INT32_MIN && n <= INT32_MAX && !tvismzero((cTValue *)np)) {
+    int32_t k = (int32_t)n;
+    if ((lua_Number)k == n)
+      return lj_str_fromint(L, k);
+  }
+  return lj_str_new(L, buf, lj_str_bufnum(buf, (cTValue *)np));
 }
 
 /* Convert integer to string. */
