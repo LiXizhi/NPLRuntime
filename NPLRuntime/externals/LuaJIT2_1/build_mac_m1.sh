@@ -1,17 +1,7 @@
-#!/bin/sh
-DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-SRCDIR=$DIR/code
-DESTDIR=$DIR/prebuilt/mac_m1
-export MACOSX_DEPLOYMENT_TARGET="10.13"
+#!/usr/bin/env bash
+set -euo pipefail
 
-rm "$DESTDIR"/*.a
-
-cd $SRCDIR
-make clean
-make CC="gcc -m64 -arch arm64" clean all
-
-if [ -f $SRCDIR/src/libluajit.a ]; then
-    mv $SRCDIR/src/libluajit.a $DESTDIR/libluajit.a
-fi;
-
-make clean
+dir=$(cd "$(dirname "$0")" && pwd)
+bash "$dir/build_mac.sh" "$@"
+mkdir -p "$dir/prebuilt/mac_m1"
+cp "$dir/prebuilt/mac/libluajit_arm64.a" "$dir/prebuilt/mac_m1/libluajit.a"

@@ -59,10 +59,12 @@ cmake --build build/mac-current --target MacLuaJITSmoke
 ctest --test-dir build/mac-current -R mac_luajit_gc_smoke --output-on-failure
 ```
 
-The bundled macOS LuaJIT needs `-Wl,-no_deduplicate` with recent Apple linkers;
-the `luajit21` target propagates this flag. The smoke test exercises the affected
-VM return paths during numeric string conversion and garbage collection.
-See [upstream LuaJIT fix 2240d844](https://github.com/LuaJIT/LuaJIT/commit/2240d84464cc3dcb22fd976f1db162b36b5b52d5).
+The macOS client links a universal LuaJIT 2.1 archive built from
+[upstream revision 63c8f1a9](https://github.com/LuaJIT/LuaJIT/commit/63c8f1a9b479ba5518cf6a170ff7729178bc3cfd).
+Run `bash NPLRuntime/externals/LuaJIT2_1/build_mac.sh` to regenerate both slices
+and their public headers. Pass a local LuaJIT Git checkout as the script's first
+argument for an offline rebuild. The smoke test checks header/runtime agreement,
+trace compilation, numeric string conversion and garbage collection.
 
 For graphics performance, the macOS OpenGL UP buffer path maps unused ranges
 without synchronization and discards storage before reusing a range. Using
