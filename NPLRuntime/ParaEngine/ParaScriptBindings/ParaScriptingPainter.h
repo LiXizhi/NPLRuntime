@@ -98,6 +98,8 @@ namespace ParaScripting
 		//
 		static void DrawPoint(float x, float y);
 		static void DrawLine(float x1, float y1, float x2, float y2);
+		/** Draw a filled, camera-facing disc at a 3D pivot using the current pen color. */
+		static void DrawBillboardDisc(float x, float y, float z, float radius);
 		static void DrawRect(float x1, float y1, float w, float h);
 
 		/** draw 3d triangles

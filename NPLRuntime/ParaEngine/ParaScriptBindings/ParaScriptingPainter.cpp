@@ -7,6 +7,8 @@
 // Containing the interface between script and the engine. 
 //----------------------------------------------------------------------
 #include "ParaEngine.h"
+#include <algorithm>
+#include <cmath>
 #include <sstream>
 #include "ParaWorldAsset.h"
 #include "ParaScriptingPainter.h"
@@ -57,6 +59,40 @@ void ParaScripting::ParaPainter::DrawLine(float x1, float y1, float x2, float y2
 		m_pPainter->drawLine(QLineF(x1, y1, x2, y2));
 }
 
+void ParaScripting::ParaPainter::DrawBillboardDisc(float x, float y, float z, float radius)
+{
+	if (!m_pPainter || !m_pPainter->isActive() || !(radius > 0.f) || !std::isfinite(radius))
+		return;
+
+	// ShapesDrawer uses this tessellation for filled circles. All pivots of a
+	// skeleton share a radius, so build the local-space fan once and reuse it.
+	const int maxSegments = 100;
+	static Vector3 vertices[3 * maxSegments];
+	static float cachedRadius = 0.f;
+	static int segments = 0;
+	if (radius != cachedRadius)
+	{
+		const double twoPi = 6.283185307179586;
+		segments = (int)std::max(5.0, std::min(double(maxSegments), radius * twoPi / 0.05));
+		Vector3 previous(radius, 0.f, 0.f);
+		for (int i = 0; i < segments; ++i)
+		{
+			const double angle = twoPi * (i + 1) / segments;
+			Vector3 next((float)(std::cos(angle) * radius), (float)(std::sin(angle) * radius), 0.f);
+			vertices[3 * i] = previous;
+			vertices[3 * i + 1] = next;
+			vertices[3 * i + 2] = Vector3::ZERO;
+			previous = next;
+		}
+		cachedRadius = radius;
+	}
+
+	m_pPainter->PushMatrix();
+	m_pPainter->TranslateMatrix(x, y, z);
+	m_pPainter->LoadBillboardMatrix();
+	m_pPainter->drawTriangles(vertices, segments);
+	m_pPainter->PopMatrix();
+}
 
 void ParaScripting::ParaPainter::DrawLineList(const object& lineList, int nLineCount, int nIndexOffset)
 {

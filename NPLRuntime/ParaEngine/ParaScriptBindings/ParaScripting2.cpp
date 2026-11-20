@@ -219,6 +219,7 @@ void CNPLScriptingState::LoadHAPI_UI()
 						// draws
 						def("DrawPoint", &ParaPainter::DrawPoint),
 						def("DrawLine", &ParaPainter::DrawLine),
+						def("DrawBillboardDisc", &ParaPainter::DrawBillboardDisc),
 						def("DrawRect", &ParaPainter::DrawRect),
 						def("DrawTriangleList", &ParaPainter::DrawTriangleList),
 						def("DrawLineList", &ParaPainter::DrawLineList),
