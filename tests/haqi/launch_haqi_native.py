@@ -127,6 +127,8 @@ def main():
     parser.add_argument("--exe", type=Path, default=os.environ.get("PARAENGINE_EXE"))
     parser.add_argument("--renderer", default="opengl" if sys.platform == "darwin" else "auto")
     parser.add_argument("--prepare-only", action="store_true", help="Refresh files without launching the client")
+    parser.add_argument("--manual-login", action="store_true",
+                        help="Show the normal Haqi sign-in and selection screens")
     parser.add_argument("--profile-unlimited-fps", action="store_true",
                         help="Request the fastest supported frame rate for this profiling session")
     args = parser.parse_args()
@@ -151,6 +153,8 @@ def main():
                    "noupdate=true", "isDevEnv=true", "debug=main", "mc=false",
                    "bootstrapper=script/apps/Aries/main_loop.lua",
                    "config=config/TaoMee.GameClient.config.xml"]
+        if not args.manual_login:
+            command.append("haqi_quick_login=true")
         if args.profile_unlimited_fps:
             command.append("profile_unlimited_fps=true")
         with (runtime / "stdout.log").open("a") as output:

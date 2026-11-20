@@ -22,6 +22,14 @@ native executable. Supply `--exe` (or `PARAENGINE_EXE`) to select one explicitly
 `--web-root` / `WEBPARACRAFT_ROOT` and `--paraworld-root` / `PARAWORLD_ROOT`
 override the source directories. Paths containing spaces must be quoted.
 
+By default, the native test launcher signs in with the KeepWork login remembered
+in that runtime. On the first run, sign in with **Remember password** selected.
+Subsequent launches select the last character if it still belongs to the account,
+or the first available character otherwise. The launcher rejoins that character's
+last server when available, then falls back to Haqi's recommendation or another
+available server. Pass `--manual-login` to choose an account, character, and server
+yourself. Add `--profile-unlimited-fps` when you want an uncapped profiling session.
+
 Each run prepares `build/haqi-mac-runtime` on macOS or
 `build/haqi-native-runtime` on Windows (`--runtime-dir` overrides this):
 
