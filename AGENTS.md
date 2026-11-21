@@ -12,6 +12,8 @@ Guidance for AI coding agents working in `NPLRuntimeUnified` (`unified-crossplat
 
 ## Haqi / 魔法哈奇
 
+夜间维护无法登录时，运行 `python3 tests/haqi/launch_offline.py` 进入本地测试服。首次准备资源用 `--prepare`，自动回归用 `--check`。它从配置出生点加载哈奇镇、任务 NPC、商店与背包，附带 36 个陪测角色和火系训练技能。[离线测试服的准备、复测与覆盖范围](docs/haqi-testing.md#offline-town-during-maintenance)
+
 For Haqi native or browser launches, remembered login, C++ and NPL profiling in the same plaza, or testing the official homepage and downloads, start with [Running and testing Haqi](docs/haqi-testing.md). It identifies the repository for each layer and links the launchers, fixtures and reference captures. The Project 530 workflow below uses the Paracraft shell.
 
 ## Repository Layout

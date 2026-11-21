@@ -9,6 +9,27 @@ Run commands from the NPLRuntime checkout. Pick the entry point for the behavior
 | Deployed Web game | Open the game shell on the environment under test. [Dev](https://emscripten.keepwork.com/haqi1.html) · [Production](https://webparacraft.keepwork.com/haqi1.html) |
 | Official homepage, downloads, guides and game handoff | KeepWork repository `official/open`, file `official/open/apps/haqi/haqi_web.md`. The public Haqi domain embeds this KeepWork page, which embeds the game after a click. [Repository](https://git.keepwork.com/official/open) · [Official homepage](https://haqi.keepwork.com/#official/open/apps/haqi/haqi_web) |
 
+## Offline town during maintenance
+
+During the 00:00–06:00 China time maintenance window, use the local test realm to enter the kids edition of Haqi Town. You need Python 3.9+, a WebGL2 browser, the sibling `../ParaEngine/paraworld` scripts and `../webparacraft` with its generated Haqi packages and matching JS/WASM. Override their locations with `--paraworld-root` and `--web-root`.
+
+```bash
+python3 tests/haqi/launch_offline.py --prepare   # once while public artwork is available
+python3 tests/haqi/launch_offline.py             # works disconnected after preparation
+```
+
+Open [the local realm](http://127.0.0.1:8094/) and click **使用测试角色登录哈奇镇**. The launcher issues a temporary local session and the Aries world loader places the character at the configured birth point in `61HaqiTown`. Walk around, use the bottom dock, or click **去找米歇尔** and then click the merchant herself to open her shop. **训练：火系技能** targets one of 36 dressed stand-ins near spawn and plays the stock fire spell. Casts change the local target's HP. To start over, open the root URL and log in again. Refreshing the running game keeps that session's quest state.
+
+The original Aries client runs the HUD, menus, quest tracker, town NPC scripts, shop display and inventory. The stock `paraworld.auth.AuthUser` handler consumes the loopback login response. The service supplies a synthetic account, pet, inventory, quest storage and a training target. The quest provider checks prerequisites and supports accepting and dropping quests. The crowd exercises character rendering. Purchases, reward settlement, other players' network traffic and live authentication require separate tests against the game service. Use the live login path to measure production startup. The tested package also logs missing definitions for six other card spells, including `PickPet.xml`. The training spell is `Fire_SingleAttack_Level1.xml`.
+
+To run the repeatable browser check, install Chrome and the optional Python `playwright` package. The check launches its own realm, clicks through the shop and bag, accepts **启程火鸟岛** (63014), reloads, drops it, signs in afresh and checks the new session stays in town for 20 seconds. It records PNGs and the engine log under `build/haqi-offline-test/checks/`. Use another port if your manual session is open.
+
+```bash
+python3 tests/haqi/launch_offline.py --check --port 8095
+```
+
+The preparer reads public asset keys from the Haqi package manifest and the town and skill definitions. It reuses the native art cache when available and downloads missing art into the local build directory. Run `--prepare` again after updating the packages or the asset list. The generated archive and session data stay local. [Realm launcher](../tests/haqi/launch_offline.py) · [Asset recipe](../tests/haqi/offline/assets.txt) · [Browser check](../tests/haqi/verify_offline_world.py)
+
 ## Native launch and remembered login
 
 Have Python 3, a native client build, the sibling Paraworld scripts and the generated Haqi packages in `../webparacraft/auto_generate_files/`. On macOS:
