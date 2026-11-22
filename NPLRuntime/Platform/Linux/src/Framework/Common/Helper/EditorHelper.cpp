@@ -11,13 +11,25 @@
 #ifndef _WIN32
 #include <unistd.h>
 #endif
+#include <boost/version.hpp>
 #include <boost/filesystem.hpp>
+#if BOOST_VERSION >= 108600
 #include <boost/process/v1/child.hpp>
 #include <boost/process/v1/io.hpp>
 #include <boost/process/v1/pipe.hpp>
 #include <boost/process/v1/search_path.hpp>
 #include <boost/process/v1/start_dir.hpp>
 #include <boost/process/v1/args.hpp>
+namespace bp_compat = boost::process::v1;
+#else
+#include <boost/process/child.hpp>
+#include <boost/process/io.hpp>
+#include <boost/process/pipe.hpp>
+#include <boost/process/search_path.hpp>
+#include <boost/process/start_dir.hpp>
+#include <boost/process/args.hpp>
+namespace bp_compat = boost::process;
+#endif
 
 namespace ParaEngine {
 
@@ -31,7 +43,7 @@ namespace ParaEngine {
 		if (!sScriptFile || sScriptFile[0] == '\0')
 			return false;
 
-		namespace bp = boost::process::v1;
+		namespace bp = bp_compat;
 		std::string editor = CGlobals::GetSettings().GetScriptEditor();
 		if (editor.empty() || editor.find(".exe") != std::string::npos)
 		{
@@ -79,7 +91,7 @@ namespace ParaEngine {
 		if (app.empty() && cmdLine.empty())
 			return false;
 
-		namespace bp = boost::process::v1;
+		namespace bp = bp_compat;
 		try
 		{
 			std::string fullCmd;
@@ -120,7 +132,7 @@ namespace ParaEngine {
 		if (!lpFile || lpFile[0] == '\0')
 			return false;
 
-		namespace bp = boost::process::v1;
+		namespace bp = bp_compat;
 		std::string op = (lpOperation && lpOperation[0] != '\0') ? lpOperation : "open";
 		std::string fileStr = lpFile;
 		std::string paramsStr = lpParameters ? lpParameters : "";
