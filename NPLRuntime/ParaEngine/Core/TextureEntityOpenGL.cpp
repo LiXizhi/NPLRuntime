@@ -145,6 +145,17 @@ HRESULT ParaEngine::TextureEntityOpenGL::InitDeviceObjects()
 	if (SurfaceType == StaticTexture)
 	{
 		SAFE_RELEASE(m_texture);
+		if (GetRawData() && GetRawDataSize() > 0)
+		{
+			GLTexture2D* memTex = nullptr;
+			if (LoadFromMemory(GetRawData(), GetRawDataSize(), 0, PixelFormat::Unknown, (void**)(&memTex)) == S_OK && memTex)
+			{
+				memTex->AddToAutoReleasePool();
+				SetInnerTexture(memTex);
+				SetState(AssetEntity::ASSET_STATE_NORMAL);
+				return S_OK;
+			}
+		}
 		if(!IsAsyncLoad())
 			SetInnerTexture(CreateTextureFromFile_Serial(sTextureFileName));
 		else

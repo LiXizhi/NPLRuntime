@@ -227,6 +227,24 @@ namespace
 		return 0;
 	}
 
+	int ParseBlendMode(const Json::Value& v, int fallback = 4)
+	{
+		if (v.isNull())
+			return fallback;
+		if (v.isIntegral())
+			return v.asInt();
+		if (v.isString())
+		{
+			std::string s = v.asString();
+			if (s == "opaque") return 0;
+			if (s == "additive_one") return 1;
+			if (s == "alpha" || s == "alpha_blend") return 2;
+			if (s == "transparent") return 3;
+			if (s == "additive" || s == "add" || s == "additive_alpha" || s == "add_alpha") return 4;
+		}
+		return fallback;
+	}
+
 	int FindOrAppendTexture(CParaXModel* pMesh, const Json::Value& texVal, const std::vector<std::string>& extraTexList)
 	{
 		std::string texPath;
@@ -535,7 +553,7 @@ bool ParaXGltfExtras::ApplyExtrasToModel(const Json::Value& gltfRoot, CParaXMode
 			ps.model = pMesh;
 			ps.m_bExtendedV2 = true;
 			ps.pos = ParseVec3(jpe["pos"], Vector3(0, 0, 0));
-			ps.blend = jpe.get("blend", 4).asInt();
+			ps.blend = ParseBlendMode(jpe["blend"], 4);
 			ps.type = jpe.get("renderType", 0).asInt();
 			ps.patternType = ParsePatternSubType(jpe["patternType"]);
 			ps.rows = std::max(1, jpe.get("rows", 1).asInt());
@@ -635,7 +653,7 @@ bool ParaXGltfExtras::ApplyExtrasToModel(const Json::Value& gltfRoot, CParaXMode
 			re.seglen = std::max(0.01f, static_cast<float>(jre.get("seglen", 0.2).asDouble()));
 			re.length = re.seglen * (float)re.numsegs;
 			re.maxLife = static_cast<float>(jre.get("maxLife", 0.6).asDouble());
-			re.blend = jre.get("blend", 4).asInt();
+			re.blend = ParseBlendMode(jre["blend"], 4);
 			re.orientCamera = jre.get("orientCamera", true).asBool();
 			re.m_bUseAbsCord = !jre.get("localSpace", false).asBool();
 			re.widthEndScale = static_cast<float>(jre.get("widthEndScale", 0.0).asDouble());

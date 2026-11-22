@@ -1189,33 +1189,37 @@ Particle PatternParticleEmitter::newParticle(int anim, int time)
 
 	Vector3 patternVec(0, 0, 0);
 	const int pat = sys->patternType;
-	if (pat == PATTERN_HEART)
+	if (pat == PATTERN_HEART || pat == PATTERN_STAR5)
 	{
-		// Classic firework heart curve in (t1, axis) plane (typically X-Y upright plane when emitDir=(0,0,1) or tilted)
-		Vector3 upVec = (std::fabs(sys->emitDir.y) > 0.9f) ? Vector3(0, 1, 0) : axis;
-		Vector3 rightVec = (std::fabs(sys->emitDir.y) > 0.9f) ? Vector3(1, 0, 0) : t1;
-		Vector3 depthVec = rightVec.crossProduct(upVec).normalisedCopy();
-		float t = randfloat(0.0f, 2.0f * MATH_PI);
-		float s = std::sin(t);
-		float hx = (16.0f * s * s * s) / 16.0f;
-		float hy = (13.0f * std::cos(t) - 5.0f * std::cos(2.0f * t) - 2.0f * std::cos(3.0f * t) - std::cos(4.0f * t)) / 16.0f;
-		patternVec = rightVec * hx + upVec * hy + depthVec * randfloat(-0.06f, 0.06f);
-	}
-	else if (pat == PATTERN_STAR5)
-	{
-		// 5-pointed star polygon with 10 alternating outer (1.0) and inner (0.382) vertices
-		Vector3 upVec = (std::fabs(sys->emitDir.y) > 0.9f) ? Vector3(0, 1, 0) : axis;
-		Vector3 rightVec = (std::fabs(sys->emitDir.y) > 0.9f) ? Vector3(1, 0, 0) : t1;
-		Vector3 depthVec = rightVec.crossProduct(upVec).normalisedCopy();
-		int edge = randint(0, 9);
-		float frac = randfloat(0.0f, 1.0f);
-		float a0 = (edge * MATH_PI / 5.0f) + (MATH_PI * 0.5f);
-		float a1 = ((edge + 1) * MATH_PI / 5.0f) + (MATH_PI * 0.5f);
-		float r0 = (edge % 2 == 0) ? 1.0f : 0.382f;
-		float r1 = (edge % 2 == 0) ? 0.382f : 1.0f;
-		float px = interpolate<float>(frac, r0 * std::cos(a0), r1 * std::cos(a1));
-		float py = interpolate<float>(frac, r0 * std::sin(a0), r1 * std::sin(a1));
-		patternVec = rightVec * px + upVec * py + depthVec * randfloat(-0.05f, 0.05f);
+		// Keep upright silhouettes standing vertically (+Y = top of heart/star), with emitDir as the facing normal
+		Vector3 depthVec = (std::fabs(axis.y) > 0.9f) ? Vector3(1, 0, 0) : axis;
+		Vector3 upVec = Vector3(0, 1, 0) - depthVec * depthVec.y;
+		if (upVec.squaredLength() < 1e-6f)
+			upVec = Vector3(0, 1, 0);
+		else
+			upVec.normalise();
+		Vector3 rightVec = upVec.crossProduct(depthVec).normalisedCopy();
+
+		if (pat == PATTERN_HEART)
+		{
+			float t = randfloat(0.0f, 2.0f * MATH_PI);
+			float s = std::sin(t);
+			float hx = (16.0f * s * s * s) / 16.0f;
+			float hy = (13.0f * std::cos(t) - 5.0f * std::cos(2.0f * t) - 2.0f * std::cos(3.0f * t) - std::cos(4.0f * t)) / 16.0f;
+			patternVec = rightVec * hx + upVec * hy + depthVec * randfloat(-0.06f, 0.06f);
+		}
+		else
+		{
+			int edge = randint(0, 9);
+			float frac = randfloat(0.0f, 1.0f);
+			float a0 = (edge * MATH_PI / 5.0f) + (MATH_PI * 0.5f);
+			float a1 = ((edge + 1) * MATH_PI / 5.0f) + (MATH_PI * 0.5f);
+			float r0 = (edge % 2 == 0) ? 1.0f : 0.382f;
+			float r1 = (edge % 2 == 0) ? 0.382f : 1.0f;
+			float px = interpolate<float>(frac, r0 * std::cos(a0), r1 * std::cos(a1));
+			float py = interpolate<float>(frac, r0 * std::sin(a0), r1 * std::sin(a1));
+			patternVec = rightVec * px + upVec * py + depthVec * randfloat(-0.05f, 0.05f);
+		}
 	}
 	else if (pat == PATTERN_DOUBLE_RING)
 	{
@@ -1272,9 +1276,20 @@ Particle ConeJetParticleEmitter::newParticle(int anim, int time)
 	Vector3 axis, t1, t2;
 	BuildBasisAroundDir(sys->emitDir, axis, t1, t2);
 
-	float coneHalfAngle = std::min((float)MATH_PI, std::max(0.0f, sys->minPolar));
-	float cosMin = std::cos(coneHalfAngle);
-	float cosTheta = randfloat(cosMin, 1.0f);
+	float minAng = std::min((float)MATH_PI, std::max(0.0f, sys->minPolar));
+	float maxAng = minAng;
+	if (sys->maxPolar > 0.0f && sys->maxPolar < (float)MATH_PI - 1e-4f)
+	{
+		maxAng = std::min((float)MATH_PI, sys->maxPolar);
+	}
+	else if (minAng > 0.0f)
+	{
+		// Legacy / unit-test shorthand where only minPolar was set as cone half-angle
+		minAng = 0.0f;
+	}
+	float cosMax = std::cos(std::max(minAng, maxAng));
+	float cosMin = std::cos(std::min(minAng, maxAng));
+	float cosTheta = randfloat(cosMax, cosMin);
 	float sinTheta = std::sqrt(std::max(0.0f, 1.0f - cosTheta * cosTheta));
 	float phi = randfloat(0.0f, 2.0f * MATH_PI);
 
