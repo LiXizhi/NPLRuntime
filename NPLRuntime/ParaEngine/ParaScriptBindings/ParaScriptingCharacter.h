@@ -712,5 +712,11 @@ namespace ParaScripting
 
 		void EnableAutoAnimation(bool enable);
 
+		/** Configure physics cape (procedural Sky-style DIY cape or Geoset+Bone takeover) via JSON string */
+		bool SetCape(const char* sConfigJson);
+		string GetCape();
+		void ClearCape();
+		bool IsCapeSimulating();
+
 	};
 }

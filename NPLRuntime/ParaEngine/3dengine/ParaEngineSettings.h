@@ -249,6 +249,7 @@ namespace ParaEngine
 		ATTRIBUTE_METHOD1(ParaEngineSettings, SetWorldDirectory_s, const char*) { cls->SetWorldDirectory(p1); return S_OK; }
 
         ATTRIBUTE_METHOD1(ParaEngineSettings, GetWebViewVersion_s, int*)	{ *p1 = cls->GetWebVersion(); return S_OK; }
+        ATTRIBUTE_METHOD1(ParaEngineSettings, GetCapeSystemVersion_s, int*)	{ *p1 = 1; return S_OK; }
         ATTRIBUTE_METHOD1(ParaEngineSettings, GetPythonToLua_s, const char**) { *p1 = cls->GetPythonToLua()->c_str(); return S_OK; }
 		ATTRIBUTE_METHOD1(ParaEngineSettings, SetPythonToLua_s, const char*) { cls->SetPythonToLua(p1); return S_OK; }
 		ATTRIBUTE_METHOD1(ParaEngineSettings, GetCppToLua_s, const char**) { *p1 = cls->GetCppToLua()->c_str(); return S_OK; }

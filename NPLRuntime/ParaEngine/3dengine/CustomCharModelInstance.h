@@ -2,6 +2,7 @@
 #include "IAttributeFields.h"
 #include "CustomCharCommon.h"
 #include "CustomCharFace.h"
+#include <memory>
 
 namespace ParaEngine
 {
@@ -9,6 +10,7 @@ namespace ParaEngine
 	class CartoonFace;
 	class ParaXModelCanvas;
 	class CParaXModel;
+	class CharCapeInstance;
 	struct LightParams;
 	struct AnimIndex;
 
@@ -246,6 +248,12 @@ namespace ParaEngine
 		/** check whether the associated cartoon model supports cartoon face. */
 		bool IsSupportCartoonFace();
 
+		/** Configure Sky-style procedural DIY cape or Geoset/Bone cape physics from JSON */
+		bool SetCapeConfig(const std::string& jsonConfig);
+		std::string GetCapeConfig() const;
+		void ClearCape();
+		bool IsCapeSimulating() const;
+
 	public:
 		static bool IsStaticMeshAsset(const std::string& filename);
 
@@ -408,5 +416,10 @@ namespace ParaEngine
 		* usually we need to recompose body texture, whenever char model is changed.
 		*/
 		bool m_bNeedComposeBodyTexture;
+
+		/** optional physics-driven cape controller (allocated on demand) */
+		std::unique_ptr<CharCapeInstance> m_pCapeInstance;
+
+		void SyncAutoCapeWithGeosets();
 	};
 }

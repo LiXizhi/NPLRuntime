@@ -1,6 +1,7 @@
 #pragma once
 #include "BaseObject.h"
 #include "AdaptiveCharacterBudget.h"
+#include "CharCapeCore.h"
 #include "ShadowVolume.h"
 #include "ShapeRay.h"
 #include "SceneState.h"
@@ -168,6 +169,19 @@ namespace ParaEngine
 		ATTRIBUTE_METHOD1(CSceneObject, GetCharacterTriangleBudgetCulled_s, int*) { *p1 = cls->m_characterBudget.GetCulled(); return S_OK; }
 		ATTRIBUTE_METHOD1(CSceneObject, GetAdaptiveCharTriangleBudget_s, bool*) { *p1 = cls->m_characterBudget.IsEnabled(); return S_OK; }
 		ATTRIBUTE_METHOD1(CSceneObject, SetAdaptiveCharTriangleBudget_s, bool) { cls->m_characterBudget.SetEnabled(p1); return S_OK; }
+
+		ATTRIBUTE_METHOD1(CSceneObject, GetCapeSystemVersion_s, int*) { *p1 = CAPE_SYSTEM_VERSION; return S_OK; }
+		ATTRIBUTE_METHOD1(CSceneObject, GetCapePhysicsEnabled_s, bool*) { *p1 = CapeSimulationBudget::GetInstance().IsEnabled(); return S_OK; }
+		ATTRIBUTE_METHOD1(CSceneObject, SetCapePhysicsEnabled_s, bool) { CapeSimulationBudget::GetInstance().SetEnabled(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(CSceneObject, GetAutoCapeGeosets_s, bool*) { *p1 = CapeSimulationBudget::GetInstance().IsAutoCapeGeosetsEnabled(); return S_OK; }
+		ATTRIBUTE_METHOD1(CSceneObject, SetAutoCapeGeosets_s, bool) { CapeSimulationBudget::GetInstance().SetAutoCapeGeosetsEnabled(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(CSceneObject, GetCapeMaxActiveCharacters_s, int*) { *p1 = CapeSimulationBudget::GetInstance().GetMaxActiveCharacters(); return S_OK; }
+		ATTRIBUTE_METHOD1(CSceneObject, SetCapeMaxActiveCharacters_s, int) { CapeSimulationBudget::GetInstance().SetMaxActiveCharacters(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(CSceneObject, GetCapeActivateDistance_s, float*) { *p1 = CapeSimulationBudget::GetInstance().GetActivateDistance(); return S_OK; }
+		ATTRIBUTE_METHOD1(CSceneObject, SetCapeActivateDistance_s, float) { CapeSimulationBudget::GetInstance().SetActivateDistance(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(CSceneObject, GetCapeDeactivateDistance_s, float*) { *p1 = CapeSimulationBudget::GetInstance().GetDeactivateDistance(); return S_OK; }
+		ATTRIBUTE_METHOD1(CSceneObject, SetCapeDeactivateDistance_s, float) { CapeSimulationBudget::GetInstance().SetDeactivateDistance(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(CSceneObject, GetCapeActiveSimulatedCount_s, int*) { *p1 = CapeSimulationBudget::GetInstance().GetActiveSimulatedCount(); return S_OK; }
 
 		ATTRIBUTE_METHOD1(CSceneObject, GetBackGroundColor_s, Vector3*) { *p1 = cls->GetBackGroundColor().ToVector3(); return S_OK; }
 		ATTRIBUTE_METHOD1(CSceneObject, SetBackGroundColor_s, Vector3) { LinearColor c(p1.x, p1.y, p1.z, 1); cls->SetBackGroundColor(c); return S_OK; }

@@ -16,6 +16,7 @@
 #include "AsyncLoader.h"
 #include <fstream>
 #include <algorithm>
+#include "CharCapeSystem.h"
 #include "CustomCharModelInstance.h"
 
 using namespace ParaEngine;
@@ -445,6 +446,9 @@ void CharModelInstance::UpdateGeosetsToModel(CParaXModel* pModel)
 				bNewShow = (id == (nBasePart * 100 + geosets[nBasePart]));
 			else
 				bNewShow = false; // this line should never be executed.
+
+			if (bNewShow && m_pCapeInstance && m_pCapeInstance->ShouldSuppressModelGeoset(id))
+				bNewShow = false;
 		}
 		if (pModel->showGeosets[j] != bNewShow)
 		{
@@ -561,6 +565,14 @@ bool CharModelInstance::AnimateModel(SceneState* sceneState, const AnimIndex& Cu
 	charPose.m_fUpperBodyUpDownAngle = m_fUpperBodyUpDownAngle;
 	// calculate bones
 	bool bRes = m_pModelCanvas->Animate(sceneState, &charPose, CurrentAnim.nAnimID, pAnimInstance);
+
+	SyncAutoCapeWithGeosets();
+	if (m_pCapeInstance && m_pCapeInstance->IsActive())
+	{
+		m_pCapeInstance->UpdateSimulation(sceneState, pModel, m_pModelCanvas.get(), geosets, pAnimInstance);
+		if (m_bIsCustomModel || HasCustomGeosets(pModel))
+			UpdateGeosetsToModel(pModel);
+	}
 	return bRes;
 }
 
@@ -575,6 +587,18 @@ void CharModelInstance::Draw(SceneState* sceneState, CParameterBlock* materialPa
 	// draw model
 	if (m_pModelCanvas)
 		m_pModelCanvas->Draw(sceneState, materialParams, reflection);
+
+	if (m_pCapeInstance && m_pCapeInstance->IsActive())
+	{
+		ParaXEntity* pModelAsset = GetBaseModel();
+		if (pModelAsset)
+		{
+			int nIndex = (sceneState && sceneState->IsLODEnabled()) ? pModelAsset->GetLodIndex(sceneState->GetCameraToCurObjectDistance()) : 0;
+			CParaXModel* pModel = pModelAsset->GetModel(nIndex);
+			if (pModel)
+				m_pCapeInstance->Draw(sceneState, pModel, m_pModelCanvas.get(), materialParams, reflection);
+		}
+	}
 }
 
 void CharModelInstance::SetModifiedModel()
@@ -1938,4 +1962,67 @@ int CharModelInstance::InstallFields(CAttributeClass* pClass, bool bOverride)
 {
 	IAttributeFields::InstallFields(pClass, bOverride);
 	return S_OK;
+}
+
+void CharModelInstance::SyncAutoCapeWithGeosets()
+{
+	if (m_pCapeInstance && !m_pCapeInstance->IsAutoManaged() && m_pCapeInstance->IsActive())
+		return;
+
+	if (!CapeSimulationBudget::GetInstance().IsEnabled() || !CapeSimulationBudget::GetInstance().IsAutoCapeGeosetsEnabled())
+	{
+		if (m_pCapeInstance && m_pCapeInstance->IsAutoManaged())
+			m_pCapeInstance->ClearAutoGeosetTakeover();
+		return;
+	}
+
+	if (geosets[CSET_CAPE] > 0)
+	{
+		if (!m_pCapeInstance)
+			m_pCapeInstance = std::make_unique<CharCapeInstance>();
+		m_pCapeInstance->SetAutoGeosetTakeover(CSET_CAPE, geosets[CSET_CAPE]);
+	}
+	else if (m_bIsCustomModel && geosets[CSET_WINGS] >= 2)
+	{
+		if (!m_pCapeInstance)
+			m_pCapeInstance = std::make_unique<CharCapeInstance>();
+		m_pCapeInstance->SetAutoGeosetTakeover(CSET_WINGS, geosets[CSET_WINGS]);
+	}
+	else if (m_pCapeInstance && m_pCapeInstance->IsAutoManaged())
+	{
+		m_pCapeInstance->ClearAutoGeosetTakeover();
+	}
+}
+
+bool CharModelInstance::SetCapeConfig(const std::string& jsonConfig)
+{
+	if (jsonConfig.empty())
+	{
+		ClearCape();
+		return true;
+	}
+	if (!m_pCapeInstance)
+		m_pCapeInstance = std::make_unique<CharCapeInstance>();
+	const bool ok = m_pCapeInstance->SetConfigJson(jsonConfig);
+	SetModifiedModel();
+	return ok;
+}
+
+std::string CharModelInstance::GetCapeConfig() const
+{
+	return m_pCapeInstance ? m_pCapeInstance->GetConfigJson() : std::string();
+}
+
+void CharModelInstance::ClearCape()
+{
+	if (m_pCapeInstance)
+	{
+		m_pCapeInstance->Clear();
+		SetModifiedModel();
+	}
+}
+
+bool CharModelInstance::IsCapeSimulating() const
+{
+	return m_pCapeInstance && m_pCapeInstance->IsSimulating();
 }

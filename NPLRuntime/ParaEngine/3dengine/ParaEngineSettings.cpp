@@ -1955,6 +1955,7 @@ int ParaEngineSettings::InstallFields(CAttributeClass* pClass, bool bOverride)
 	pClass->AddField("WorldDirectory", FieldType_String, (void*)SetWorldDirectory_s, (void*)GetWorldDirectory_s, NULL, NULL, bOverride);
 
 	pClass->AddField("WebViewVersion", FieldType_Int, NULL, (void*)GetWebViewVersion_s, NULL, NULL, bOverride);
+	pClass->AddField("CapeSystemVersion", FieldType_Int, NULL, (void*)GetCapeSystemVersion_s, NULL, NULL, bOverride);
 #ifdef ANDROID
 	pClass->AddField("GetUsbMode", FieldType_Bool, NULL, (void*)GetUsbMode_s, NULL, NULL, bOverride);
 	pClass->AddField("SendMsgToJava", FieldType_String, (void*)SendMsgToJava_s, NULL, NULL, NULL, bOverride);

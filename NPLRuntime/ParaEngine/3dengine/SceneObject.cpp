@@ -2164,6 +2164,7 @@ HRESULT CSceneObject::AdvanceScene(double dTimeDelta, int nPipelineOrder)
 	auto* app = CGlobals::GetApp();
 	m_characterBudget.Update(app ? app->GetFPS() : 0, dTimeDelta,
 		app && app->IsAppActive());
+	CapeSimulationBudget::GetInstance().BeginFrame(app ? app->GetFPS() : 0, dTimeDelta);
 	++sceneState.m_nRenderCount;
 	SetFrameNumber(sceneState.m_nRenderCount);
 
@@ -4703,6 +4704,14 @@ int CSceneObject::InstallFields(CAttributeClass* pClass, bool bOverride)
 	pClass->AddField("EffectiveMaxCharTriangles", FieldType_Int, NULL, (void*)GetEffectiveMaxCharTriangles_s, NULL, NULL, bOverride);
 	pClass->AddField("CharacterTriangleBudgetCulled", FieldType_Int, NULL, (void*)GetCharacterTriangleBudgetCulled_s, NULL, NULL, bOverride);
 	pClass->AddField("AdaptiveCharTriangleBudget", FieldType_Bool, (void*)SetAdaptiveCharTriangleBudget_s, (void*)GetAdaptiveCharTriangleBudget_s, NULL, NULL, bOverride);
+
+	pClass->AddField("CapeSystemVersion", FieldType_Int, NULL, (void*)GetCapeSystemVersion_s, NULL, NULL, bOverride);
+	pClass->AddField("CapePhysicsEnabled", FieldType_Bool, (void*)SetCapePhysicsEnabled_s, (void*)GetCapePhysicsEnabled_s, NULL, NULL, bOverride);
+	pClass->AddField("AutoCapeGeosets", FieldType_Bool, (void*)SetAutoCapeGeosets_s, (void*)GetAutoCapeGeosets_s, NULL, NULL, bOverride);
+	pClass->AddField("CapeMaxActiveCharacters", FieldType_Int, (void*)SetCapeMaxActiveCharacters_s, (void*)GetCapeMaxActiveCharacters_s, NULL, NULL, bOverride);
+	pClass->AddField("CapeActivateDistance", FieldType_Float, (void*)SetCapeActivateDistance_s, (void*)GetCapeActivateDistance_s, NULL, NULL, bOverride);
+	pClass->AddField("CapeDeactivateDistance", FieldType_Float, (void*)SetCapeDeactivateDistance_s, (void*)GetCapeDeactivateDistance_s, NULL, NULL, bOverride);
+	pClass->AddField("CapeActiveSimulatedCount", FieldType_Int, NULL, (void*)GetCapeActiveSimulatedCount_s, NULL, NULL, bOverride);
 
 	pClass->AddField("BackgroundColor", FieldType_Vector3, (void*)SetBackGroundColor_s, (void*)GetBackGroundColor_s, CAttributeField::GetSimpleSchema(SCHEMA_RGB), NULL, bOverride);
 	pClass->AddField("EnableFog", FieldType_Bool, (void*)EnableFog_s, (void*)IsFogEnabled_s, NULL, NULL, bOverride);

@@ -1408,4 +1408,55 @@ namespace ParaScripting
 		}
 	}
 
+	bool ParaCharacter::SetCape(const char* sConfigJson)
+	{
+		if (m_pCharacter)
+		{
+			CharModelInstance* pChar = m_pCharacter->GetCharModelInstance();
+			if (pChar)
+			{
+				return pChar->SetCapeConfig(sConfigJson ? sConfigJson : "");
+			}
+		}
+		return false;
+	}
+
+	string ParaCharacter::GetCape()
+	{
+		if (m_pCharacter)
+		{
+			CharModelInstance* pChar = m_pCharacter->GetCharModelInstance();
+			if (pChar)
+			{
+				return pChar->GetCapeConfig();
+			}
+		}
+		return "";
+	}
+
+	void ParaCharacter::ClearCape()
+	{
+		if (m_pCharacter)
+		{
+			CharModelInstance* pChar = m_pCharacter->GetCharModelInstance();
+			if (pChar)
+			{
+				pChar->ClearCape();
+			}
+		}
+	}
+
+	bool ParaCharacter::IsCapeSimulating()
+	{
+		if (m_pCharacter)
+		{
+			CharModelInstance* pChar = m_pCharacter->GetCharModelInstance();
+			if (pChar)
+			{
+				return pChar->IsCapeSimulating();
+			}
+		}
+		return false;
+	}
+
 }//namespace ParaScripting

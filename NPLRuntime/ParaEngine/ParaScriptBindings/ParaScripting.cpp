@@ -270,7 +270,11 @@ void CNPLScriptingState::LoadParaScene()
 				.def("GetAnimFileName", &ParaCharacter::GetAnimFileName)
 				.def("HasAnimation", &ParaCharacter::HasAnimation)
 				.def("IsValid", &ParaCharacter::IsValid)
-				.def("EnableAutoAnimation", &ParaCharacter::EnableAutoAnimation),
+				.def("EnableAutoAnimation", &ParaCharacter::EnableAutoAnimation)
+				.def("SetCape", &ParaCharacter::SetCape)
+				.def("GetCape", &ParaCharacter::GetCape)
+				.def("ClearCape", &ParaCharacter::ClearCape)
+				.def("IsCapeSimulating", &ParaCharacter::IsCapeSimulating),
 
 			// ParaMovieCtrler class declarations
 			class_<ParaMovieCtrler>("ParaMovieCtrler")
