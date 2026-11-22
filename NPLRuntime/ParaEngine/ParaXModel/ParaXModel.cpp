@@ -1737,10 +1737,8 @@ bool CParaXModel::CanUseGpuSkinning() const
 	{
 		if (m_header.type == PARAX_MODEL_BMAX)
 			return false;
-		bool supportsLegacyGeometry = pDevice->GetBackendType() == ERHIBackend::WebGPU;
-#if PARA_TARGET_PLATFORM == PARA_PLATFORM_MAC
-		supportsLegacyGeometry |= pDevice->GetBackendType() == ERHIBackend::OpenGL;
-#endif
+		const bool supportsLegacyGeometry = pDevice->GetBackendType() == ERHIBackend::WebGPU ||
+			pDevice->GetBackendType() == ERHIBackend::OpenGL;
 		if (!supportsLegacyGeometry)
 			return false;
 	}
@@ -1757,22 +1755,6 @@ bool CParaXModel::EnsureGpuSkinBuffers()
 
 	m_pGpuSkinVB.ReleaseBuffer();
 	m_pGpuSkinIB.ReleaseBuffer();
-
-#if PARA_TARGET_PLATFORM == PARA_PLATFORM_MAC
-	// Rigid passes apply a per-pass world transform to the unskinned vertices.
-	// Keep that path for legacy meshes mixing rigid and weighted passes.
-	if (animGeometry && CGlobals::GetRenderDevice()->GetBackendType() == ERHIBackend::OpenGL)
-	{
-		for (const auto& pass : passes)
-		{
-			if (pass.indexCount > 0 && pass.is_rigid_body)
-			{
-				m_bGpuSkinBufferFailed = true;
-				return false;
-			}
-		}
-	}
-#endif
 
 	const uint32 nVerts = m_objNum.nVertices;
 	const uint32 nIndices = m_objNum.nIndices;
@@ -1834,6 +1816,113 @@ bool CParaXModel::EnsureGpuSkinBuffers()
 				dst.bones[k] = (src.bones[k] <= maxBoneIdx) ? src.bones[k] : 0;
 			}
 		}
+
+		bool hasRigidPass = false;
+		for (const auto& pass : passes)
+		{
+			if (pass.indexCount > 0 && pass.is_rigid_body)
+			{
+				hasRigidPass = true;
+				break;
+			}
+		}
+		if (hasRigidPass)
+		{
+			// Rigid passes apply the first indexed vertex's primary bone to every vertex in the pass.
+			// Stamp {255, 0, 0, 0} weights onto rigid-pass vertices unless shared incompatibly with another pass.
+			std::vector<uint8> vertUsage(nVerts, 0); // 0 = unused, 1 = weighted, 2 = rigid
+			bool bCompatibleRigidMix = true;
+			for (ModelRenderPass& pass : passes)
+			{
+				if (pass.indexCount <= 0 || pass.is_rigid_body)
+					continue;
+				const int vOffset = pass.GetVertexStart(this);
+				const int iOffset = pass.m_nIndexStart;
+				if (vOffset < 0 || iOffset < 0 || static_cast<uint32>(iOffset + pass.indexCount) > nIndices)
+				{
+					bCompatibleRigidMix = false;
+					break;
+				}
+				for (int idx = 0; idx < pass.indexCount; ++idx)
+				{
+					const uint32 v = static_cast<uint32>(m_indices[iOffset + idx]) + static_cast<uint32>(vOffset);
+					if (v >= nVerts)
+					{
+						bCompatibleRigidMix = false;
+						break;
+					}
+					vertUsage[v] = 1;
+				}
+				if (!bCompatibleRigidMix)
+					break;
+			}
+			for (size_t passIdx = 0; bCompatibleRigidMix && passIdx < passes.size(); ++passIdx)
+			{
+				ModelRenderPass& pass = passes[passIdx];
+				if (pass.indexCount <= 0 || !pass.is_rigid_body)
+					continue;
+				const int vOffset = pass.GetVertexStart(this);
+				const int iOffset = pass.m_nIndexStart;
+				if (vOffset < 0 || iOffset < 0 || static_cast<uint32>(iOffset + pass.indexCount) > nIndices)
+				{
+					bCompatibleRigidMix = false;
+					break;
+				}
+				const uint32 firstVert = static_cast<uint32>(m_indices[iOffset]) + static_cast<uint32>(vOffset);
+				if (firstVert >= nVerts)
+				{
+					bCompatibleRigidMix = false;
+					break;
+				}
+				const uint8 rawBone = m_origVertices[firstVert].bones[0];
+				const uint8 rigidBone = (rawBone <= maxBoneIdx) ? rawBone : 0;
+				for (int idx = 0; idx < pass.indexCount; ++idx)
+				{
+					const uint32 v = static_cast<uint32>(m_indices[iOffset + idx]) + static_cast<uint32>(vOffset);
+					if (v >= nVerts)
+					{
+						bCompatibleRigidMix = false;
+						break;
+					}
+					mesh_vertex_normal_skinned& dst = pVerts[v];
+					if (vertUsage[v] == 1)
+					{
+						if (dst.weights[0] != 0xff || dst.weights[1] != 0 || dst.weights[2] != 0 || dst.weights[3] != 0 || dst.bones[0] != rigidBone)
+						{
+							bCompatibleRigidMix = false;
+							break;
+						}
+					}
+					else if (vertUsage[v] == 2)
+					{
+						if (dst.bones[0] != rigidBone)
+						{
+							bCompatibleRigidMix = false;
+							break;
+						}
+					}
+					else
+					{
+						dst.weights[0] = 0xff;
+						dst.weights[1] = 0;
+						dst.weights[2] = 0;
+						dst.weights[3] = 0;
+						dst.bones[0] = rigidBone;
+						dst.bones[1] = 0;
+						dst.bones[2] = 0;
+						dst.bones[3] = 0;
+						vertUsage[v] = 2;
+					}
+				}
+			}
+			if (!bCompatibleRigidMix)
+			{
+				m_pGpuSkinVB.Unlock();
+				m_pGpuSkinVB.ReleaseBuffer();
+				m_bGpuSkinBufferFailed = true;
+				return false;
+			}
+		}
 		m_pGpuSkinVB.Unlock();
 	}
 
@@ -1872,19 +1961,6 @@ void CParaXModel::UploadBonePalette(CEffectFile* pEffect) const
 		palette[i * 3 + 2] = Vector4(m._13, m._23, m._33, m._43);
 	}
 	pEffect->setVectorArray(CEffectFile::k_worldMatrixArray, palette, nBones * 3);
-#if PARA_TARGET_PLATFORM == PARA_PLATFORM_MAC
-	if (pEffect->GetFileName() == ":IDR_FX_CHARACTER_SKINNED_LOW")
-	{
-		for (uint32 i = 0; i < nBones; ++i)
-		{
-			const Matrix4& m = bones[i].mrot;
-			palette[i * 3] = Vector4(m._11, m._21, m._31, 0.f);
-			palette[i * 3 + 1] = Vector4(m._12, m._22, m._32, 0.f);
-			palette[i * 3 + 2] = Vector4(m._13, m._23, m._33, 0.f);
-		}
-		pEffect->SetRawValue("g_boneNormals", palette, 0, nBones * 3 * sizeof(Vector4));
-	}
-#endif
 }
 
 void CParaXModel::RenderShaderAnim(SceneState* pSceneState, CParameterBlock* pMaterialParams)
@@ -2364,17 +2440,17 @@ void CParaXModel::drawModel(SceneState* pSceneState, CParameterBlock* pMaterialP
 		if (nRenderMethod == SOFT_ANIM || nRenderMethod == SHADER_ANIM)
 		{
 			bool compatible = true;
-#if PARA_TARGET_PLATFORM == PARA_PLATFORM_MAC
 			if (animGeometry && CGlobals::GetRenderDevice()->GetBackendType() == ERHIBackend::OpenGL)
 			{
 				// Preserve the active shader's material, including RGB-only texture animation.
-				nRenderMethod = SOFT_ANIM;
 				const auto* skinned = pEffectMgr->GetEffectByHandle(TECH_CHARACTER_SKINNED);
-				compatible = skinned && skinned->GetFileName() == ":IDR_FX_CHARACTER_SKINNED_LOW" &&
-					pEffectMgr->GetCurrentEffectFile()->GetFileName() == ":IDR_FX_SIMPLE_MESH_NORMAL_LOW" &&
-					GetRenderPass(pMaterialParam) == 0;
+				if (skinned && skinned->GetFileName() == ":IDR_FX_CHARACTER_SKINNED_LOW")
+				{
+					nRenderMethod = SOFT_ANIM;
+					compatible = pEffectMgr->GetCurrentEffectFile()->GetFileName() == ":IDR_FX_SIMPLE_MESH_NORMAL_LOW" &&
+						GetRenderPass(pMaterialParam) == 0;
+				}
 			}
-#endif
 			if (compatible && (nPrevTechHandle == TECH_CHARACTER || nPrevTechHandle == TECH_SIMPLE_MESH_NORMAL || nPrevTechHandle == TECH_CHARACTER_SKINNED) &&
 				EnsureGpuSkinBuffers())
 			{

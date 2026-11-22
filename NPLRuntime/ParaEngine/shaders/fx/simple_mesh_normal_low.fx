@@ -75,42 +75,38 @@ float4 InstancePosition(float4 pos, float4 x, float4 y, float4 z)
 }
 #endif
 #ifdef CHARACTER_SKINNED_LOW
-// CPU skinning uses the scale-free normal transform calculated by each bone.
 float4 g_mWorldMatrixArray[174] : WORLDMATRIXARRAY;
-float4 g_boneNormals[174];
-
-float3 BonePosition(float4 pos, int i)
-{
-    return float3(dot(pos, g_mWorldMatrixArray[i]), dot(pos, g_mWorldMatrixArray[i+1]), dot(pos, g_mWorldMatrixArray[i+2]));
-}
-
-float3 BoneNormal(float3 norm, int i)
-{
-    return float3(dot(norm, g_boneNormals[i].xyz), dot(norm, g_boneNormals[i+1].xyz), dot(norm, g_boneNormals[i+2].xyz));
-}
 
 void SkinVertex(inout float4 pos, inout float3 norm, float4 weights, float4 indices)
 {
+    float wSum = weights.x + weights.y + weights.z + weights.w;
+    if (wSum < 0.001)
+        return;
     int4 i = (int4)(indices * 255.0 + 0.5) * 3;
-    float3 p = BonePosition(pos, i.x) * weights.x;
-    float3 n = BoneNormal(norm, i.x) * weights.x;
+    float4 r0 = g_mWorldMatrixArray[i.x] * weights.x;
+    float4 r1 = g_mWorldMatrixArray[i.x + 1] * weights.x;
+    float4 r2 = g_mWorldMatrixArray[i.x + 2] * weights.x;
     if (weights.y > 0.0)
     {
-        p += BonePosition(pos, i.y) * weights.y;
-        n += BoneNormal(norm, i.y) * weights.y;
+        r0 += g_mWorldMatrixArray[i.y] * weights.y;
+        r1 += g_mWorldMatrixArray[i.y + 1] * weights.y;
+        r2 += g_mWorldMatrixArray[i.y + 2] * weights.y;
         if (weights.z > 0.0)
         {
-            p += BonePosition(pos, i.z) * weights.z;
-            n += BoneNormal(norm, i.z) * weights.z;
+            r0 += g_mWorldMatrixArray[i.z] * weights.z;
+            r1 += g_mWorldMatrixArray[i.z + 1] * weights.z;
+            r2 += g_mWorldMatrixArray[i.z + 2] * weights.z;
             if (weights.w > 0.0)
             {
-                p += BonePosition(pos, i.w) * weights.w;
-                n += BoneNormal(norm, i.w) * weights.w;
+                r0 += g_mWorldMatrixArray[i.w] * weights.w;
+                r1 += g_mWorldMatrixArray[i.w + 1] * weights.w;
+                r2 += g_mWorldMatrixArray[i.w + 2] * weights.w;
             }
         }
     }
-    pos = float4(p, 1.0);
-    norm = n;
+    float4 p4 = float4(pos.xyz, 1.0);
+    pos = float4(dot(p4, r0), dot(p4, r1), dot(p4, r2), 1.0);
+    norm = float3(dot(norm, r0.xyz), dot(norm, r1.xyz), dot(norm, r2.xyz));
 }
 #endif
 Interpolants vertexShader(	float4	Pos			: POSITION,
