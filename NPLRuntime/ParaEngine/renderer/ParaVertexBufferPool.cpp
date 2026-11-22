@@ -15,13 +15,13 @@ using namespace ParaEngine;
 // std::map<const std::string, ParaVertexBufferPool*> ParaEngine::ParaVertexBufferPool::s_pools;
 
 ParaEngine::ParaVertexBufferPool::ParaVertexBufferPool(const AssetKey& key)
-	: AssetEntity(key), m_nMaxPooledCount(10), m_nFullSizedBufferSize(65535), m_nTotalBufferBytes(0)
+	: AssetEntity(key), m_nMaxPooledCount(10), m_nFullSizedBufferSize(65535), m_nTotalBufferBytes(0), m_nUnusedBufferBytes(0)
 {
 
 }
 
 ParaEngine::ParaVertexBufferPool::ParaVertexBufferPool()
-	: m_nMaxPooledCount(10), m_nFullSizedBufferSize(65535), m_nTotalBufferBytes(0)
+	: m_nMaxPooledCount(10), m_nFullSizedBufferSize(65535), m_nTotalBufferBytes(0), m_nUnusedBufferBytes(0)
 {
 
 }
@@ -29,6 +29,28 @@ ParaEngine::ParaVertexBufferPool::ParaVertexBufferPool()
 ParaEngine::ParaVertexBufferPool::~ParaVertexBufferPool()
 {
 	Cleanup();
+}
+
+uint32 ParaEngine::ParaVertexBufferPool::RoundUpBucketSize(uint32 nBufferSize) const
+{
+	if (nBufferSize == 0)
+		return 0;
+	const uint32 fullSize = GetFullSizedBufferSize();
+	if (fullSize > 0 && nBufferSize >= fullSize)
+		return fullSize;
+
+	// Use power-of-two multiples of 32 block faces (32 * 4 * 20 = 2560 bytes)
+	// so partial chunk VBs reuse device buffers with bounded internal fragmentation.
+	uint32 bucket = 2560u;
+	while (bucket < nBufferSize)
+	{
+		if (fullSize > 0 && bucket * 2u >= fullSize)
+			return fullSize;
+		if (bucket > (0x7fffffffu / 2u))
+			return nBufferSize;
+		bucket *= 2u;
+	}
+	return bucket;
 }
 
 uint32 ParaEngine::ParaVertexBufferPool::GetFullSizedBufferSize() const
@@ -58,7 +80,10 @@ int ParaEngine::ParaVertexBufferPool::GetActiveBufferCount() const
 
 int ParaEngine::ParaVertexBufferPool::GetTotalBufferCount() const
 {
-	return GetActiveBufferCount() + (int)(m_unusedFullSizedBuffers.size());
+	int unusedCount = (int)m_unusedFullSizedBuffers.size();
+	for (const auto& kv : m_unusedBuckets)
+		unusedCount += (int)kv.second.size();
+	return GetActiveBufferCount() + unusedCount;
 }
 
 void ParaEngine::ParaVertexBufferPool::Cleanup()
@@ -73,6 +98,19 @@ void ParaEngine::ParaVertexBufferPool::Cleanup()
 	}
 	m_unusedFullSizedBuffers.clear();
 
+	for (auto& kv : m_unusedBuckets)
+	{
+		for (auto* vertexBuffer : kv.second)
+		{
+			if (vertexBuffer)
+			{
+				vertexBuffer->ReleaseBuffer();
+				SAFE_DELETE(vertexBuffer);
+			}
+		}
+	}
+	m_unusedBuckets.clear();
+
 	for (auto vertexBuffer : m_activeBuffers)
 	{
 		if (vertexBuffer){
@@ -82,6 +120,7 @@ void ParaEngine::ParaVertexBufferPool::Cleanup()
 	}
 	m_activeBuffers.clear();
 	m_nTotalBufferBytes = 0;
+	m_nUnusedBufferBytes = 0;
 }
 
 HRESULT ParaEngine::ParaVertexBufferPool::DeleteDeviceObjects()
@@ -103,6 +142,19 @@ HRESULT ParaEngine::ParaVertexBufferPool::RendererRecreated()
 	}
 	m_unusedFullSizedBuffers.clear();
 
+	for (auto& kv : m_unusedBuckets)
+	{
+		for (auto* vertexBuffer : kv.second)
+		{
+			if (vertexBuffer)
+			{
+				vertexBuffer->RendererRecreated();
+				SAFE_DELETE(vertexBuffer);
+			}
+		}
+	}
+	m_unusedBuckets.clear();
+
 	for (auto vertexBuffer : m_activeBuffers)
 	{
 		if (vertexBuffer){
@@ -112,22 +164,50 @@ HRESULT ParaEngine::ParaVertexBufferPool::RendererRecreated()
 	}
 	m_activeBuffers.clear();
 	m_nTotalBufferBytes = 0;
+	m_nUnusedBufferBytes = 0;
 	return S_OK;
 }
 
 void ParaEngine::ParaVertexBufferPool::TickCache()
 {
+	const size_t maxUnusedBytes = (size_t)GetMaxPooledCount() * (size_t)(GetFullSizedBufferSize() > 0 ? GetFullSizedBufferSize() : 65536u);
+	while (m_nUnusedBufferBytes > maxUnusedBytes && !m_unusedBuckets.empty())
+	{
+		// Evict largest unused buffers first to reclaim VRAM quickly.
+		auto bucketIter = std::prev(m_unusedBuckets.end());
+		auto& vec = bucketIter->second;
+		if (!vec.empty())
+		{
+			ParaVertexBuffer* vertexBuffer = vec.back();
+			vec.pop_back();
+			if (vertexBuffer)
+			{
+				const size_t sz = vertexBuffer->GetBufferSize();
+				m_nTotalBufferBytes = (m_nTotalBufferBytes >= sz) ? (m_nTotalBufferBytes - sz) : 0;
+				m_nUnusedBufferBytes = (m_nUnusedBufferBytes >= sz) ? (m_nUnusedBufferBytes - sz) : 0;
+				vertexBuffer->ReleaseBuffer();
+				SAFE_DELETE(vertexBuffer);
+			}
+		}
+		if (vec.empty())
+			m_unusedBuckets.erase(bucketIter);
+	}
+
 	if (m_unusedFullSizedBuffers.size() > GetMaxPooledCount())
 	{
-		int nRemoveCount = m_unusedFullSizedBuffers.size() - GetMaxPooledCount();
-		for (int i = 0; i < nRemoveCount; ++i)
+		int nRemoveCount = (int)m_unusedFullSizedBuffers.size() - (int)GetMaxPooledCount();
+		for (int i = 0; i < nRemoveCount && !m_unusedFullSizedBuffers.empty(); ++i)
 		{
-			auto vertexBuffer = m_unusedFullSizedBuffers.begin();
-			if ((*vertexBuffer))
+			auto iter = m_unusedFullSizedBuffers.begin();
+			ParaVertexBuffer* vertexBuffer = *iter;
+			m_unusedFullSizedBuffers.erase(iter);
+			if (vertexBuffer)
 			{
-				m_nTotalBufferBytes -= (*vertexBuffer)->GetBufferSize();
-				(*vertexBuffer)->ReleaseBuffer();
-				m_unusedFullSizedBuffers.erase(vertexBuffer);
+				const size_t sz = vertexBuffer->GetBufferSize();
+				m_nTotalBufferBytes = (m_nTotalBufferBytes >= sz) ? (m_nTotalBufferBytes - sz) : 0;
+				m_nUnusedBufferBytes = (m_nUnusedBufferBytes >= sz) ? (m_nUnusedBufferBytes - sz) : 0;
+				vertexBuffer->ReleaseBuffer();
+				SAFE_DELETE(vertexBuffer);
 			}
 		}
 	}
@@ -137,60 +217,63 @@ ParaVertexBuffer* ParaEngine::ParaVertexBufferPool::CreateBuffer(uint32 nBufferS
 {
 	if (nBufferSize == 0)
 		return NULL;
-	if (m_unusedFullSizedBuffers.size() > 0 && nBufferSize == GetFullSizedBufferSize())
+	const uint32 bucketSize = RoundUpBucketSize(nBufferSize);
+	auto bucketIter = m_unusedBuckets.find(bucketSize);
+	if (bucketIter != m_unusedBuckets.end())
 	{
-		for (auto iter = m_unusedFullSizedBuffers.begin(); iter != m_unusedFullSizedBuffers.end(); )
+		auto& vec = bucketIter->second;
+		while (!vec.empty())
 		{
-			ParaVertexBuffer* vertexBuffer = *iter;
-			if (vertexBuffer->IsValid())
+			ParaVertexBuffer* vertexBuffer = vec.back();
+			vec.pop_back();
+			const size_t sz = vertexBuffer ? vertexBuffer->GetBufferSize() : 0;
+			m_nUnusedBufferBytes = (m_nUnusedBufferBytes >= sz) ? (m_nUnusedBufferBytes - sz) : 0;
+			if (vertexBuffer && vertexBuffer->IsValid())
 			{
-				m_unusedFullSizedBuffers.erase(iter);
+				if (vec.empty())
+					m_unusedBuckets.erase(bucketIter);
 				m_activeBuffers.insert(vertexBuffer);
 				return vertexBuffer;
 			}
-			else
+			else if (vertexBuffer)
 			{
-				// this should never happen. 
-				iter = m_unusedFullSizedBuffers.erase(iter);
+				m_nTotalBufferBytes = (m_nTotalBufferBytes >= sz) ? (m_nTotalBufferBytes - sz) : 0;
 				SAFE_DELETE(vertexBuffer);
 			}
 		}
+		m_unusedBuckets.erase(bucketIter);
 	}
+
 	ParaVertexBuffer* vertexBuffer = new ParaVertexBuffer();
 	if (vertexBuffer)
 	{
 		m_activeBuffers.insert(vertexBuffer);
-		vertexBuffer->CreateBuffer(nBufferSize, dwFormat, dwUsage, dwPool);
-		m_nTotalBufferBytes += nBufferSize;
+		vertexBuffer->CreateBuffer(bucketSize, dwFormat, dwUsage, dwPool);
+		m_nTotalBufferBytes += bucketSize;
 	}
 	return vertexBuffer;
 }
 
 void ParaEngine::ParaVertexBufferPool::ReleaseBuffer(ParaVertexBuffer* pBuffer)
 {
-	if (pBuffer && pBuffer->IsValid() && pBuffer->GetBufferSize() == GetFullSizedBufferSize())
+	if (!pBuffer)
+		return;
+	auto iter = m_activeBuffers.find(pBuffer);
+	if (iter != m_activeBuffers.end())
+		m_activeBuffers.erase(iter);
+
+	if (pBuffer->IsValid() && pBuffer->GetBufferSize() > 0)
 	{
-		m_unusedFullSizedBuffers.insert(pBuffer);
-		auto iter = m_activeBuffers.find(pBuffer);
-		if (iter != m_activeBuffers.end())
-		{
-			m_activeBuffers.erase(iter);
-		}
+		const uint32 sz = pBuffer->GetBufferSize();
+		m_unusedBuckets[sz].push_back(pBuffer);
+		m_nUnusedBufferBytes += sz;
 	}
 	else
 	{
-		auto iter = m_activeBuffers.find(pBuffer);
-		if (iter != m_activeBuffers.end())
-		{
-			ParaVertexBuffer* vertexBuffer = (*iter);
-			if (vertexBuffer)
-			{
-				m_nTotalBufferBytes -= vertexBuffer->GetBufferSize();
-				vertexBuffer->ReleaseBuffer();
-				SAFE_DELETE(vertexBuffer);
-			}
-			m_activeBuffers.erase(iter);
-		}
+		const size_t sz = pBuffer->GetBufferSize();
+		m_nTotalBufferBytes = (m_nTotalBufferBytes >= sz) ? (m_nTotalBufferBytes - sz) : 0;
+		pBuffer->ReleaseBuffer();
+		SAFE_DELETE(pBuffer);
 	}
 }
 
@@ -231,6 +314,7 @@ size_t ParaEngine::ParaVertexBufferPool::GetTotalBufferBytes(bool bRecalculate)
 	else
 	{
 		m_nTotalBufferBytes = 0;
+		m_nUnusedBufferBytes = 0;
 		for (auto vertexBuffer : m_activeBuffers)
 		{
 			m_nTotalBufferBytes += vertexBuffer->GetBufferSize();
@@ -238,6 +322,18 @@ size_t ParaEngine::ParaVertexBufferPool::GetTotalBufferBytes(bool bRecalculate)
 		for (auto vertexBuffer : m_unusedFullSizedBuffers)
 		{
 			m_nTotalBufferBytes += vertexBuffer->GetBufferSize();
+			m_nUnusedBufferBytes += vertexBuffer->GetBufferSize();
+		}
+		for (const auto& kv : m_unusedBuckets)
+		{
+			for (auto* vertexBuffer : kv.second)
+			{
+				if (vertexBuffer)
+				{
+					m_nTotalBufferBytes += vertexBuffer->GetBufferSize();
+					m_nUnusedBufferBytes += vertexBuffer->GetBufferSize();
+				}
+			}
 		}
 		return m_nTotalBufferBytes;
 	}

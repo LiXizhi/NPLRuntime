@@ -69,15 +69,11 @@ namespace ParaEngine
 			else
 			{
 				BuildRenderGroup();
+				UploadFromMemoryToDeviceBuffer();
 				m_isDirty = false;
 				if (IsMainRenderer())
 					pOwnerBlockRegion->SetChunkDirty(m_packedChunkID, false);
 				SetChunkBuildState(RenderableChunk::ChunkBuild_Ready);
-
-				// transfer ownership from builder task to render task. 
-				m_renderTasks = m_builder_tasks;
-				m_builder_tasks.clear();
-				ClearBuilderBuffer();
 				return true;
 			}
 		}
@@ -178,6 +174,7 @@ namespace ParaEngine
 			return;
 
 		ClearRenderTasks();
+		ClearBuilderBuffer();
 		ReleaseVertexBuffers();
 		BlockChunk* pChunk = pOwnerBlockRegion->GetChunk(m_packedChunkID, false);
 		if (!pChunk)
@@ -203,10 +200,7 @@ namespace ParaEngine
 		SortAndMergeInstanceGroupsByTexture();
 
 		//----------------------------------------------------------
-		//2.create a big buffer to hold all blocks
-
-		uint32_t bufferSize = sizeof(BlockVertexCompressed) * (totalFaceCount * 4);
-
+		//2.create staging memory buffer; UploadFromMemoryToDeviceBuffer allocates compact GPU VB
 		BlockRenderMethod dwShaderID = (BlockRenderMethod)GetShaderID();
 
 		m_totalFaceCount = totalFaceCount;
@@ -219,11 +213,12 @@ namespace ParaEngine
 		//3.fill buffer
 
 		int32 nFreeFaceCountInVertexBuffer = Math::Min(maxFaceCountPerBatch, m_totalFaceCount - nFaceCountCompleted);
-		ParaVertexBuffer* pVertexBuffer = RequestVertexBuffer(nFreeFaceCountInVertexBuffer);
-		if (!pVertexBuffer)
+		int32 nMemoryBufferIndex = 0;
+		ParaVertexBuffer memoryBuffer = RequestMemoryBuffer(nFreeFaceCountInVertexBuffer, &nMemoryBufferIndex);
+		if (!memoryBuffer.IsValid())
 			return;
-		BlockVertexCompressed* pVertices;
-		pVertexBuffer->Lock((void**)&pVertices);
+		BlockVertexCompressed* pVertices = NULL;
+		memoryBuffer.Lock((void**)&pVertices);
 		uint32_t vertexOffset = 0;
 
 		std::vector<InstanceGroup* >& instanceGroups = GetInstanceGroups();
@@ -246,12 +241,13 @@ namespace ParaEngine
 			{
 				if (nFreeFaceCountInVertexBuffer < (maxFaceCountPerBatch*0.1))
 				{
-					pVertexBuffer->Unlock();
+					m_memoryBuffers[nMemoryBufferIndex].SetUsedSize(vertexOffset * sizeof(BlockVertexCompressed));
+					memoryBuffer.Unlock();
 					nFreeFaceCountInVertexBuffer = Math::Min(maxFaceCountPerBatch, m_totalFaceCount - nFaceCountCompleted);
-					pVertexBuffer = RequestVertexBuffer(nFreeFaceCountInVertexBuffer);
-					if (!pVertexBuffer)
+					memoryBuffer = RequestMemoryBuffer(nFreeFaceCountInVertexBuffer, &nMemoryBufferIndex);
+					if (!memoryBuffer.IsValid())
 						return;
-					pVertexBuffer->Lock((void**)&pVertices);
+					memoryBuffer.Lock((void**)&pVertices);
 					vertexOffset = 0;
 					pLastInstGroup = NULL;
 				}
@@ -269,7 +265,7 @@ namespace ParaEngine
 			if (!pTask || !(pInstGroup->CanShareRenderBufferWith(pLastInstGroup)))
 			{
 				pTask = BlockRenderTask::CreateTask();
-				pTask->Init(pTemplate, nBlockData, vertexOffset, pVertexBuffer->GetDevicePointer(), pChunk->m_minBlockId_ws);
+				pTask->Init(pTemplate, nBlockData, vertexOffset, pChunk->m_minBlockId_ws, nMemoryBufferIndex);
 				pTask->SetMaterialId(materialId);
 				m_builder_tasks.push_back(pTask);
 				pLastInstGroup = pInstGroup;
@@ -283,12 +279,13 @@ namespace ParaEngine
 				batchInstCount++;
 				if (nFreeFaceCountInVertexBuffer < nMaxFaceCountPerInstance)
 				{
-					pVertexBuffer->Unlock();
+					m_memoryBuffers[nMemoryBufferIndex].SetUsedSize(vertexOffset * sizeof(BlockVertexCompressed));
+					memoryBuffer.Unlock();
 					nFreeFaceCountInVertexBuffer = Math::Min(maxFaceCountPerBatch, m_totalFaceCount - nFaceCountCompleted);
-					pVertexBuffer = RequestVertexBuffer(nFreeFaceCountInVertexBuffer);
-					if (!pVertexBuffer)
+					memoryBuffer = RequestMemoryBuffer(nFreeFaceCountInVertexBuffer, &nMemoryBufferIndex);
+					if (!memoryBuffer.IsValid())
 						return;
-					pVertexBuffer->Lock((void**)&pVertices);
+					memoryBuffer.Lock((void**)&pVertices);
 					vertexOffset = 0;
 
 					if (nFreeFaceCountInVertexBuffer < unprocessedInstCount*nMaxFaceCountPerInstance)
@@ -300,7 +297,7 @@ namespace ParaEngine
 						instCount = unprocessedInstCount;
 					}
 					pTask = BlockRenderTask::CreateTask();
-					pTask->Init(pTemplate, nBlockData, vertexOffset, pVertexBuffer->GetDevicePointer(), pChunk->m_minBlockId_ws);
+					pTask->Init(pTemplate, nBlockData, vertexOffset, pChunk->m_minBlockId_ws, nMemoryBufferIndex);
 					pTask->SetMaterialId(materialId);
 					m_builder_tasks.push_back(pTask);
 					pLastInstGroup = pInstGroup;
@@ -335,7 +332,9 @@ namespace ParaEngine
 				}
 			}
 		}
-		pVertexBuffer->Unlock();
+		m_memoryBuffers[nMemoryBufferIndex].SetUsedSize(vertexOffset * sizeof(BlockVertexCompressed));
+		memoryBuffer.Unlock();
+		m_totalFaceCount = nFaceCountCompleted;
 
 	}
 
@@ -555,9 +554,11 @@ namespace ParaEngine
 		return tls_instanceGroups;
 	}
 
-	std::map<int64_t, int>& RenderableChunk::GetInstanceMap()
+	std::unordered_map<int64_t, int>& RenderableChunk::GetInstanceMap()
 	{
-		thread_local static std::map<int64_t, int> tls_instance_map;
+		thread_local static std::unordered_map<int64_t, int> tls_instance_map;
+		if (tls_instance_map.bucket_count() < 64)
+			tls_instance_map.reserve(64);
 		return tls_instance_map;
 	}
 
@@ -584,7 +585,7 @@ namespace ParaEngine
 		int32 totalFaceCount = 0;
 		int32 cachedGroupIdx = 0;
 		uint16_t nSize = (uint16_t)pChunk->m_blockIndices.size();
-		std::map < int64_t, int > & instance_map = GetInstanceMap();
+		std::unordered_map<int64_t, int>& instance_map = GetInstanceMap();
 		std::vector<InstanceGroup* >& instanceGroups = GetInstanceGroups();
 
 		for (uint16_t i = 0; i < nSize; i++)
@@ -807,6 +808,7 @@ namespace ParaEngine
 			{
 				if (nFreeFaceCountInVertexBuffer < (maxFaceCountPerBatch*0.1))
 				{
+					m_memoryBuffers[nMemoryBufferIndex].SetUsedSize(vertexOffset * sizeof(BlockVertexCompressed));
 					memoryBuffer.Unlock();
 					nFreeFaceCountInVertexBuffer = Math::Min(maxFaceCountPerBatch, m_totalFaceCount - nFaceCountCompleted);
 					memoryBuffer = RequestMemoryBuffer(nFreeFaceCountInVertexBuffer, &nMemoryBufferIndex);
@@ -842,6 +844,7 @@ namespace ParaEngine
 				batchInstCount++;
 				if (nFreeFaceCountInVertexBuffer < nMaxFaceCountPerInstance)
 				{
+					m_memoryBuffers[nMemoryBufferIndex].SetUsedSize(vertexOffset * sizeof(BlockVertexCompressed));
 					memoryBuffer.Unlock();
 					nFreeFaceCountInVertexBuffer = Math::Min(maxFaceCountPerBatch, m_totalFaceCount - nFaceCountCompleted);
 					memoryBuffer = RequestMemoryBuffer(nFreeFaceCountInVertexBuffer, &nMemoryBufferIndex);
@@ -893,7 +896,9 @@ namespace ParaEngine
 				CHECK_YIELD_CPU_TO_WRITER;
 			}
 		}
+		m_memoryBuffers[nMemoryBufferIndex].SetUsedSize(vertexOffset * sizeof(BlockVertexCompressed));
 		memoryBuffer.Unlock();
+		m_totalFaceCount = nFaceCountCompleted;
 		if (pnCpuYieldCount)
 			*pnCpuYieldCount = nCpuYieldCount;
 	}
@@ -921,21 +926,34 @@ namespace ParaEngine
 
 		if (!m_memoryBuffers.empty())
 		{
-			for (ParaMemoryBuffer& memBuffer : m_memoryBuffers)
+			std::vector<int32> bufferRemap(m_memoryBuffers.size(), -1);
+			for (size_t idx = 0; idx < m_memoryBuffers.size(); ++idx)
 			{
-				ParaVertexBuffer* pBuffer = RequestVertexBuffer(memBuffer.GetBufferSize() / (sizeof(BlockVertexCompressed) * 4));
+				ParaMemoryBuffer& memBuffer = m_memoryBuffers[idx];
+				const uint32 usedBytes = memBuffer.GetUsedSize();
+				if (usedBytes == 0)
+					continue;
+				const int32 usedFaces = (int32)(usedBytes / (sizeof(BlockVertexCompressed) * 4));
+				if (usedFaces <= 0)
+					continue;
+				ParaVertexBuffer* pBuffer = RequestVertexBuffer(usedFaces);
 				if (pBuffer)
-					pBuffer->UploadMemoryBuffer(memBuffer.GetMemoryPointer());
+				{
+					pBuffer->UploadMemoryBuffer(memBuffer.GetMemoryPointer(), (int32)usedBytes);
+					bufferRemap[idx] = (int32)m_vertexBuffers.size() - 1;
+				}
 			}
 
 			m_renderTasks.clear();
 			m_renderTasks.reserve(m_builder_tasks.size());
 			for (BlockRenderTask* pTask : m_builder_tasks)
 			{
-				if ((int)m_vertexBuffers.size() > pTask->GetBufferIndex())
+				const int32 bufIdx = pTask->GetBufferIndex();
+				const int32 mappedIdx = (bufIdx >= 0 && bufIdx < (int32)bufferRemap.size()) ? bufferRemap[bufIdx] : -1;
+				if (mappedIdx >= 0 && mappedIdx < (int32)m_vertexBuffers.size() && pTask->GetPrimitiveCount() > 0)
 				{
 					// transfer render task ownership from builder task to render task. 
-					pTask->SetVertexBuffer(m_vertexBuffers[pTask->GetBufferIndex()]->GetDevicePointer());
+					pTask->SetVertexBuffer(m_vertexBuffers[mappedIdx]->GetDevicePointer());
 					m_renderTasks.push_back(pTask);
 				}
 				else
@@ -944,6 +962,10 @@ namespace ParaEngine
 				}
 			}
 			m_builder_tasks.clear();
+			ClearBuilderBuffer();
+		}
+		else
+		{
 			ClearBuilderBuffer();
 		}
 	}

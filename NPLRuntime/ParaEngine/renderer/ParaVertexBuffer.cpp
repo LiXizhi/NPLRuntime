@@ -184,6 +184,7 @@ bool ParaEngine::ParaIndexBuffer::CreateBuffer(uint32 nBufferSize, DWORD dwForma
 
 bool ParaEngine::ParaMemoryBuffer::CreateBuffer(uint32 nBufferSize, DWORD dwFormat /*= 0*/, DWORD dwUsage /*= 0*/)
 {
+	m_nUsedSize = 0;
 	return CreateMemoryBuffer(nBufferSize, dwFormat, dwUsage);
 }
 

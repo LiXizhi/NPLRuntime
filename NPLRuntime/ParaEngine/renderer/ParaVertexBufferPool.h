@@ -1,6 +1,8 @@
 #pragma once
 #include "AssetManager.h"
+#include <map>
 #include <unordered_set>
+#include <vector>
 
 namespace ParaEngine
 {
@@ -62,8 +64,11 @@ namespace ParaEngine
 		
 		
 	protected:
+		uint32 RoundUpBucketSize(uint32 nBufferSize) const;
+
 		std::unordered_set<ParaVertexBuffer*> m_activeBuffers;
 		std::unordered_set<ParaVertexBuffer*> m_unusedFullSizedBuffers;
+		std::map<uint32, std::vector<ParaVertexBuffer*>> m_unusedBuckets;
 
 		/** we will reuse full sized buffer */
 		uint32 m_nFullSizedBufferSize;
@@ -73,6 +78,8 @@ namespace ParaEngine
 
 		/** total number of bytes in memory.*/
 		size_t m_nTotalBufferBytes;
+		/** total number of unused pooled bytes in memory.*/
+		size_t m_nUnusedBufferBytes;
 		
 	};
 

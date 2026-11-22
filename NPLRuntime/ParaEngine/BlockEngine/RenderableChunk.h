@@ -1,4 +1,5 @@
 ﻿#pragma once
+#include <unordered_map>
 #include "BlockRenderTask.h"
 #include "BlockCommon.h"
 #include "BlockChunk.h"
@@ -221,7 +222,7 @@ namespace ParaEngine
 		std::vector<InstanceGroup* >& GetInstanceGroups();
 
 		/** mapping from a hashed value of block_template id and template data if any. */
-		std::map<int64_t, int>& GetInstanceMap();
+		std::unordered_map<int64_t, int>& GetInstanceMap();
 		
 		static void StaticReleaseInstGroup(std::vector<RenderableChunk::InstanceGroup* >* pInstances);
 

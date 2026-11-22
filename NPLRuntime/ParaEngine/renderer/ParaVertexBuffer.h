@@ -77,8 +77,13 @@ namespace ParaEngine
 	class ParaMemoryBuffer : public ParaVertexBuffer
 	{
 	public:
+		ParaMemoryBuffer() : m_nUsedSize(0) {}
 		bool CreateBuffer(uint32 nBufferSize, DWORD dwFormat = 0, DWORD dwUsage = 0);
 		char* GetDevicePointer();
+		void SetUsedSize(uint32 nUsedSize) { m_nUsedSize = nUsedSize; }
+		uint32 GetUsedSize() const { return m_nUsedSize; }
+	protected:
+		uint32 m_nUsedSize;
 	};
 	
 }

@@ -10,6 +10,9 @@
 #include "BlockEngine/BlockTemplate.h"
 #include "BlockEngine/BlockDirection.h"
 #include "BlockEngine/BlockCommon.h"
+#include "BlockEngine/RenderableChunk.h"
+#include "renderer/ParaVertexBuffer.h"
+#include "renderer/ParaVertexBufferPool.h"
 #include "renderer/VertexFVF.h"
 #include "ShapeAABB.h"
 #include "3dengine/ParaEngineSettings.h"
@@ -704,6 +707,83 @@ namespace
 			TEST_CHECK(hRestored == h0);
 		}
 	}
+
+	class TestPoolableBuffer : public ParaVertexBuffer
+	{
+	public:
+		void InitFakeValid(uint32 sz)
+		{
+			m_bufferType = BufferType_MemoryBuffer;
+			m_nBufferSize = sz;
+			m_buffer = new char[sz];
+		}
+	};
+
+	void TestChunkCompactMemoryAndBucketPool()
+	{
+		// 1. ParaMemoryBuffer tracks exact post-culling byte count separately from pre-culling capacity
+		{
+			ParaMemoryBuffer memBuf;
+			const uint32 faceBytes = 4u * (uint32)sizeof(BlockVertexCompressed);
+			TEST_CHECK(memBuf.CreateBuffer(6u * faceBytes));
+			TEST_CHECK(memBuf.GetBufferSize() == 6u * faceBytes);
+			TEST_CHECK(memBuf.GetUsedSize() == 0u);
+			memBuf.SetUsedSize(2u * faceBytes);
+			TEST_CHECK(memBuf.GetUsedSize() == 2u * faceBytes);
+			memBuf.ReleaseBuffer();
+		}
+
+		// 2. ParaVertexBufferPool size-bucketed reuse and unused byte budget eviction
+		{
+			class TestBucketPool : public ParaVertexBufferPool
+			{
+			public:
+				uint32 TestRoundUp(uint32 sz) const { return RoundUpBucketSize(sz); }
+				void InjectFakeActive(ParaVertexBuffer* buf)
+				{
+					m_activeBuffers.insert(buf);
+					m_nTotalBufferBytes += buf->GetBufferSize();
+				}
+			};
+
+			TestBucketPool pool;
+			pool.SetFullSizedBufferSize(720000u);
+			pool.SetMaxPooledCount(1u); // 720 KB unused budget
+
+			TEST_CHECK(pool.TestRoundUp(80u) == 2560u);
+			TEST_CHECK(pool.TestRoundUp(2560u) == 2560u);
+			TEST_CHECK(pool.TestRoundUp(2561u) == 5120u);
+			TEST_CHECK(pool.TestRoundUp(700000u) == 720000u);
+
+			auto* fakeSmall = new TestPoolableBuffer();
+			fakeSmall->InitFakeValid(5120u);
+			pool.InjectFakeActive(fakeSmall);
+			TEST_CHECK(pool.GetActiveBufferCount() == 1);
+			pool.ReleaseBuffer(fakeSmall);
+			TEST_CHECK(pool.GetActiveBufferCount() == 0);
+			TEST_CHECK(pool.GetTotalBufferCount() == 1);
+			TEST_CHECK(pool.GetTotalBufferBytes() == 5120u);
+
+			// Requesting 3200 bytes rounds up to 5120 bucket and reuses fakeSmall in O(1)
+			ParaVertexBuffer* reused = pool.CreateBuffer(3200u);
+			TEST_CHECK(reused == fakeSmall);
+			TEST_CHECK(pool.GetActiveBufferCount() == 1);
+			TEST_CHECK(pool.GetTotalBufferCount() == 1);
+			pool.ReleaseBuffer(reused);
+
+			// Exceeding unused byte budget evicts largest unused buffers in TickCache
+			auto* fakeLarge = new TestPoolableBuffer();
+			fakeLarge->InitFakeValid(720000u);
+			pool.InjectFakeActive(fakeLarge);
+			pool.ReleaseBuffer(fakeLarge);
+			TEST_CHECK(pool.GetTotalBufferBytes() == 725120u);
+			pool.TickCache();
+			TEST_CHECK(pool.GetTotalBufferBytes() == 5120u);
+			TEST_CHECK(pool.GetTotalBufferBytes(true) == 5120u);
+			pool.Cleanup();
+			TEST_CHECK(pool.GetTotalBufferBytes() == 0u);
+		}
+	}
 }
 
 int main()
@@ -720,6 +800,7 @@ int main()
 	TestSoftwareOcclusionBufferMode(true);   // D3D11 / D3D12 / Vulkan / Metal / WebGPU [0, 1] clip Z
 	TestSoftwareOcclusionBufferMode(false);  // OpenGL [-1, 1] clip Z
 	TestRigidBodyFastPathAndPsoStateHashCache();
+	TestChunkCompactMemoryAndBucketPool();
 
 	std::printf("=== Summary: %d passed, %d failed ===\n", g_passed, g_failed);
 	return (g_failed == 0) ? EXIT_SUCCESS : EXIT_FAILURE;
