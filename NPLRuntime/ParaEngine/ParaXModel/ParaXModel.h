@@ -25,6 +25,26 @@ namespace ParaEngine
 	struct ModelAttachment;
 	class ParaVoxelModel;
 
+	/** Pre-decomposed greedy 3D box primitive in ParaX model space (bottom at y=0) for compound rigid-body collision. */
+	struct ParaXPhysicsBox
+	{
+		Vector3 m_center;
+		Vector3 m_halfExtents;
+		int16 m_boneIndex = -1;
+		uint16 m_templateId = 0;
+	};
+
+	/** Auto-extracted joint / axle definition from BMax BoneBlocks or <pe:physics> metadata. */
+	struct ParaXPhysicsJointDef
+	{
+		std::string m_name;
+		int m_constraintType = 1; // 1=Hinge, 2=Slider, 6=Spring
+		Vector3 m_pivot;          // in ParaX model space (bottom at y=0)
+		Vector3 m_axis;           // unit axis in model space
+		int16 m_boneIndex = -1;
+		int16 m_parentBoneIndex = -1;
+	};
+
 	/**
 	* ParaX model is the model file for character animation, etc in the game world.
 	*/
@@ -268,6 +288,13 @@ namespace ParaEngine
 		friend struct ModelRenderPass;
 
 		ParaVoxelModel* CreateGetVoxelModel();
+
+		const std::vector<ParaXPhysicsBox>& GetPhysicsBoxes() const { return m_physicsBoxes; }
+		void SetPhysicsBoxes(const std::vector<ParaXPhysicsBox>& boxes) { m_physicsBoxes = boxes; }
+		const std::vector<ParaXPhysicsJointDef>& GetPhysicsJointDefs() const { return m_physicsJointDefs; }
+		void SetPhysicsJointDefs(const std::vector<ParaXPhysicsJointDef>& joints) { m_physicsJointDefs = joints; }
+		const std::string& GetDefaultPhysicsProperty() const { return m_sDefaultPhysicsProperty; }
+		void SetDefaultPhysicsProperty(const std::string& prop) { m_sDefaultPhysicsProperty = prop; }
 	private:
 		void InitVertexBuffer_NOANIM();
 		void InitVertexBuffer_BMAX();
@@ -413,6 +440,10 @@ namespace ParaEngine
 		bool m_bAllPassesRigidBody = false;
 		bool m_bRigidBufferBuilt = false;
 		bool m_bRigidBufferFailed = false;
+
+		std::vector<ParaXPhysicsBox> m_physicsBoxes;
+		std::vector<ParaXPhysicsJointDef> m_physicsJointDefs;
+		std::string m_sDefaultPhysicsProperty;
 
 		static const size_t MAX_USE_VERTEX_BUFFER_SIZE = 1024 * 1024 * 256;
 		static size_t m_uUsedVB;

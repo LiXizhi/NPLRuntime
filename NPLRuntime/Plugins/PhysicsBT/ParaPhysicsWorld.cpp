@@ -30,7 +30,8 @@ void ParaEngine::BulletPhysicsShape::Release()
 	delete this;
 }
 
-ParaEngine::BulletPhysicsActor::BulletPhysicsActor(btRigidBody* pActor) : m_pActor(pActor)
+ParaEngine::BulletPhysicsActor::BulletPhysicsActor(btRigidBody* pActor, CParaPhysicsWorld* pWorld, short group, short mask)
+	: m_pActor(pActor), m_pWorld(pWorld), m_group(group), m_mask(mask)
 {
 
 }
@@ -63,12 +64,15 @@ PARAVECTOR3 ParaEngine::BulletPhysicsActor::GetOrigin() {
 void ParaEngine::BulletPhysicsActor::SetWorldTransform(const PARAMATRIX* pMatrix)
 {
 #ifdef USE_MOTIONSTATE
-	static btTransform transform;
-	transform.setFromOpenGLMatrix((float*)pMatrix);
-	m_pActor->getMotionState()->setWorldTransform(transform);
-	if (IsKinematicObject()) m_pActor->setCenterOfMassTransform(transform);
+	btTransform transform;
+	transform.setFromOpenGLMatrix((const float*)pMatrix);
+	if (m_pActor->getMotionState())
+		m_pActor->getMotionState()->setWorldTransform(transform);
+	m_pActor->setCenterOfMassTransform(transform);
+	if (IsKinematicObject())
+		m_pActor->setInterpolationWorldTransform(transform);
 #else
-	m_pActor->getWorldTransform().setFromOpenGLMatrix((float*)pMatrix);
+	m_pActor->getWorldTransform().setFromOpenGLMatrix((const float*)pMatrix);
 #endif
 }
 
@@ -79,8 +83,78 @@ void ParaEngine::BulletPhysicsActor::Release()
 
 void ParaEngine::BulletPhysicsActor::ApplyCentralImpulse(const PARAVECTOR3& impulse)
 {
-	m_pActor->setActivationState(ACTIVE_TAG);
+	m_pActor->activate(true);
 	m_pActor->applyCentralImpulse(btVector3(impulse.x, impulse.y, impulse.z));
+}
+
+void ParaEngine::BulletPhysicsActor::ApplyCentralForce(const PARAVECTOR3& force)
+{
+	m_pActor->activate(true);
+	m_pActor->applyCentralForce(btVector3(force.x, force.y, force.z));
+}
+
+void ParaEngine::BulletPhysicsActor::ApplyForce(const PARAVECTOR3& force, const PARAVECTOR3& relPos)
+{
+	m_pActor->activate(true);
+	m_pActor->applyForce(btVector3(force.x, force.y, force.z), btVector3(relPos.x, relPos.y, relPos.z));
+}
+
+void ParaEngine::BulletPhysicsActor::ApplyImpulse(const PARAVECTOR3& impulse, const PARAVECTOR3& relPos)
+{
+	m_pActor->activate(true);
+	m_pActor->applyImpulse(btVector3(impulse.x, impulse.y, impulse.z), btVector3(relPos.x, relPos.y, relPos.z));
+}
+
+void ParaEngine::BulletPhysicsActor::ApplyTorque(const PARAVECTOR3& torque)
+{
+	m_pActor->activate(true);
+	m_pActor->applyTorque(btVector3(torque.x, torque.y, torque.z));
+}
+
+void ParaEngine::BulletPhysicsActor::ApplyTorqueImpulse(const PARAVECTOR3& torqueImpulse)
+{
+	m_pActor->activate(true);
+	m_pActor->applyTorqueImpulse(btVector3(torqueImpulse.x, torqueImpulse.y, torqueImpulse.z));
+}
+
+void ParaEngine::BulletPhysicsActor::ClearForces()
+{
+	m_pActor->clearForces();
+}
+
+void ParaEngine::BulletPhysicsActor::SetKinematic(bool bKinematic)
+{
+	btDynamicsWorld* dynWorld = m_pWorld ? m_pWorld->GetScene() : NULL;
+	if (dynWorld)
+		dynWorld->removeRigidBody(m_pActor);
+
+	int flags = m_pActor->getCollisionFlags();
+	if (bKinematic)
+	{
+		flags = (flags & ~btCollisionObject::CF_STATIC_OBJECT) | btCollisionObject::CF_KINEMATIC_OBJECT;
+		m_pActor->setCollisionFlags(flags);
+		m_pActor->setMassProps(0.f, btVector3(0.f, 0.f, 0.f));
+		m_pActor->updateInertiaTensor();
+		m_pActor->setActivationState(DISABLE_DEACTIVATION);
+	}
+	else
+	{
+		flags &= ~btCollisionObject::CF_KINEMATIC_OBJECT;
+		float curMass = GetMass();
+		if (curMass <= 0.f)
+			flags |= btCollisionObject::CF_STATIC_OBJECT;
+		else
+			flags &= ~btCollisionObject::CF_STATIC_OBJECT;
+		m_pActor->setCollisionFlags(flags);
+		m_pActor->setActivationState(ACTIVE_TAG);
+		m_pActor->activate(true);
+	}
+
+	if (dynWorld)
+	{
+		short nGroupMask = 1 << m_group;
+		dynWorld->addRigidBody(m_pActor, nGroupMask, m_mask);
+	}
 }
 void BulletPhysicsActor::Activate()
 {
@@ -109,7 +183,38 @@ float BulletPhysicsActor::GetMass()
 }
 void BulletPhysicsActor::SetMass(float mass)
 {
-	m_pActor->setMassProps(mass, m_pActor->getLocalInertia());
+	btDynamicsWorld* dynWorld = m_pWorld ? m_pWorld->GetScene() : NULL;
+	if (dynWorld)
+		dynWorld->removeRigidBody(m_pActor);
+
+	btVector3 localInertia(0.f, 0.f, 0.f);
+	int flags = m_pActor->getCollisionFlags();
+	if (mass > 0.f)
+	{
+		if (m_pActor->getCollisionShape())
+			m_pActor->getCollisionShape()->calculateLocalInertia(mass, localInertia);
+		flags &= ~(btCollisionObject::CF_STATIC_OBJECT | btCollisionObject::CF_KINEMATIC_OBJECT);
+		m_pActor->setCollisionFlags(flags);
+		m_pActor->setMassProps(mass, localInertia);
+		m_pActor->updateInertiaTensor();
+		if (m_pActor->getActivationState() != DISABLE_DEACTIVATION)
+			m_pActor->setActivationState(ACTIVE_TAG);
+		m_pActor->activate(true);
+	}
+	else
+	{
+		if (!(flags & btCollisionObject::CF_KINEMATIC_OBJECT))
+			flags |= btCollisionObject::CF_STATIC_OBJECT;
+		m_pActor->setCollisionFlags(flags);
+		m_pActor->setMassProps(0.f, localInertia);
+		m_pActor->updateInertiaTensor();
+	}
+
+	if (dynWorld)
+	{
+		short nGroupMask = 1 << m_group;
+		dynWorld->addRigidBody(m_pActor, nGroupMask, m_mask);
+	}
 }
 PARAVECTOR3 BulletPhysicsActor::GetLocalInertia()
 {
@@ -407,6 +512,41 @@ void BulletPhysicsConstraint::EnableSliderMotor(bool enable, float targetVelocit
 	}
 }
 
+void BulletPhysicsConstraint::SetSpringParams(int axis, bool enable, float stiffness, float damping, float equilibriumPoint, bool useCurrentEquilibrium)
+{
+	if (m_type == ConstraintType_Spring && m_pConstraint && axis >= 0 && axis < 6)
+	{
+		btGeneric6DofSpringConstraint* spring = static_cast<btGeneric6DofSpringConstraint*>(m_pConstraint);
+		spring->enableSpring(axis, enable);
+		spring->setStiffness(axis, stiffness);
+		spring->setDamping(axis, damping);
+		if (useCurrentEquilibrium)
+			spring->setEquilibriumPoint(axis);
+		else
+			spring->setEquilibriumPoint(axis, equilibriumPoint);
+	}
+}
+
+void BulletPhysicsConstraint::SetLinearLimits3D(const PARAVECTOR3& lower, const PARAVECTOR3& upper)
+{
+	if ((m_type == ConstraintType_Generic6Dof || m_type == ConstraintType_Spring) && m_pConstraint)
+	{
+		btGeneric6DofConstraint* dof = static_cast<btGeneric6DofConstraint*>(m_pConstraint);
+		dof->setLinearLowerLimit(btVector3(lower.x, lower.y, lower.z));
+		dof->setLinearUpperLimit(btVector3(upper.x, upper.y, upper.z));
+	}
+}
+
+void BulletPhysicsConstraint::SetAngularLimits3D(const PARAVECTOR3& lower, const PARAVECTOR3& upper)
+{
+	if ((m_type == ConstraintType_Generic6Dof || m_type == ConstraintType_Spring) && m_pConstraint)
+	{
+		btGeneric6DofConstraint* dof = static_cast<btGeneric6DofConstraint*>(m_pConstraint);
+		dof->setAngularLowerLimit(btVector3(lower.x, lower.y, lower.z));
+		dof->setAngularUpperLimit(btVector3(upper.x, upper.y, upper.z));
+	}
+}
+
 //////////////////////////////////////////////////////////////////////////
 // BulletPhysicsVehicle Implementation
 //////////////////////////////////////////////////////////////////////////
@@ -576,7 +716,7 @@ bool CParaPhysicsWorld::InitPhysics()
 
 bool CParaPhysicsWorld::StepSimulation(float fDeltaTime)
 {
-	m_dynamicsWorld->stepSimulation(fDeltaTime, 3, 1 / 60.f);
+	m_dynamicsWorld->stepSimulation(fDeltaTime, 8, 1.f / 60.f);
 	return true;
 }
 
@@ -657,18 +797,105 @@ IParaPhysicsShape* CParaPhysicsWorld::CreateSimpleShape(const ParaPhysicsSimpleS
 	}
 	else if (shapeDesc.m_shape == "capsule")
 	{
-		pShape->m_pShape = new btCapsuleShape(shapeDesc.m_halfWidth, (shapeDesc.m_halfHeight - shapeDesc.m_halfWidth) * 2);
+		float cylHeight = (shapeDesc.m_halfHeight > shapeDesc.m_halfWidth) ? ((shapeDesc.m_halfHeight - shapeDesc.m_halfWidth) * 2.f) : 0.f;
+		pShape->m_pShape = new btCapsuleShape(shapeDesc.m_halfWidth, cylHeight);
+	}
+	else if (shapeDesc.m_shape == "cylinder")
+	{
+		pShape->m_pShape = new btCylinderShape(btVector3(shapeDesc.m_halfWidth, shapeDesc.m_halfHeight, shapeDesc.m_halfLength));
+	}
+	else if (shapeDesc.m_shape == "cylinderX")
+	{
+		pShape->m_pShape = new btCylinderShapeX(btVector3(shapeDesc.m_halfWidth, shapeDesc.m_halfHeight, shapeDesc.m_halfLength));
+	}
+	else if (shapeDesc.m_shape == "cylinderZ")
+	{
+		pShape->m_pShape = new btCylinderShapeZ(btVector3(shapeDesc.m_halfWidth, shapeDesc.m_halfHeight, shapeDesc.m_halfLength));
+	}
+	else if (shapeDesc.m_shape == "cone")
+	{
+		pShape->m_pShape = new btConeShape(shapeDesc.m_halfWidth, shapeDesc.m_halfHeight * 2.f);
 	}
 	else 
 	{
 		pShape->m_pShape = NULL;
 	}
-	if (pShape->m_pShape == NULL) return NULL;
+	if (pShape->m_pShape == NULL)
+	{
+		delete pShape;
+		return NULL;
+	}
 
 	pShape->m_pShape->setUserPointer(pShape);
 
 	m_collisionShapes.insert(pShape);
 	
+	return pShape;
+}
+
+IParaPhysicsShape* CParaPhysicsWorld::CreateCompoundShape(const ParaPhysicsCompoundChildDesc* children, int childCount)
+{
+	if (!children || childCount <= 0)
+		return NULL;
+
+	BulletCompoundShape* pCompound = new BulletCompoundShape();
+	pCompound->m_pShape = new btCompoundShape(true, childCount);
+
+	for (int i = 0; i < childCount; ++i)
+	{
+		const ParaPhysicsCompoundChildDesc& desc = children[i];
+		btCollisionShape* childShape = NULL;
+		if (desc.m_shape == "sphere")
+		{
+			childShape = new btSphereShape(desc.m_halfExtents.x);
+		}
+		else if (desc.m_shape == "cylinder")
+		{
+			childShape = new btCylinderShape(btVector3(desc.m_halfExtents.x, desc.m_halfExtents.y, desc.m_halfExtents.z));
+		}
+		else if (desc.m_shape == "capsule")
+		{
+			float cylH = (desc.m_halfExtents.y > desc.m_halfExtents.x) ? ((desc.m_halfExtents.y - desc.m_halfExtents.x) * 2.f) : 0.f;
+			childShape = new btCapsuleShape(desc.m_halfExtents.x, cylH);
+		}
+		else
+		{
+			childShape = new btBoxShape(btVector3(desc.m_halfExtents.x, desc.m_halfExtents.y, desc.m_halfExtents.z));
+		}
+
+		btMatrix3x3 rot(
+			desc.m_localRotation._11, desc.m_localRotation._21, desc.m_localRotation._31,
+			desc.m_localRotation._12, desc.m_localRotation._22, desc.m_localRotation._32,
+			desc.m_localRotation._13, desc.m_localRotation._23, desc.m_localRotation._33
+		);
+		btTransform localTrans(rot, btVector3(desc.m_localOrigin.x, desc.m_localOrigin.y, desc.m_localOrigin.z));
+		pCompound->m_childShapes.push_back(childShape);
+		pCompound->m_pShape->addChildShape(localTrans, childShape);
+	}
+
+	pCompound->m_pShape->recalculateLocalAabb();
+	pCompound->m_pShape->setUserPointer(pCompound);
+	m_collisionShapes.insert(pCompound);
+	return pCompound;
+}
+
+IParaPhysicsShape* CParaPhysicsWorld::CreateConvexHullShape(const PARAVECTOR3* points, int numPoints, const PARAVECTOR3& scale)
+{
+	if (!points || numPoints <= 0)
+		return NULL;
+
+	BulletSimpleShape* pShape = new BulletSimpleShape();
+	btConvexHullShape* hull = new btConvexHullShape();
+	int step = (numPoints > 256) ? (numPoints / 256) : 1;
+	for (int i = 0; i < numPoints; i += step)
+	{
+		hull->addPoint(btVector3(points[i].x * scale.x, points[i].y * scale.y, points[i].z * scale.z), false);
+	}
+	hull->recalcLocalAabb();
+	hull->optimizeConvexHull();
+	pShape->m_pShape = hull;
+	pShape->m_pShape->setUserPointer(pShape);
+	m_collisionShapes.insert(pShape);
 	return pShape;
 }
 
@@ -747,7 +974,9 @@ IParaPhysicsShape* CParaPhysicsWorld::CreateTriangleMeshShape(const ParaPhysicsT
 
 void CParaPhysicsWorld::ReleaseShape(IParaPhysicsShape* pShape)
 {
-	m_collisionShapes.erase((BulletPhysicsShape*)pShape);
+	if (!pShape)
+		return;
+	m_collisionShapes.erase(pShape);
 	pShape->Release();
 }
 
@@ -794,7 +1023,7 @@ IParaPhysicsActor* CParaPhysicsWorld::CreateActor(const ParaPhysicsActorDesc& ac
 	short nGroupMask = 1 << actorDesc.m_group;
 	m_dynamicsWorld->addRigidBody(body, nGroupMask, actorDesc.m_mask);
 
-	BulletPhysicsActor* pActor = new BulletPhysicsActor(body);
+	BulletPhysicsActor* pActor = new BulletPhysicsActor(body, this, actorDesc.m_group, actorDesc.m_mask);
 	
 	body->setUserPointer(pActor);
 
@@ -836,15 +1065,24 @@ void CParaPhysicsWorld::ReleaseActor(IParaPhysicsActor* pActor)
 
 IParaPhysicsActor* ParaEngine::CParaPhysicsWorld::RaycastClosestShape(const PARAVECTOR3& vOrigin, const PARAVECTOR3& vDirection, DWORD dwType, RayCastHitResult& hit, short dwGroupMask, float fSensorRange)
 {
+	return RaycastClosestShapeEx(vOrigin, vDirection, dwType, hit, dwGroupMask, fSensorRange, false);
+}
+
+IParaPhysicsActor* ParaEngine::CParaPhysicsWorld::RaycastClosestShapeEx(const PARAVECTOR3& vOrigin, const PARAVECTOR3& vDirection, DWORD dwType, RayCastHitResult& hit, short dwGroupMask, float fSensorRange, bool includeBlockGroup)
+{
+	if (!m_dynamicsWorld)
+		return NULL;
 	btVector3 vFrom(vOrigin.x, vOrigin.y, vOrigin.z);
 	btVector3 vTo(vDirection.x, vDirection.y, vDirection.z);
-	dwGroupMask = dwGroupMask ^ (1 << IParaPhysicsGroup::BLOCK);  // 屏蔽地块组
+	if (!includeBlockGroup)
+	{
+		dwGroupMask = dwGroupMask & ~(1 << IParaPhysicsGroup::BLOCK); // 屏蔽地块组
+	}
 	if (fSensorRange < 0.f)
 		fSensorRange = 200.f;
 	vTo = vFrom + vTo * fSensorRange;
 
 	btCollisionWorld::ClosestRayResultCallback cb(vFrom, vTo);
-	// cb.m_collisionFilterGroup = 0;
 	cb.m_collisionFilterMask = dwGroupMask;
 	// filter back faces. Added by LiXizhi 2010.3. In bullet, triangle seems to be double sided by default.  
 	cb.m_flags = 1;// btTriangleRaycastCallback::kF_FilterBackfaces;
@@ -860,9 +1098,68 @@ IParaPhysicsActor* ParaEngine::CParaPhysicsWorld::RaycastClosestShape(const PARA
 	else
 	{
 		hit.m_vHitPointWorld = CONVERT_PARAVECTOR3(vTo);
-		hit.m_vHitNormalWorld = PARAVECTOR3(1.0f, 1.0f, 1.0f); //CONVERT_PARAVECTOR3(btVector3(1.0, 0.0, 0.0));
+		hit.m_vHitNormalWorld = PARAVECTOR3(1.0f, 1.0f, 1.0f);
 		return NULL;
 	}
+}
+
+int ParaEngine::CParaPhysicsWorld::GetActiveContacts(std::vector<ParaPhysicsContactPair>& outContacts, float minImpulse)
+{
+	outContacts.clear();
+	if (!m_dispatcher)
+		return 0;
+
+	int numManifolds = m_dispatcher->getNumManifolds();
+	for (int i = 0; i < numManifolds; ++i)
+	{
+		btPersistentManifold* contactManifold = m_dispatcher->getManifoldByIndexInternal(i);
+		if (!contactManifold)
+			continue;
+		int numContacts = contactManifold->getNumContacts();
+		if (numContacts <= 0)
+			continue;
+
+		const btCollisionObject* obA = contactManifold->getBody0();
+		const btCollisionObject* obB = contactManifold->getBody1();
+		if (!obA || !obB)
+			continue;
+
+		IParaPhysicsActor* actorA = (IParaPhysicsActor*)(obA->getUserPointer());
+		IParaPhysicsActor* actorB = (IParaPhysicsActor*)(obB->getUserPointer());
+		if (!actorA || !actorB)
+			continue;
+
+		int bestIdx = -1;
+		float maxImpulse = -1.f;
+		for (int j = 0; j < numContacts; ++j)
+		{
+			const btManifoldPoint& pt = contactManifold->getContactPoint(j);
+			if (pt.getDistance() <= 0.05f)
+			{
+				float imp = (float)pt.getAppliedImpulse();
+				if (imp > maxImpulse)
+				{
+					maxImpulse = imp;
+					bestIdx = j;
+				}
+			}
+		}
+
+		if (bestIdx >= 0 && maxImpulse >= minImpulse)
+		{
+			const btManifoldPoint& pt = contactManifold->getContactPoint(bestIdx);
+			ParaPhysicsContactPair pair;
+			pair.m_pActorA = actorA;
+			pair.m_pActorB = actorB;
+			const btVector3& ptWorld = pt.getPositionWorldOnB();
+			const btVector3& normWorld = pt.m_normalWorldOnB;
+			pair.m_hitPointWorld = PARAVECTOR3((float)ptWorld.x(), (float)ptWorld.y(), (float)ptWorld.z());
+			pair.m_hitNormalWorld = PARAVECTOR3((float)normWorld.x(), (float)normWorld.y(), (float)normWorld.z());
+			pair.m_appliedImpulse = maxImpulse;
+			outContacts.push_back(pair);
+		}
+	}
+	return (int)outContacts.size();
 }
 
 void ParaEngine::CParaPhysicsWorld::SetDebugDrawer(IParaDebugDraw* debugDrawer)
@@ -903,6 +1200,30 @@ int ParaEngine::CParaPhysicsWorld::GetDebugDrawMode()
 // Constraint/Joint Implementation
 //////////////////////////////////////////////////////////////////////////
 
+static btTransform BuildAxisConstraintFrame(const btVector3& pivot, const btVector3& rawAxis)
+{
+	btTransform frame;
+	frame.setIdentity();
+	frame.setOrigin(pivot);
+	btVector3 dir = rawAxis;
+	btScalar lenSq = dir.length2();
+	if (lenSq > btScalar(1e-6f))
+	{
+		dir /= btSqrt(lenSq);
+		const btVector3 unitX(1.f, 0.f, 0.f);
+		btScalar dot = unitX.dot(dir);
+		if (dot < btScalar(-0.9999f))
+		{
+			frame.setRotation(btQuaternion(btVector3(0.f, 1.f, 0.f), SIMD_PI));
+		}
+		else if (dot < btScalar(0.9999f))
+		{
+			frame.setRotation(shortestArcQuat(unitX, dir));
+		}
+	}
+	return frame;
+}
+
 IParaPhysicsConstraint* CParaPhysicsWorld::CreateConstraint(const ParaPhysicsConstraintDesc& constraintDesc)
 {
 	if (!m_dynamicsWorld || !constraintDesc.m_pActorA)
@@ -920,6 +1241,10 @@ IParaPhysicsConstraint* CParaPhysicsWorld::CreateConstraint(const ParaPhysicsCon
 	btVector3 axisA(constraintDesc.m_axisInA.x, constraintDesc.m_axisInA.y, constraintDesc.m_axisInA.z);
 	btVector3 pivotB(constraintDesc.m_pivotInB.x, constraintDesc.m_pivotInB.y, constraintDesc.m_pivotInB.z);
 	btVector3 axisB(constraintDesc.m_axisInB.x, constraintDesc.m_axisInB.y, constraintDesc.m_axisInB.z);
+	if (axisA.length2() < btScalar(1e-6f))
+		axisA = btVector3(0.f, 1.f, 0.f);
+	if (axisB.length2() < btScalar(1e-6f))
+		axisB = axisA;
 
 	switch (constraintDesc.m_type)
 	{
@@ -939,11 +1264,11 @@ IParaPhysicsConstraint* CParaPhysicsWorld::CreateConstraint(const ParaPhysicsCon
 	{
 		if (bodyB)
 		{
-			constraint = new btHingeConstraint(*bodyA, *bodyB, pivotA, pivotB, axisA, axisB);
+			constraint = new btHingeConstraint(*bodyA, *bodyB, pivotA, pivotB, axisA.normalized(), axisB.normalized());
 		}
 		else
 		{
-			constraint = new btHingeConstraint(*bodyA, pivotA, axisA);
+			constraint = new btHingeConstraint(*bodyA, pivotA, axisA.normalized());
 		}
 		btHingeConstraint* hinge = static_cast<btHingeConstraint*>(constraint);
 		if (constraintDesc.m_lowLimit != 0.0f || constraintDesc.m_highLimit != 0.0f)
@@ -959,11 +1284,8 @@ IParaPhysicsConstraint* CParaPhysicsWorld::CreateConstraint(const ParaPhysicsCon
 	}
 	case ConstraintType_Slider:
 	{
-		btTransform frameA, frameB;
-		frameA.setIdentity();
-		frameA.setOrigin(pivotA);
-		frameB.setIdentity();
-		frameB.setOrigin(pivotB);
+		btTransform frameA = BuildAxisConstraintFrame(pivotA, axisA);
+		btTransform frameB = BuildAxisConstraintFrame(pivotB, axisB);
 
 		if (bodyB)
 		{
@@ -976,6 +1298,8 @@ IParaPhysicsConstraint* CParaPhysicsWorld::CreateConstraint(const ParaPhysicsCon
 		btSliderConstraint* slider = static_cast<btSliderConstraint*>(constraint);
 		slider->setLowerLinLimit(constraintDesc.m_lowLimit);
 		slider->setUpperLinLimit(constraintDesc.m_highLimit);
+		slider->setLowerAngLimit(0.0f);
+		slider->setUpperAngLimit(0.0f);
 		if (constraintDesc.m_enableMotor)
 		{
 			slider->setPoweredLinMotor(true);
@@ -986,11 +1310,8 @@ IParaPhysicsConstraint* CParaPhysicsWorld::CreateConstraint(const ParaPhysicsCon
 	}
 	case ConstraintType_ConeTwist:
 	{
-		btTransform frameA, frameB;
-		frameA.setIdentity();
-		frameA.setOrigin(pivotA);
-		frameB.setIdentity();
-		frameB.setOrigin(pivotB);
+		btTransform frameA = BuildAxisConstraintFrame(pivotA, axisA);
+		btTransform frameB = BuildAxisConstraintFrame(pivotB, axisB);
 
 		if (bodyB)
 		{
@@ -1004,11 +1325,8 @@ IParaPhysicsConstraint* CParaPhysicsWorld::CreateConstraint(const ParaPhysicsCon
 	}
 	case ConstraintType_Generic6Dof:
 	{
-		btTransform frameA, frameB;
-		frameA.setIdentity();
-		frameA.setOrigin(pivotA);
-		frameB.setIdentity();
-		frameB.setOrigin(pivotB);
+		btTransform frameA = BuildAxisConstraintFrame(pivotA, axisA);
+		btTransform frameB = BuildAxisConstraintFrame(pivotB, axisB);
 
 		if (bodyB)
 		{
@@ -1022,16 +1340,48 @@ IParaPhysicsConstraint* CParaPhysicsWorld::CreateConstraint(const ParaPhysicsCon
 	}
 	case ConstraintType_Fixed:
 	{
-		btTransform frameA, frameB;
-		frameA.setIdentity();
-		frameA.setOrigin(pivotA);
-		frameB.setIdentity();
-		frameB.setOrigin(pivotB);
-
+		btTransform frameA = BuildAxisConstraintFrame(pivotA, axisA);
 		if (bodyB)
 		{
+			btTransform frameB = BuildAxisConstraintFrame(pivotB, axisB);
 			constraint = new btFixedConstraint(*bodyA, *bodyB, frameA, frameB);
 		}
+		else
+		{
+			btTransform worldFrame = bodyA->getCenterOfMassTransform() * frameA;
+			constraint = new btFixedConstraint(*bodyA, btTypedConstraint::getFixedBody(), frameA, worldFrame);
+		}
+		break;
+	}
+	case ConstraintType_Spring:
+	{
+		btTransform frameA = BuildAxisConstraintFrame(pivotA, axisA);
+		btGeneric6DofSpringConstraint* spring = nullptr;
+		if (bodyB)
+		{
+			btTransform frameB = BuildAxisConstraintFrame(pivotB, axisB);
+			spring = new btGeneric6DofSpringConstraint(*bodyA, *bodyB, frameA, frameB, true);
+		}
+		else
+		{
+			spring = new btGeneric6DofSpringConstraint(*bodyA, frameA, true);
+		}
+		float low = constraintDesc.m_lowLimit;
+		float high = constraintDesc.m_highLimit;
+		if (low == 0.0f && high == 0.0f)
+		{
+			low = -1.0f;
+			high = 1.0f;
+		}
+		spring->setLinearLowerLimit(btVector3(low, 0.f, 0.f));
+		spring->setLinearUpperLimit(btVector3(high, 0.f, 0.f));
+		spring->setAngularLowerLimit(btVector3(0.f, 0.f, 0.f));
+		spring->setAngularUpperLimit(btVector3(0.f, 0.f, 0.f));
+		spring->enableSpring(0, true);
+		spring->setStiffness(0, constraintDesc.m_springStiffness);
+		spring->setDamping(0, constraintDesc.m_springDamping);
+		spring->setEquilibriumPoint();
+		constraint = spring;
 		break;
 	}
 	default:

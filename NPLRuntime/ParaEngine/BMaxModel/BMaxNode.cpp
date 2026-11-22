@@ -36,7 +36,8 @@ DWORD ParaEngine::BMaxNode::GetColor()
 {
 	if (m_color == 0)
 	{
-		auto node_template = BlockWorldClient::GetInstance()->GetBlockTemplate((uint16)template_id);
+		auto* pBlockWorld = BlockWorldClient::GetInstance();
+		auto node_template = pBlockWorld ? pBlockWorld->GetBlockTemplate((uint16)template_id) : nullptr;
 		if (node_template)
 			SetColor(node_template->GetBlockColor(block_data));
 		else
@@ -287,7 +288,8 @@ int ParaEngine::BMaxNode::GetFaceShape(int nIndex)
 {
 	if(m_bIsSolid)
 		return 0xf;
-	BlockTemplate* block_template = BlockWorldClient::GetInstance()->GetBlockTemplate((uint16)template_id);
+	auto* pBlockWorld = BlockWorldClient::GetInstance();
+	BlockTemplate* block_template = pBlockWorld ? pBlockWorld->GetBlockTemplate((uint16)template_id) : nullptr;
 	return block_template ? block_template->GetFaceShapeDirect(nIndex, block_data) : 0;
 }
 
@@ -295,7 +297,8 @@ int ParaEngine::BMaxNode::TessellateBlock(BlockModel* tessellatedModel)
 {
 	int bone_index = GetBoneIndex();
 
-	BlockTemplate* block_template = BlockWorldClient::GetInstance()->GetBlockTemplate((uint16)template_id);
+	auto* pBlockWorld = BlockWorldClient::GetInstance();
+	BlockTemplate* block_template = pBlockWorld ? pBlockWorld->GetBlockTemplate((uint16)template_id) : nullptr;
 	
 	if (block_template == 0 || block_template->isSolidBlock() || block_template->GetID() == BMaxParser::BoneBlockId)
 	{

@@ -225,10 +225,10 @@ DWORD ParaEngine::BMaxFrameNode::CalculateBoneColor()
 			BMaxNode* neighbourNode = GetNeighbour(side);
 			if (neighbourNode && !neighbourNode->HasBoneWeight())
 			{
-				auto next_node_template = pBlockWorld->GetBlockTemplate((uint16)(neighbourNode->template_id));
-				if (next_node_template && next_node_template->isSolidBlock() && neighbourNode->template_id != BMaxParser::BoneBlockId)
+				auto next_node_template = pBlockWorld ? pBlockWorld->GetBlockTemplate((uint16)(neighbourNode->template_id)) : nullptr;
+				if ((!pBlockWorld || (next_node_template && next_node_template->isSolidBlock())) && neighbourNode->template_id != BMaxParser::BoneBlockId)
 				{
-					color = next_node_template->GetBlockColor(neighbourNode->block_data);
+					color = next_node_template ? next_node_template->GetBlockColor(neighbourNode->block_data) : neighbourNode->GetColor();
 					SetColor(color);
 					return color;
 				}

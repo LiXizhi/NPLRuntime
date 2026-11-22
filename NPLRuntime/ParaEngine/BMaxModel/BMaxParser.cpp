@@ -21,6 +21,8 @@
 #include "ParaXModel/XFileHelper.h"
 #include "BMaxBlockModelNode.h"
 #include <tinyxml.h>
+#include <unordered_set>
+#include <algorithm>
 #include "BlockEngine/BlockDirection.h"
 #include "BMaxAnimGenerator.h"
 #include "BMaxParser.h"
@@ -124,9 +126,9 @@ namespace ParaEngine
 			int block_data = (int)((double)block[5]);
 
 			aabb.Extend(Vector3((float)x, (float)y, (float)z));
-			auto pBlockTemplate = pBlockWorld->GetBlockTemplate(template_id);
+			auto pBlockTemplate = pBlockWorld ? pBlockWorld->GetBlockTemplate(template_id) : nullptr;
 
-			if (pBlockTemplate && m_nHelperBlockId != template_id)
+			if ((pBlockTemplate || template_id > 0) && m_nHelperBlockId != template_id)
 			{
 				if (template_id == BlockModelBlockId)
 				{
@@ -248,14 +250,14 @@ namespace ParaEngine
 						}
 					}
 				}
-				else if (pBlockTemplate->IsMatchAttribute(BlockTemplate::batt_obstruction) && pBlockTemplate->IsMatchAttribute(BlockTemplate::batt_cubeModel) && !pBlockTemplate->IsMatchAttribute(BlockTemplate::batt_solid))
+				else if (pBlockTemplate && pBlockTemplate->IsMatchAttribute(BlockTemplate::batt_obstruction) && pBlockTemplate->IsMatchAttribute(BlockTemplate::batt_cubeModel) && !pBlockTemplate->IsMatchAttribute(BlockTemplate::batt_solid))
 				{
 					// non-solid, but obstruction blocks such as slope, stairs, and other custom models
 					BMaxNodePtr node(new BMaxNode(this, x, y, z, template_id, block_data));
 					node->setSolid(false);
 					nodes.push_back(node);
 				}
-				else if (!pBlockTemplate->IsMatchAttribute(BlockTemplate::batt_solid))
+				else if (template_id == TransparentBlockId || (pBlockTemplate && !pBlockTemplate->IsMatchAttribute(BlockTemplate::batt_solid)))
 				{
 					// non-solid non-obstruction blocks,like web, grass, will not be rendered. but can be used to connect bones
 					template_id = TransparentBlockId;
@@ -412,6 +414,20 @@ namespace ParaEngine
 			if (auto_scale == "false" || auto_scale == "False")
 			{
 				m_bAutoScale = false;
+			}
+			std::string physProp;
+			if (ReadValue(element, "physics_property", physProp) && !physProp.empty())
+			{
+				m_sDefaultPhysicsProperty = physProp;
+			}
+			BMaxXMLElement* physElem = element->FirstChildElement("pe:physics");
+			if (physElem != NULL)
+			{
+				const char* text = physElem->GetText();
+				if (text && text[0])
+				{
+					m_sDefaultPhysicsProperty = text;
+				}
 			}
 		}
 	}
@@ -1248,6 +1264,206 @@ namespace ParaEngine
 			pMesh->showGeosets = new bool[pMesh->geosets.size()];
 			memset(pMesh->showGeosets, true, pMesh->geosets.size() * sizeof(bool));
 		}
+
+		if (nMaxTriangleCount < 0)
+		{
+			BuildGreedyPhysicsBoxes(pMesh);
+			ExtractPhysicsJointDefsFromBones(pMesh);
+			if (!m_sDefaultPhysicsProperty.empty())
+			{
+				pMesh->SetDefaultPhysicsProperty(m_sDefaultPhysicsProperty);
+			}
+		}
+	}
+
+	void BMaxParser::BuildGreedyPhysicsBoxes(CParaXModel* pMesh)
+	{
+		if (!pMesh || m_nodes.empty())
+			return;
+
+		struct GridCoord
+		{
+			int16 x, y, z;
+			int16 boneIdx;
+			uint16 templateId;
+		};
+		std::vector<GridCoord> coords;
+		coords.reserve(m_nodes.size());
+
+		for (auto& kv : m_nodes)
+		{
+			BMaxNode* node = kv.second.get();
+			if (!node || node->template_id == TransparentBlockId)
+				continue;
+			if (!node->isSolid() && node->GetBlockModel() == nullptr && node->GetParaXModel() == nullptr)
+				continue;
+			GridCoord gc;
+			gc.x = node->x;
+			gc.y = node->y;
+			gc.z = node->z;
+			gc.boneIdx = (int16)node->GetBoneIndex();
+			gc.templateId = (uint16)node->template_id;
+			coords.push_back(gc);
+		}
+
+		if (coords.empty())
+			return;
+
+		std::sort(coords.begin(), coords.end(), [](const GridCoord& a, const GridCoord& b) {
+			if (a.y != b.y) return a.y < b.y;
+			if (a.z != b.z) return a.z < b.z;
+			return a.x < b.x;
+		});
+
+		std::unordered_set<uint64> consumed;
+		consumed.reserve(coords.size() * 2);
+
+		auto isCompatible = [&](int x, int y, int z, int16 boneIdx) -> bool {
+			if (x < 0 || y < 0 || z < 0)
+				return false;
+			uint64 idx = GetNodeIndex((uint16)x, (uint16)y, (uint16)z);
+			if (consumed.find(idx) != consumed.end())
+				return false;
+			BMaxNode* n = GetNode((uint16)x, (uint16)y, (uint16)z);
+			if (!n || n->template_id == TransparentBlockId)
+				return false;
+			if (!n->isSolid() && n->GetBlockModel() == nullptr && n->GetParaXModel() == nullptr)
+				return false;
+			return ((int16)n->GetBoneIndex()) == boneIdx;
+		};
+
+		float fScale = m_fScale;
+		if (m_nLodLevel > 0)
+			fScale *= (float)pow(2, m_nLodLevel);
+
+		std::vector<ParaXPhysicsBox> boxes;
+		for (const auto& seed : coords)
+		{
+			uint64 seedIdx = GetNodeIndex((uint16)seed.x, (uint16)seed.y, (uint16)seed.z);
+			if (consumed.find(seedIdx) != consumed.end())
+				continue;
+
+			int x0 = seed.x, x1 = seed.x;
+			int y0 = seed.y, y1 = seed.y;
+			int z0 = seed.z, z1 = seed.z;
+
+			while (isCompatible(x1 + 1, y0, z0, seed.boneIdx))
+				++x1;
+
+			bool canExpandZ = true;
+			while (canExpandZ)
+			{
+				for (int x = x0; x <= x1; ++x)
+				{
+					if (!isCompatible(x, y0, z1 + 1, seed.boneIdx))
+					{
+						canExpandZ = false;
+						break;
+					}
+				}
+				if (canExpandZ)
+					++z1;
+			}
+
+			bool canExpandY = true;
+			while (canExpandY)
+			{
+				for (int z = z0; z <= z1 && canExpandY; ++z)
+				{
+					for (int x = x0; x <= x1; ++x)
+					{
+						if (!isCompatible(x, y1 + 1, z, seed.boneIdx))
+						{
+							canExpandY = false;
+							break;
+						}
+					}
+				}
+				if (canExpandY)
+					++y1;
+			}
+
+			for (int y = y0; y <= y1; ++y)
+				for (int z = z0; z <= z1; ++z)
+					for (int x = x0; x <= x1; ++x)
+						consumed.insert(GetNodeIndex((uint16)x, (uint16)y, (uint16)z));
+
+			Vector3 minCorner((float)x0 - m_centerPos.x,
+				(float)y0,
+				(float)z0 - m_centerPos.z);
+			Vector3 maxCorner((float)(x1 + 1) - m_centerPos.x,
+				(float)(y1 + 1),
+				(float)(z1 + 1) - m_centerPos.z);
+
+			ParaXPhysicsBox box;
+			box.m_center = (minCorner + maxCorner) * (0.5f * fScale);
+			box.m_halfExtents = (maxCorner - minCorner) * (0.5f * fScale);
+			box.m_boneIndex = seed.boneIdx;
+			box.m_templateId = seed.templateId;
+			boxes.push_back(box);
+		}
+
+		// Cap compound child count at 64 for pathological high-detail sculptures (keep largest volume boxes + AABB fallback if exceeded)
+		if (boxes.size() > 64)
+		{
+			std::sort(boxes.begin(), boxes.end(), [](const ParaXPhysicsBox& a, const ParaXPhysicsBox& b) {
+				float volA = a.m_halfExtents.x * a.m_halfExtents.y * a.m_halfExtents.z;
+				float volB = b.m_halfExtents.x * b.m_halfExtents.y * b.m_halfExtents.z;
+				return volA > volB;
+			});
+			boxes.resize(64);
+		}
+
+		pMesh->SetPhysicsBoxes(boxes);
+	}
+
+	void BMaxParser::ExtractPhysicsJointDefsFromBones(CParaXModel* pMesh)
+	{
+		if (!pMesh || m_bones.empty())
+			return;
+
+		std::vector<ParaXPhysicsJointDef> joints;
+		joints.reserve(m_bones.size());
+
+		for (size_t i = 0; i < m_bones.size(); ++i)
+		{
+			BMaxFrameNode* pFrame = m_bones[i].get();
+			if (!pFrame || !pFrame->GetBone())
+				continue;
+
+			Bone* pBone = pFrame->GetBone();
+			std::string lowerName = pBone->GetName();
+			std::transform(lowerName.begin(), lowerName.end(), lowerName.begin(), ::tolower);
+
+			ParaXPhysicsJointDef jd;
+			jd.m_name = pBone->GetName();
+			jd.m_pivot = pBone->pivot;
+			jd.m_axis = pFrame->GetAxis();
+			if (jd.m_axis.squaredLength() < 1e-6f)
+				jd.m_axis = Vector3::UNIT_Y;
+			jd.m_boneIndex = (int16)i;
+			jd.m_parentBoneIndex = (int16)pFrame->GetParentBoneIndex();
+
+			if (lowerName.find("slider") != std::string::npos ||
+				lowerName.find("elevator") != std::string::npos ||
+				lowerName.find("piston") != std::string::npos)
+			{
+				jd.m_constraintType = 2; // ConstraintType_Slider
+			}
+			else if (lowerName.find("spring") != std::string::npos ||
+				lowerName.find("bounce") != std::string::npos)
+			{
+				jd.m_constraintType = 6; // ConstraintType_Spring
+			}
+			else
+			{
+				jd.m_constraintType = 1; // ConstraintType_Hinge (default for BoneBlock axles)
+			}
+
+			joints.push_back(jd);
+		}
+
+		pMesh->SetPhysicsJointDefs(joints);
 	}
 
 	int BMaxParser::GetBoneIndex(uint16 x, uint16 y, uint16 z)

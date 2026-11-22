@@ -24,7 +24,10 @@ int ParaEngine::BMaxGlassModelNode::TessellateBlock(BlockModel* tessellatedModel
 	int bone_index = GetBoneIndex();
 
 
-	BlockTemplate* block_template = BlockWorldClient::GetInstance()->GetBlockTemplate((uint16)template_id);
+	auto* pBlockWorld = BlockWorldClient::GetInstance();
+	BlockTemplate* block_template = pBlockWorld ? pBlockWorld->GetBlockTemplate((uint16)template_id) : nullptr;
+	if (!block_template)
+		return tessellatedModel->GetVerticesCount();
 
 	// glass models
 

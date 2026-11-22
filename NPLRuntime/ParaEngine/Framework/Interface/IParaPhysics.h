@@ -2,6 +2,7 @@
 #include "PEtypes.h"
 #include <set>
 #include <list>
+#include <vector>
 #include <string>
 
 namespace ParaEngine
@@ -44,9 +45,41 @@ namespace ParaEngine
 	struct ParaPhysicsSimpleShapeDesc
 	{
 		std::string m_shape;
-		float m_halfWidth;     // box.x  sphere.r  capsule.r
-		float m_halfHeight;    // box.y	 sphere.r  capsule.h(胶囊圆柱高, 含半球高)
-		float m_halfLength;    // box.z  sphere.r  capsule.r
+		float m_halfWidth;     // box.x  sphere.r  capsule.r  cylinder.x
+		float m_halfHeight;    // box.y	 sphere.r  capsule.h(胶囊圆柱高, 含半球高)  cylinder.y
+		float m_halfLength;    // box.z  sphere.r  capsule.r  cylinder.z
+	};
+
+	/** Child shape descriptor for compound collision shapes (e.g. concave BMax models). */
+	struct ParaPhysicsCompoundChildDesc
+	{
+		ParaPhysicsCompoundChildDesc()
+			: m_shape("box")
+		{
+			m_halfExtents = PARAVECTOR3(0.5f, 0.5f, 0.5f);
+			m_localOrigin = PARAVECTOR3(0.f, 0.f, 0.f);
+			m_localRotation = PARAMATRIX3x3();
+			for (int r = 0; r < 3; ++r)
+				for (int c = 0; c < 3; ++c)
+					m_localRotation.m[r][c] = (r == c) ? 1.f : 0.f;
+		}
+		std::string m_shape;
+		PARAVECTOR3 m_halfExtents;
+		PARAVECTOR3 m_localOrigin;
+		PARAMATRIX3x3 m_localRotation;
+	};
+
+	struct IParaPhysicsShape;
+	struct IParaPhysicsActor;
+
+	/** Contact pair reported by physics world after simulation step. */
+	struct ParaPhysicsContactPair
+	{
+		IParaPhysicsActor* m_pActorA;
+		IParaPhysicsActor* m_pActorB;
+		PARAVECTOR3 m_hitPointWorld;
+		PARAVECTOR3 m_hitNormalWorld;
+		float m_appliedImpulse;
 	};
 
 	/** it is represent a shape that can be used to create various actors in the scene. */
@@ -56,6 +89,7 @@ namespace ParaEngine
 		{
 			m_pUserData = NULL;
 		}
+		virtual ~IParaPhysicsShape() {}
 
 		/// get user data associated with the shape
 		virtual void* GetUserData() { return m_pUserData; }
@@ -85,7 +119,13 @@ namespace ParaEngine
 	*/
 	struct ParaPhysicsActorDesc
 	{
-		ParaPhysicsActorDesc():m_mass(0.f), m_group(1), m_mask(-1), m_pShape(NULL) {}
+		ParaPhysicsActorDesc() : m_mass(0.f), m_group(1), m_mask(-1), m_pShape(NULL)
+		{
+			m_origin = PARAVECTOR3(0.f, 0.f, 0.f);
+			for (int r = 0; r < 3; ++r)
+				for (int c = 0; c < 3; ++c)
+					m_rotation.m[r][c] = (r == c) ? 1.f : 0.f;
+		}
 		///Storage for the translation
 		PARAVECTOR3 m_origin;
 
@@ -112,7 +152,7 @@ namespace ParaEngine
 		{
 			m_pUserData = NULL;
 		}
-		~IParaPhysicsActor() 
+		virtual ~IParaPhysicsActor() 
 		{
 		}
 		/// get user data associated with the shape
@@ -127,6 +167,13 @@ namespace ParaEngine
 		virtual void* get() = 0;
 		virtual void Release() = 0;
 		virtual void ApplyCentralImpulse(const PARAVECTOR3& impulse) {}
+		virtual void ApplyCentralForce(const PARAVECTOR3& force) {}
+		virtual void ApplyForce(const PARAVECTOR3& force, const PARAVECTOR3& relPos) {}
+		virtual void ApplyImpulse(const PARAVECTOR3& impulse, const PARAVECTOR3& relPos) {}
+		virtual void ApplyTorque(const PARAVECTOR3& torque) {}
+		virtual void ApplyTorqueImpulse(const PARAVECTOR3& torqueImpulse) {}
+		virtual void ClearForces() {}
+		virtual void SetKinematic(bool bKinematic) {}
 		virtual PARAVECTOR3 GetOrigin() { return PARAVECTOR3(); }
 
 		virtual void Activate() = 0;
@@ -203,6 +250,7 @@ namespace ParaEngine
 		ConstraintType_ConeTwist = 3,      // Cone twist (ragdoll joints)
 		ConstraintType_Generic6Dof = 4,    // 6 degrees of freedom
 		ConstraintType_Fixed = 5,          // Fixed joint (welding)
+		ConstraintType_Spring = 6,         // 6DoF Spring joint (bouncy/damped linear or angular spring)
 	};
 
 	/** Descriptor for creating physics constraints/joints */
@@ -211,7 +259,8 @@ namespace ParaEngine
 		ParaPhysicsConstraintDesc() : m_type(ConstraintType_Hinge), m_pActorA(nullptr), m_pActorB(nullptr),
 			m_disableCollisionsBetweenBodies(true), m_breakingThreshold(-1.0f),
 			m_lowLimit(0.0f), m_highLimit(0.0f), m_softness(0.9f), m_biasFactor(0.3f), m_relaxationFactor(1.0f),
-			m_enableMotor(false), m_motorTargetVelocity(0.0f), m_maxMotorImpulse(0.0f) {}
+			m_enableMotor(false), m_motorTargetVelocity(0.0f), m_maxMotorImpulse(0.0f),
+			m_springStiffness(50.0f), m_springDamping(0.5f) {}
 
 		ParaPhysicsConstraintType m_type;
 		IParaPhysicsActor* m_pActorA;       // First body (required)
@@ -239,6 +288,10 @@ namespace ParaEngine
 		bool m_enableMotor;
 		float m_motorTargetVelocity;
 		float m_maxMotorImpulse;
+
+		// Spring settings (for ConstraintType_Spring)
+		float m_springStiffness;
+		float m_springDamping;
 	};
 
 	/** Interface for physics constraints/joints */
@@ -272,6 +325,11 @@ namespace ParaEngine
 		virtual float GetSliderPosition() { return 0.0f; }
 		virtual void SetSliderLimit(float lowerLimit, float upperLimit) {}
 		virtual void EnableSliderMotor(bool enable, float targetVelocity, float maxForce) {}
+
+		// Spring-specific methods (axis 0..2 linear XYZ, 3..5 angular XYZ)
+		virtual void SetSpringParams(int axis, bool enable, float stiffness, float damping, float equilibriumPoint = 0.0f, bool useCurrentEquilibrium = false) {}
+		virtual void SetLinearLimits3D(const PARAVECTOR3& lower, const PARAVECTOR3& upper) {}
+		virtual void SetAngularLimits3D(const PARAVECTOR3& lower, const PARAVECTOR3& upper) {}
 
 		void* m_pUserData;
 	};
@@ -360,6 +418,12 @@ namespace ParaEngine
 
 		virtual IParaPhysicsShape* CreateSimpleShape(const ParaPhysicsSimpleShapeDesc& shapeDesc) { return NULL; }
 
+		/** Create a compound collision shape composed of multiple primitive child shapes. */
+		virtual IParaPhysicsShape* CreateCompoundShape(const ParaPhysicsCompoundChildDesc* children, int childCount) { return NULL; }
+
+		/** Create a convex hull shape from point cloud vertices. */
+		virtual IParaPhysicsShape* CreateConvexHullShape(const PARAVECTOR3* points, int numPoints, const PARAVECTOR3& scale) { return NULL; }
+
 		/** release a physics shape */
 		virtual void ReleaseShape(IParaPhysicsShape *pShape) = 0;
 
@@ -371,6 +435,15 @@ namespace ParaEngine
 
 		/** ray cast a given group. */
 		virtual IParaPhysicsActor* RaycastClosestShape(const PARAVECTOR3& vOrigin, const PARAVECTOR3& vDirection, DWORD dwType, RayCastHitResult& hit, short dwGroupMask, float fSensorRange) = 0;
+
+		/** ray cast with explicit control over whether terrain block group is included. */
+		virtual IParaPhysicsActor* RaycastClosestShapeEx(const PARAVECTOR3& vOrigin, const PARAVECTOR3& vDirection, DWORD dwType, RayCastHitResult& hit, short dwGroupMask, float fSensorRange, bool includeBlockGroup)
+		{
+			return RaycastClosestShape(vOrigin, vDirection, dwType, hit, dwGroupMask, fSensorRange);
+		}
+
+		/** Collect active contact pairs from the narrowphase dispatcher after StepSimulation. */
+		virtual int GetActiveContacts(std::vector<ParaPhysicsContactPair>& outContacts, float minImpulse = 0.0f) { return 0; }
 
 		//////////////////////////////////////////////////////////////////////////
 		// Constraint/Joint APIs

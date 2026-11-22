@@ -43,8 +43,10 @@ namespace ParaEngine
 
 		virtual Matrix4* GetAttachmentMatrix(Matrix4& pOut, int nAttachmentID = 0, int nRenderNumber = 0);
 
-		virtual void GetLocalTransform(Matrix4* localTransform);
-		virtual void UpdateGeometry();
+		virtual void SetLocalTransform(const Matrix4& mXForm) override;
+		virtual void GetLocalTransform(Matrix4* localTransform) override;
+		virtual void UpdateGeometry() override;
+		virtual float GetAssetHeight() override;
 
 		/** set the scale of the object. This function takes effects on both character object and mesh object.
 		* @param s: scaling applied to all axis.1.0 means original size. */
@@ -80,6 +82,17 @@ namespace ParaEngine
 		virtual int GetPhysicsGroup();
 		virtual void EnablePhysics(bool bEnable);
 		virtual bool IsPhysicsEnabled();
+
+		virtual void SetPhysicsShape(const char* shape) override;
+		virtual const char* GetPhysicsShape() override;
+		virtual void SetPhysicsProperty(const char* property) override;
+		virtual const char* GetPhysicsProperty(const char* inputTable = NULL) override;
+		virtual void EnableDynamicPhysics(bool bEnable) override;
+		virtual bool IsDynamicPhysicsEnabled() override;
+		virtual IParaPhysicsActor* GetDynamicPhysicsActor() override { return m_dynamicPhysicsActor; }
+		virtual void ApplyCentralImpulse(const Vector3& impulse) override;
+		void LoadDynamicPhysics();
+		void UnloadDynamicPhysics();
 		virtual TextureEntity* GetReplaceableTexture(int ReplaceableTextureID)override;
 		virtual bool  SetReplaceableTexture(int ReplaceableTextureID,TextureEntity* pTextureEntity)override;
 
@@ -122,6 +135,9 @@ namespace ParaEngine
 
 		/** all static physics actors in physics engine */ 
 		vector<IParaPhysicsActor*> m_staticActors;
+		std::string m_sPhysicsShape;
+		IParaPhysicsActor* m_dynamicPhysicsActor;
+		Matrix4* m_pLocalTransform;
 
 		// any bit wise combination of PHYSICS_METHOD
 		DWORD m_dwPhysicsMethod;

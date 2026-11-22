@@ -257,6 +257,12 @@ namespace ParaEngine
 
 		ATTRIBUTE_METHOD1(CSceneObject, GetPhysicsDebugDrawMode_s, int*) { *p1 = cls->GetPhysicsDebugDrawMode(); return S_OK; }
 		ATTRIBUTE_METHOD1(CSceneObject, SetPhysicsDebugDrawMode_s, int) { cls->SetPhysicsDebugDrawMode(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(CSceneObject, IsDynamicSimulationEnabled_s, bool*) { *p1 = cls->IsDynamicSimulationEnabled(); return S_OK; }
+		ATTRIBUTE_METHOD1(CSceneObject, SetDynamicSimulationEnabled_s, bool) { cls->SetDynamicSimulationEnabled(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(CSceneObject, GetPhysicsSimulationTime_s, float*) { *p1 = cls->GetPhysicsSimulationTime(); return S_OK; }
+		ATTRIBUTE_METHOD1(CSceneObject, SetPhysicsSimulationTime_s, float) { cls->SetPhysicsSimulationTime(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(CSceneObject, PhysicsRaycast_s, const char**) { *p1 = cls->PhysicsRaycast(*p1); return S_OK; }
+		ATTRIBUTE_METHOD1(CSceneObject, PhysicsContacts_s, const char**) { *p1 = cls->PhysicsContacts(*p1); return S_OK; }
 
 		ATTRIBUTE_METHOD1(CSceneObject, IsBlockInput_s, bool*) { *p1 = cls->IsBlockInput(); return S_OK; }
 		ATTRIBUTE_METHOD1(CSceneObject, SetBlockInput_s, bool) { cls->SetBlockInput(p1); return S_OK; }
@@ -1065,6 +1071,13 @@ namespace ParaEngine
 
 		/** get groups Mask used to filter physics objects, default to 0xffffffff*/
 		virtual DWORD GetPhysicsGroupMask();
+
+		bool IsDynamicSimulationEnabled();
+		void SetDynamicSimulationEnabled(bool bEnable);
+		float GetPhysicsSimulationTime();
+		void SetPhysicsSimulationTime(float fTime);
+		const char* PhysicsRaycast(const char* queryTableStr);
+		const char* PhysicsContacts(const char* queryTableStr);
 
 		bool IsDropShadow() { return m_renderDropShadow; }
 		void SetDropShadow(bool useDropShadow) { m_renderDropShadow = useDropShadow; }

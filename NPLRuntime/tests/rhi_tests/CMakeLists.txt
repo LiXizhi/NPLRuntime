@@ -97,6 +97,33 @@ if(TARGET test_world_perf_optimizations)
     add_executable(ParticleAndParaxTest "${PROJECT_SOURCE_DIR}/tests/ParticleAndParaxTest.cpp" headless_platform_stubs.cpp)
     target_link_libraries(ParticleAndParaxTest PRIVATE ${texture_test_libraries})
     add_test(NAME particle_and_parax_unit COMMAND ParticleAndParaxTest)
+    if(TARGET PhysicsBT)
+        if(PHYSICS_STATICLIB)
+            add_executable(PhysicsContraptionTest
+                "${PROJECT_SOURCE_DIR}/tests/PhysicsContraptionTest.cpp"
+                headless_platform_stubs.cpp)
+            target_link_libraries(PhysicsContraptionTest PRIVATE
+                ${texture_test_libraries}
+                PhysicsBT BulletDynamics BulletCollision LinearMath BulletSoftBody)
+        else()
+            add_executable(PhysicsContraptionTest
+                "${PROJECT_SOURCE_DIR}/tests/PhysicsContraptionTest.cpp"
+                "${PROJECT_SOURCE_DIR}/Plugins/PhysicsBT/ParaPhysicsWorld.cpp"
+                "${PROJECT_SOURCE_DIR}/Plugins/PhysicsBT/PhysicsDebugDraw.cpp"
+                headless_platform_stubs.cpp)
+            target_link_libraries(PhysicsContraptionTest PRIVATE
+                ${texture_test_libraries}
+                BulletDynamics BulletCollision LinearMath BulletSoftBody)
+        endif()
+        target_include_directories(PhysicsContraptionTest PRIVATE
+            "${PROJECT_SOURCE_DIR}/ParaEngine"
+            "${PROJECT_SOURCE_DIR}/ParaEngine/Core"
+            "${PROJECT_SOURCE_DIR}/ParaEngine/util"
+            "${PROJECT_SOURCE_DIR}/ParaEngine/Framework/Interface"
+            "${PROJECT_SOURCE_DIR}/Plugins/PhysicsBT"
+            "${BULLET_PHYSICS_SOURCE_DIR}/src")
+        add_test(NAME physics_contraption_unit COMMAND PhysicsContraptionTest)
+    endif()
     if(WIN32 AND TARGET RenderSystemD3D12 AND BLOCK_SKY_DXC)
         add_executable(test_block_sky_dxr test_block_sky_dxr.cpp headless_platform_stubs.cpp)
         target_include_directories(test_block_sky_dxr PRIVATE "${PROJECT_SOURCE_DIR}/RenderSystem")

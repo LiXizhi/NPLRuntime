@@ -4815,6 +4815,10 @@ int CSceneObject::InstallFields(CAttributeClass* pClass, bool bOverride)
 
 	pClass->AddField("persistent", FieldType_Bool, (void*)SetPersistent_s, (void*)IsPersistent_s, NULL, NULL, bOverride);
 	pClass->AddField("PhysicsDebugDrawMode", FieldType_Int, (void*)SetPhysicsDebugDrawMode_s, (void*)GetPhysicsDebugDrawMode_s, NULL, NULL, bOverride);
+	pClass->AddField("EnableDynamicSimulation", FieldType_Bool, (void*)SetDynamicSimulationEnabled_s, (void*)IsDynamicSimulationEnabled_s, NULL, NULL, bOverride);
+	pClass->AddField("PhysicsSimulationTime", FieldType_Float, (void*)SetPhysicsSimulationTime_s, (void*)GetPhysicsSimulationTime_s, NULL, NULL, bOverride);
+	pClass->AddField("PhysicsRaycast", FieldType_String, NULL, (void*)PhysicsRaycast_s, NULL, NULL, bOverride);
+	pClass->AddField("PhysicsContacts", FieldType_String, NULL, (void*)PhysicsContacts_s, NULL, NULL, bOverride);
 	pClass->AddField("BlockInput", FieldType_Bool, (void*)SetBlockInput_s, (void*)IsBlockInput_s, NULL, NULL, bOverride);
 	pClass->AddField("AllMiniSceneGraphNames", FieldType_String, NULL, (void*)GetAllMiniSceneGraphNames_s, NULL, NULL, bOverride);
 	pClass->AddField("ShadowRadius", FieldType_Float, (void*)SetShadowRadius_s, (void*)GetShadowRadius_s, NULL, NULL, bOverride);
@@ -4833,4 +4837,34 @@ int CSceneObject::InstallFields(CAttributeClass* pClass, bool bOverride)
 	pClass->AddField("ShadowMapSize", FieldType_Int, (void*)SetShadowMapTexelSize_s, NULL, NULL, NULL, bOverride);
 
 	return S_OK;
+}
+
+bool CSceneObject::IsDynamicSimulationEnabled()
+{
+	return CGlobals::GetPhysicsWorld()->IsDynamicsSimulationEnabled();
+}
+
+void CSceneObject::SetDynamicSimulationEnabled(bool bEnable)
+{
+	CGlobals::GetPhysicsWorld()->SetDynamicsSimulationEnabled(bEnable);
+}
+
+float CSceneObject::GetPhysicsSimulationTime()
+{
+	return (float)CGlobals::GetPhysicsWorld()->GetSimulationTime();
+}
+
+void CSceneObject::SetPhysicsSimulationTime(float fTime)
+{
+	CGlobals::GetPhysicsWorld()->ResetSimulationTime((double)fTime);
+}
+
+const char* CSceneObject::PhysicsRaycast(const char* queryTableStr)
+{
+	return CGlobals::GetPhysicsWorld()->RaycastWorldStr(queryTableStr);
+}
+
+const char* CSceneObject::PhysicsContacts(const char* queryTableStr)
+{
+	return CGlobals::GetPhysicsWorld()->GetActiveContactsStr(queryTableStr);
 }

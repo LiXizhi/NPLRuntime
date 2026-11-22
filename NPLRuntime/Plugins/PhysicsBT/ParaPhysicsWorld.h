@@ -22,6 +22,8 @@ NxActor  <--------> btRigidBody
 */
 namespace ParaEngine
 {
+	class CParaPhysicsWorld;
+
 	/** it is represent a shape that can be used to create various actors in the scene. */
 	struct BulletPhysicsShape : public IParaPhysicsShape
 	{
@@ -49,10 +51,30 @@ namespace ParaEngine
 		btCollisionShape* m_pShape;
 	};
 
+	struct BulletCompoundShape : public IParaPhysicsShape
+	{
+		BulletCompoundShape() : m_pShape(NULL) {}
+		~BulletCompoundShape()
+		{
+			SAFE_DELETE(m_pShape);
+			for (size_t i = 0; i < m_childShapes.size(); ++i)
+			{
+				SAFE_DELETE(m_childShapes[i]);
+			}
+			m_childShapes.clear();
+		}
+
+		virtual void* get() { return m_pShape; }
+		virtual void Release() { delete this; }
+
+		btCompoundShape* m_pShape;
+		std::vector<btCollisionShape*> m_childShapes;
+	};
+
 	/** it is represent a shape that can be used to create various actors in the scene. */
 	struct BulletPhysicsActor : public IParaPhysicsActor
 	{
-		BulletPhysicsActor(btRigidBody* pActor);
+		BulletPhysicsActor(btRigidBody* pActor, CParaPhysicsWorld* pWorld = NULL, short group = 0, short mask = -1);
 		~BulletPhysicsActor();
 
 		// 设置获取物理矩阵  float[16]
@@ -62,6 +84,13 @@ namespace ParaEngine
 		virtual void* get() {return m_pActor;};
 		virtual void Release();
 		virtual void ApplyCentralImpulse(const PARAVECTOR3& impulse);
+		virtual void ApplyCentralForce(const PARAVECTOR3& force) override;
+		virtual void ApplyForce(const PARAVECTOR3& force, const PARAVECTOR3& relPos) override;
+		virtual void ApplyImpulse(const PARAVECTOR3& impulse, const PARAVECTOR3& relPos) override;
+		virtual void ApplyTorque(const PARAVECTOR3& torque) override;
+		virtual void ApplyTorqueImpulse(const PARAVECTOR3& torqueImpulse) override;
+		virtual void ClearForces() override;
+		virtual void SetKinematic(bool bKinematic) override;
 		virtual PARAVECTOR3 GetOrigin();
 
 		virtual void Activate();
@@ -120,6 +149,9 @@ namespace ParaEngine
 		virtual void SetCcdMotionThreshold(float threshold);
 		
 		btRigidBody* m_pActor;
+		CParaPhysicsWorld* m_pWorld;
+		short m_group;
+		short m_mask;
 	};
 
 	/** Bullet physics constraint wrapper */
@@ -151,6 +183,11 @@ namespace ParaEngine
 		virtual float GetSliderPosition() override;
 		virtual void SetSliderLimit(float lowerLimit, float upperLimit) override;
 		virtual void EnableSliderMotor(bool enable, float targetVelocity, float maxForce) override;
+
+		// Spring / 6DoF specific
+		virtual void SetSpringParams(int axis, bool enable, float stiffness, float damping, float equilibriumPoint = 0.0f, bool useCurrentEquilibrium = false) override;
+		virtual void SetLinearLimits3D(const PARAVECTOR3& lower, const PARAVECTOR3& upper) override;
+		virtual void SetAngularLimits3D(const PARAVECTOR3& lower, const PARAVECTOR3& upper) override;
 
 		btTypedConstraint* m_pConstraint;
 		ParaPhysicsConstraintType m_type;
@@ -223,6 +260,8 @@ namespace ParaEngine
 		*/
 		virtual IParaPhysicsShape* CreateTriangleMeshShape(const ParaPhysicsTriangleMeshDesc& meshDesc);
 		virtual IParaPhysicsShape* CreateSimpleShape(const ParaPhysicsSimpleShapeDesc& shapeDesc);
+		virtual IParaPhysicsShape* CreateCompoundShape(const ParaPhysicsCompoundChildDesc* children, int childCount) override;
+		virtual IParaPhysicsShape* CreateConvexHullShape(const PARAVECTOR3* points, int numPoints, const PARAVECTOR3& scale) override;
 
 		/** release a physics shape */
 		virtual void ReleaseShape(IParaPhysicsShape* pShape);
@@ -236,6 +275,8 @@ namespace ParaEngine
 
 		/** ray cast a given group. */
 		virtual IParaPhysicsActor* RaycastClosestShape(const PARAVECTOR3& vOrigin, const PARAVECTOR3& vDirection, DWORD dwType, RayCastHitResult& hit, short dwGroupMask, float fSensorRange);
+		virtual IParaPhysicsActor* RaycastClosestShapeEx(const PARAVECTOR3& vOrigin, const PARAVECTOR3& vDirection, DWORD dwType, RayCastHitResult& hit, short dwGroupMask, float fSensorRange, bool includeBlockGroup) override;
+		virtual int GetActiveContacts(std::vector<ParaPhysicsContactPair>& outContacts, float minImpulse = 0.0f) override;
 
 		//////////////////////////////////////////////////////////////////////////
 		// Constraint/Joint APIs

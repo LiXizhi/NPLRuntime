@@ -142,6 +142,8 @@ namespace ParaEngine
 		void ClearModel();
 		void FillParaXModelData(CParaXModel* pMesh, int32 nMaxTriangleCount = -1);
 		void FillVerticesAndIndices(int32 nMaxTriangleCount = -1);
+		void BuildGreedyPhysicsBoxes(CParaXModel* pMesh);
+		void ExtractPhysicsJointDefsFromBones(CParaXModel* pMesh);
 		//void ProcessBoneNodes();
 		//int CreateBoneIndex(uint16 x, uint16 y, uint16 z, int parentIndex);
 		int GetBoneIndex(uint16 x, uint16 y, uint16 z);
@@ -205,6 +207,7 @@ namespace ParaEngine
 		BMaxAnimGenerator* m_pAnimGenerator;
 
 		bool m_bMergeCoplanerBlockFace;
+		std::string m_sDefaultPhysicsProperty;
 
 		static const int  MaxBoneLengthHorizontal;
 		static const int  MaxBoneLengthVertical;

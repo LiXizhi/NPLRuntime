@@ -359,10 +359,54 @@ void CPhysicsWorld::SetActorPhysicsProperty(IParaPhysicsActor* actor, const char
 					Vector3 axisB((float)(double)msg["AxisBX"], (float)(double)msg["AxisBY"], (float)(double)msg["AxisBZ"]);
 
 					// Defaults
-					if (msg["AxisAY"].GetType() != NPL::NPLObjectBase::NPLObjectType_Number) axisA = Vector3(0, 1, 0);
-					if (msg["AxisBY"].GetType() != NPL::NPLObjectBase::NPLObjectType_Number) axisB = Vector3(0, 1, 0);
+					if (msg["AxisAX"].GetType() != NPL::NPLObjectBase::NPLObjectType_Number &&
+						msg["AxisAY"].GetType() != NPL::NPLObjectBase::NPLObjectType_Number &&
+						msg["AxisAZ"].GetType() != NPL::NPLObjectBase::NPLObjectType_Number)
+					{
+						axisA = Vector3(0, 1, 0);
+					}
+					if (msg["AxisBX"].GetType() != NPL::NPLObjectBase::NPLObjectType_Number &&
+						msg["AxisBY"].GetType() != NPL::NPLObjectBase::NPLObjectType_Number &&
+						msg["AxisBZ"].GetType() != NPL::NPLObjectBase::NPLObjectType_Number)
+					{
+						axisB = axisA;
+					}
 
-					CreateConstraint(constraintType, actor, pOtherActor, pivotA, axisA, pivotB, axisB);
+					// Auto-populate PivotA and AxisA from BMax BoneBlock joint definition if UseBonePivot is true
+					if (msg["UseBonePivot"].GetType() == NPL::NPLObjectBase::NPLObjectType_Bool && (bool)msg["UseBonePivot"])
+					{
+						CBaseObject* pOwner = (CBaseObject*)actor->GetUserData();
+						if (pOwner && pOwner->GetPrimaryAsset() && pOwner->GetPrimaryAsset()->GetType() == AssetEntity::parax)
+						{
+							CParaXModel* pModel = ((ParaXEntity*)pOwner->GetPrimaryAsset())->GetModel();
+							if (pModel && !pModel->GetPhysicsJointDefs().empty())
+							{
+								int boneJointIdx = 0;
+								if (msg["BoneJointIndex"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number)
+									boneJointIdx = (int)(double)msg["BoneJointIndex"];
+								if (boneJointIdx >= 0 && boneJointIdx < (int)pModel->GetPhysicsJointDefs().size())
+								{
+									const auto& jd = pModel->GetPhysicsJointDefs()[boneJointIdx];
+									float fScale = pOwner->GetScaling();
+									float halfModelH = pModel->GetHeader().maxExtent.y * 0.5f;
+									pivotA = (jd.m_pivot - Vector3(0.f, halfModelH, 0.f)) * fScale;
+									axisA = jd.m_axis;
+									if (!pOtherActor)
+										axisB = axisA;
+								}
+							}
+						}
+					}
+
+					bool disableCol = true;
+					if (msg["DisableCollision"].GetType() == NPL::NPLObjectBase::NPLObjectType_Bool)
+						disableCol = (bool)msg["DisableCollision"];
+
+					IParaPhysicsConstraint* pConstraint = CreateConstraint(constraintType, actor, pOtherActor, pivotA, axisA, pivotB, axisB, disableCol);
+					if (pConstraint)
+					{
+						SetConstraintProperty(pConstraint, property);
+					}
 				}
 				else if (msg["Index"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number)
 				{
@@ -378,6 +422,208 @@ void CPhysicsWorld::SetActorPhysicsProperty(IParaPhysicsActor* actor, const char
 			else if (method == "ReleaseAllJoints")
 			{
 				ReleaseConstraintsByActor(actor);
+			}
+			else if (method == "ApplyImpulse")
+			{
+				PARAVECTOR3 imp((float)(double)msg["X"], (float)(double)msg["Y"], (float)(double)msg["Z"]);
+				if (msg["RelX"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number)
+				{
+					PARAVECTOR3 rel((float)(double)msg["RelX"], (float)(double)msg["RelY"], (float)(double)msg["RelZ"]);
+					actor->ApplyImpulse(imp, rel);
+				}
+				else
+				{
+					actor->ApplyCentralImpulse(imp);
+				}
+			}
+			else if (method == "ApplyForce")
+			{
+				PARAVECTOR3 f((float)(double)msg["X"], (float)(double)msg["Y"], (float)(double)msg["Z"]);
+				if (msg["RelX"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number)
+				{
+					PARAVECTOR3 rel((float)(double)msg["RelX"], (float)(double)msg["RelY"], (float)(double)msg["RelZ"]);
+					actor->ApplyForce(f, rel);
+				}
+				else
+				{
+					actor->ApplyCentralForce(f);
+				}
+			}
+			else if (method == "ApplyTorque")
+			{
+				PARAVECTOR3 tq((float)(double)msg["X"], (float)(double)msg["Y"], (float)(double)msg["Z"]);
+				if (msg["IsImpulse"].GetType() == NPL::NPLObjectBase::NPLObjectType_Bool && (bool)msg["IsImpulse"])
+					actor->ApplyTorqueImpulse(tq);
+				else
+					actor->ApplyTorque(tq);
+			}
+			else if (method == "ClearForces")
+			{
+				actor->ClearForces();
+			}
+			else if (method == "SetKinematic")
+			{
+				bool bKin = true;
+				if (msg["Kinematic"].GetType() == NPL::NPLObjectBase::NPLObjectType_Bool)
+					bKin = (bool)msg["Kinematic"];
+				actor->SetKinematic(bKin);
+				if (!bKin)
+				{
+					m_mapKinematicMotions.erase(actor);
+				}
+			}
+			else if (method == "SetKinematicTransform")
+			{
+				CBaseObject* pOwner = (CBaseObject*)actor->GetUserData();
+				float dt = 1.f / 60.f;
+				if (msg["DeltaTime"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number)
+					dt = (std::max)(0.001f, (float)(double)msg["DeltaTime"]);
+
+				PARAVECTOR3 oldOrigin = actor->GetOrigin();
+				Matrix4 worldMat;
+				worldMat.identity();
+				if (pOwner)
+				{
+					Matrix4 localMat;
+					pOwner->GetLocalTransform(&localMat);
+					float fScale = pOwner->GetScaling();
+					if (fabs(fScale - 1.f) > 1e-4f)
+					{
+						float invS = 1.f / fScale;
+						Matrix4 invScaleMat;
+						invScaleMat.makeScale(invS, invS, invS);
+						worldMat = localMat * invScaleMat;
+					}
+					else
+					{
+						worldMat = localMat;
+					}
+					float fHalfH = pOwner->GetAssetHeight() * 0.5f;
+					Vector3 vCenter(0.f, fHalfH, 0.f);
+					vCenter = vCenter * worldMat;
+					DVector3 vPos = pOwner->GetPosition();
+					worldMat._41 = (float)vPos.x + vCenter.x;
+					worldMat._42 = (float)vPos.y + vCenter.y;
+					worldMat._43 = (float)vPos.z + vCenter.z;
+				}
+				else
+				{
+					Quaternion q;
+					q.x = (float)(double)msg["QuatX"];
+					q.y = (float)(double)msg["QuatY"];
+					q.z = (float)(double)msg["QuatZ"];
+					q.w = (msg["QuatW"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number) ? (float)(double)msg["QuatW"] : 1.f;
+					q.ToRotationMatrix(worldMat, Vector3((float)(double)msg["X"], (float)(double)msg["Y"], (float)(double)msg["Z"]));
+				}
+
+				actor->SetWorldTransform((const PARAMATRIX*)&worldMat);
+				PARAVECTOR3 newOrigin(worldMat._41, worldMat._42, worldMat._43);
+				actor->SetLinearVelocity(PARAVECTOR3(
+					(newOrigin.x - oldOrigin.x) / dt,
+					(newOrigin.y - oldOrigin.y) / dt,
+					(newOrigin.z - oldOrigin.z) / dt));
+			}
+			else if (method == "SetKinematicMotion")
+			{
+				std::string modeStr = (msg["Mode"].GetType() == NPL::NPLObjectBase::NPLObjectType_String) ? (const std::string&)msg["Mode"] : "none";
+				if (modeStr == "none" || modeStr.empty())
+				{
+					m_mapKinematicMotions.erase(actor);
+					actor->SetLinearVelocity(PARAVECTOR3(0.f, 0.f, 0.f));
+					actor->SetAngularVelocity(PARAVECTOR3(0.f, 0.f, 0.f));
+				}
+				else
+				{
+					if (!actor->IsKinematicObject())
+						actor->SetKinematic(true);
+
+					KinematicMotionDesc km;
+					Matrix4 curMat;
+					actor->GetWorldTransform((PARAMATRIX*)&curMat);
+					km.m_baseOrigin = curMat.getTrans();
+					curMat.setTrans(Vector3::ZERO);
+					km.m_baseRot.FromRotationMatrix(curMat);
+
+					if (msg["BaseX"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number)
+					{
+						km.m_baseOrigin = Vector3((float)(double)msg["BaseX"], (float)(double)msg["BaseY"], (float)(double)msg["BaseZ"]);
+					}
+					if (msg["BaseQuatW"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number)
+					{
+						km.m_baseRot = Quaternion((float)(double)msg["BaseQuatW"], (float)(double)msg["BaseQuatX"], (float)(double)msg["BaseQuatY"], (float)(double)msg["BaseQuatZ"]);
+						km.m_baseRot.normalise();
+					}
+
+					if (msg["AxisX"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number ||
+						msg["AxisY"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number ||
+						msg["AxisZ"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number)
+					{
+						km.m_axis = Vector3((float)(double)msg["AxisX"], (float)(double)msg["AxisY"], (float)(double)msg["AxisZ"]);
+						if (km.m_axis.squaredLength() > 1e-6f)
+							km.m_axis.normalise();
+						else
+							km.m_axis = Vector3::UNIT_Y;
+					}
+
+					if (msg["PivotX"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number)
+					{
+						km.m_localPivot = Vector3((float)(double)msg["PivotX"], (float)(double)msg["PivotY"], (float)(double)msg["PivotZ"]);
+					}
+					else if (msg["UseBonePivot"].GetType() == NPL::NPLObjectBase::NPLObjectType_Bool && (bool)msg["UseBonePivot"])
+					{
+						CBaseObject* pOwner = (CBaseObject*)actor->GetUserData();
+						if (pOwner && pOwner->GetPrimaryAsset() && pOwner->GetPrimaryAsset()->GetType() == AssetEntity::parax)
+						{
+							CParaXModel* pModel = ((ParaXEntity*)pOwner->GetPrimaryAsset())->GetModel();
+							if (pModel && !pModel->GetPhysicsJointDefs().empty())
+							{
+								const auto& jd = pModel->GetPhysicsJointDefs()[0];
+								float fScale = pOwner->GetScaling();
+								float halfModelH = pModel->GetHeader().maxExtent.y * 0.5f;
+								km.m_localPivot = (jd.m_pivot - Vector3(0.f, halfModelH, 0.f)) * fScale;
+								if (msg["AxisX"].GetType() != NPL::NPLObjectBase::NPLObjectType_Number &&
+									msg["AxisY"].GetType() != NPL::NPLObjectBase::NPLObjectType_Number &&
+									msg["AxisZ"].GetType() != NPL::NPLObjectBase::NPLObjectType_Number)
+								{
+									km.m_axis = jd.m_axis;
+								}
+							}
+						}
+					}
+
+					if (msg["OffsetX"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number ||
+						msg["OffsetY"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number ||
+						msg["OffsetZ"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number)
+					{
+						km.m_linearOffset = Vector3((float)(double)msg["OffsetX"], (float)(double)msg["OffsetY"], (float)(double)msg["OffsetZ"]);
+					}
+					if (msg["Speed"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number)
+						km.m_speed = (float)(double)msg["Speed"];
+					if (msg["PauseTime"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number)
+						km.m_pauseTime = (std::max)(0.f, (float)(double)msg["PauseTime"]);
+					if (msg["MaxAngle"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number)
+						km.m_maxAngle = (float)(double)msg["MaxAngle"];
+					if (msg["Period"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number)
+						km.m_period = (std::max)(0.05f, (float)(double)msg["Period"]);
+					if (msg["PhaseOffset"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number)
+						km.m_phaseOffset = (float)(double)msg["PhaseOffset"];
+
+					if (modeStr == "rotate")
+						km.m_mode = KinematicMotion_Rotate;
+					else if (modeStr == "pingpong")
+						km.m_mode = KinematicMotion_PingPong;
+					else if (modeStr == "pendulum")
+						km.m_mode = KinematicMotion_Pendulum;
+
+					m_mapKinematicMotions[actor] = km;
+				}
+			}
+			else if (method == "ResetSimulationTime")
+			{
+				double t = 0.0;
+				if (msg["Time"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number)
+					t = (double)msg["Time"];
+				ResetSimulationTime(t);
 			}
 			return; // Handled method
 		}
@@ -446,6 +692,75 @@ const char* CPhysicsWorld::GetActorPhysicsProperty(IParaPhysicsActor* actor, con
 						msg["ForwardX"] = (double)fwd.x;
 						msg["ForwardY"] = (double)fwd.y;
 						msg["ForwardZ"] = (double)fwd.z;
+					}
+					NPL::NPLHelper::NPLTableToString(NULL, msg, sCode);
+					return sCode.c_str();
+				}
+				else if (method == "Transform")
+				{
+					Matrix4 mat;
+					actor->GetWorldTransform((PARAMATRIX*)&mat);
+					Vector3 origin = mat.getTrans();
+					mat.setTrans(Vector3::ZERO);
+					Quaternion q;
+					q.FromRotationMatrix(mat);
+					PARAVECTOR3 lv = actor->GetLinearVelocity();
+					PARAVECTOR3 av = actor->GetAngularVelocity();
+					msg["OriginX"] = (double)origin.x;
+					msg["OriginY"] = (double)origin.y;
+					msg["OriginZ"] = (double)origin.z;
+					msg["QuatX"] = (double)q.x;
+					msg["QuatY"] = (double)q.y;
+					msg["QuatZ"] = (double)q.z;
+					msg["QuatW"] = (double)q.w;
+					msg["LinVelX"] = (double)lv.x;
+					msg["LinVelY"] = (double)lv.y;
+					msg["LinVelZ"] = (double)lv.z;
+					msg["AngVelX"] = (double)av.x;
+					msg["AngVelY"] = (double)av.y;
+					msg["AngVelZ"] = (double)av.z;
+					msg["IsKinematic"] = actor->IsKinematicObject();
+					msg["IsStatic"] = actor->IsStaticObject();
+					NPL::NPLHelper::NPLTableToString(NULL, msg, sCode);
+					return sCode.c_str();
+				}
+				else if (method == "ModelPhysicsInfo")
+				{
+					CBaseObject* pOwner = (CBaseObject*)actor->GetUserData();
+					if (pOwner && pOwner->GetPrimaryAsset() && pOwner->GetPrimaryAsset()->GetType() == AssetEntity::parax)
+					{
+						CParaXModel* pModel = ((ParaXEntity*)pOwner->GetPrimaryAsset())->GetModel();
+						if (pModel)
+						{
+							float fScale = pOwner->GetScaling();
+							float halfModelH = pModel->GetHeader().maxExtent.y * 0.5f;
+							msg["BoxCount"] = (double)pModel->GetPhysicsBoxes().size();
+							msg["JointCount"] = (double)pModel->GetPhysicsJointDefs().size();
+							if (!pModel->GetDefaultPhysicsProperty().empty())
+								msg["DefaultProperty"] = pModel->GetDefaultPhysicsProperty();
+							for (size_t i = 0; i < pModel->GetPhysicsJointDefs().size(); ++i)
+							{
+								const auto& jd = pModel->GetPhysicsJointDefs()[i];
+								Vector3 localPivot = (jd.m_pivot - Vector3(0.f, halfModelH, 0.f)) * fScale;
+								char keyBuf[48];
+								snprintf(keyBuf, sizeof(keyBuf), "Joint%dName", (int)i);
+								msg[(const char*)keyBuf] = jd.m_name;
+								snprintf(keyBuf, sizeof(keyBuf), "Joint%dType", (int)i);
+								msg[(const char*)keyBuf] = (double)jd.m_constraintType;
+								snprintf(keyBuf, sizeof(keyBuf), "Joint%dPivotX", (int)i);
+								msg[(const char*)keyBuf] = (double)localPivot.x;
+								snprintf(keyBuf, sizeof(keyBuf), "Joint%dPivotY", (int)i);
+								msg[(const char*)keyBuf] = (double)localPivot.y;
+								snprintf(keyBuf, sizeof(keyBuf), "Joint%dPivotZ", (int)i);
+								msg[(const char*)keyBuf] = (double)localPivot.z;
+								snprintf(keyBuf, sizeof(keyBuf), "Joint%dAxisX", (int)i);
+								msg[(const char*)keyBuf] = (double)jd.m_axis.x;
+								snprintf(keyBuf, sizeof(keyBuf), "Joint%dAxisY", (int)i);
+								msg[(const char*)keyBuf] = (double)jd.m_axis.y;
+								snprintf(keyBuf, sizeof(keyBuf), "Joint%dAxisZ", (int)i);
+								msg[(const char*)keyBuf] = (double)jd.m_axis.z;
+							}
+						}
 					}
 					NPL::NPLHelper::NPLTableToString(NULL, msg, sCode);
 					return sCode.c_str();
@@ -535,6 +850,8 @@ void CPhysicsWorld::ExitPhysics()
 		delete* itCurCP;
 	}
 	m_listMeshShapes.clear();
+	m_listDynamicShapes.clear();
+	m_mapKinematicMotions.clear();
 	m_mapDynamicActors.clear();
 	// 清空块
 	m_mapPhysicsBlocks.clear();
@@ -548,20 +865,167 @@ void CPhysicsWorld::ResetPhysics()
 	InitPhysics();
 }
 
+void CPhysicsWorld::SyncActorTransformToObject(IParaPhysicsActor* actor, CBaseObject* obj)
+{
+	if (!actor || !obj)
+		return;
+	alignas(16) Matrix4 matrix;
+	actor->GetWorldTransform((PARAMATRIX*)&matrix);
+	Vector3 pos = matrix.getTrans();
+	float fCenterHeight = obj->GetAssetHeight() * 0.5f;
+
+	matrix.setTrans(Vector3(0, 0, 0));
+	obj->SetPosition(DVector3(pos.x, pos.y - fCenterHeight, pos.z));
+
+	Matrix4 matOffset;
+	float fScaling = obj->GetScaling();
+	if (fabs(fScaling) > 1e-5f)
+		fCenterHeight = fCenterHeight / fScaling;
+	matOffset.makeTrans(Vector3(0, -fCenterHeight, 0));
+	matOffset = matOffset * matrix;
+	matOffset.offsetTrans(Vector3(0, fCenterHeight, 0));
+
+	obj->SetLocalTransform(matOffset);
+	obj->SetYaw(0);
+	obj->SetRoll(0);
+	obj->SetPitch(0);
+}
+
+void CPhysicsWorld::StepKinematicControllers(double dTime)
+{
+	if (m_mapKinematicMotions.empty())
+		return;
+
+	const float t = (float)m_dSimulationTime;
+	for (auto& kv : m_mapKinematicMotions)
+	{
+		IParaPhysicsActor* actor = kv.first;
+		const KinematicMotionDesc& km = kv.second;
+		if (!actor || km.m_mode == KinematicMotion_None)
+			continue;
+
+		Vector3 newOrigin = km.m_baseOrigin;
+		Quaternion newRot = km.m_baseRot;
+		Vector3 linVel = Vector3::ZERO;
+		Vector3 angVel = Vector3::ZERO;
+
+		if (km.m_mode == KinematicMotion_Rotate)
+		{
+			float angle = km.m_speed * t + km.m_phaseOffset;
+			Quaternion deltaQ;
+			deltaQ.FromAngleAxis(Radian(angle), km.m_axis);
+			newRot = km.m_baseRot * deltaQ;
+			newRot.normalise();
+
+			Matrix4 baseRotMat, newRotMat;
+			km.m_baseRot.ToRotationMatrix(baseRotMat, Vector3::ZERO);
+			newRot.ToRotationMatrix(newRotMat, Vector3::ZERO);
+			Vector3 worldAxis = km.m_axis * baseRotMat;
+			angVel = worldAxis * km.m_speed;
+
+			if (km.m_localPivot.squaredLength() > 1e-6f)
+			{
+				Vector3 worldAnchor = km.m_baseOrigin + (km.m_localPivot * baseRotMat);
+				Vector3 rNow = -(km.m_localPivot * newRotMat);
+				newOrigin = worldAnchor + rNow;
+				linVel = angVel.crossProduct(rNow);
+			}
+		}
+		else if (km.m_mode == KinematicMotion_PingPong)
+		{
+			float dist = km.m_linearOffset.length();
+			if (dist > 1e-4f && km.m_speed > 1e-4f)
+			{
+				float moveDur = dist / km.m_speed;
+				float halfCycle = moveDur + km.m_pauseTime;
+				float fullCycle = 2.f * halfCycle;
+				float localT = std::fmod(t + km.m_phaseOffset * fullCycle, fullCycle);
+				if (localT < 0.f)
+					localT += fullCycle;
+
+				float u = 0.f;
+				float duDt = 0.f;
+				if (localT < moveDur)
+				{
+					float s = localT / moveDur;
+					// Smooth cosine easing near endpoints for comfortable player platform carry
+					u = 0.5f * (1.f - std::cos(s * MATH_PI));
+					duDt = (0.5f * MATH_PI / moveDur) * std::sin(s * MATH_PI);
+				}
+				else if (localT < halfCycle)
+				{
+					u = 1.f;
+					duDt = 0.f;
+				}
+				else if (localT < halfCycle + moveDur)
+				{
+					float s = (localT - halfCycle) / moveDur;
+					u = 0.5f * (1.f + std::cos(s * MATH_PI));
+					duDt = -(0.5f * MATH_PI / moveDur) * std::sin(s * MATH_PI);
+				}
+				else
+				{
+					u = 0.f;
+					duDt = 0.f;
+				}
+				newOrigin = km.m_baseOrigin + km.m_linearOffset * u;
+				linVel = km.m_linearOffset * duDt;
+			}
+		}
+		else if (km.m_mode == KinematicMotion_Pendulum)
+		{
+			float omegaFreq = (2.f * MATH_PI) / (std::max)(0.05f, km.m_period);
+			float phase = omegaFreq * t + km.m_phaseOffset * 2.f * MATH_PI;
+			float angle = km.m_maxAngle * std::sin(phase);
+			float dAngleDt = km.m_maxAngle * omegaFreq * std::cos(phase);
+
+			Quaternion deltaQ;
+			deltaQ.FromAngleAxis(Radian(angle), km.m_axis);
+			newRot = km.m_baseRot * deltaQ;
+			newRot.normalise();
+
+			Matrix4 baseRotMat, newRotMat;
+			km.m_baseRot.ToRotationMatrix(baseRotMat, Vector3::ZERO);
+			newRot.ToRotationMatrix(newRotMat, Vector3::ZERO);
+			Vector3 worldAxis = km.m_axis * baseRotMat;
+			angVel = worldAxis * dAngleDt;
+
+			Vector3 worldAnchor = km.m_baseOrigin + (km.m_localPivot * baseRotMat);
+			Vector3 rNow = -(km.m_localPivot * newRotMat);
+			newOrigin = worldAnchor + rNow;
+			linVel = angVel.crossProduct(rNow);
+		}
+
+		Matrix4 worldMat;
+		newRot.ToRotationMatrix(worldMat, newOrigin);
+		actor->SetWorldTransform((const PARAMATRIX*)&worldMat);
+		actor->SetLinearVelocity(PARAVECTOR3(linVel.x, linVel.y, linVel.z));
+		actor->SetAngularVelocity(PARAVECTOR3(angVel.x, angVel.y, angVel.z));
+
+		CBaseObject* obj = (CBaseObject*)(actor->GetUserData());
+		if (obj)
+		{
+			SyncActorTransformToObject(actor, obj);
+		}
+	}
+}
+
 void CPhysicsWorld::StepSimulation(double dTime)
 {
-	alignas(16) Matrix4 matrix;
 	static int16_t s_block_frame_id = 0;
 	s_block_frame_id++;
 	
 	if (IsDynamicsSimulationEnabled())
 	{
+		m_dSimulationTime += dTime;
+		StepKinematicControllers(dTime);
+
 		IParaPhysicsActor_Map_Type::iterator itCurCP = m_mapDynamicActors.begin();
 		IParaPhysicsActor_Map_Type::iterator itEndCP = m_mapDynamicActors.end();
 
 		// check load terrain physics blocks near all dynamic actors
 		BlockWorldClient* pWorld = BlockWorldClient::GetInstance();
-		bool isAutoPhysicsBlock = pWorld->IsAutoPhysics();
+		bool isAutoPhysicsBlock = pWorld ? pWorld->IsAutoPhysics() : false;
 		
 		if (isAutoPhysicsBlock)
 		{
@@ -571,7 +1035,7 @@ void CPhysicsWorld::StepSimulation(double dTime)
 				IParaPhysicsActor* actor = *itCurCP;
 				CBaseObject* obj = (CBaseObject*)(actor->GetUserData());
 				
-				if (!actor->IsStaticOrKinematicObject())
+				if (obj && !actor->IsStaticOrKinematicObject())
 				{
 					obj->GetAABB(&aabb); 
 					LoadPhysicsBlock(&aabb, s_block_frame_id);
@@ -596,23 +1060,10 @@ void CPhysicsWorld::StepSimulation(double dTime)
 				if (activationState != 2) // Skip ISLAND_SLEEPING actors
 				{
 					CBaseObject* obj = (CBaseObject*)(actor->GetUserData());
-					actor->GetWorldTransform((PARAMATRIX*)&matrix);
-					Vector3 pos = matrix.getTrans();
-					float fCenterHeight = obj->GetAssetHeight() * 0.5f;
-
-					matrix.setTrans(Vector3(0, 0, 0));
-					obj->SetPosition(DVector3(pos.x, pos.y - fCenterHeight, pos.z));
-
-					Matrix4 matOffset;
-					fCenterHeight = fCenterHeight / obj->GetScaling();
-					matOffset.makeTrans(Vector3(0, -fCenterHeight, 0));
-					matOffset = matOffset * matrix;
-					matOffset.offsetTrans(Vector3(0, fCenterHeight, 0));
-
-					obj->SetLocalTransform(matOffset);
-					obj->SetYaw(0);
-					obj->SetRoll(0);
-					obj->SetPitch(0);
+					if (obj)
+					{
+						SyncActorTransformToObject(actor, obj);
+					}
 				}
 			}
 		}
@@ -638,21 +1089,34 @@ void CPhysicsWorld::StepSimulation(double dTime)
 
 IParaPhysicsActor* ParaEngine::CPhysicsWorld::CreateDynamicMesh(CBaseObject* obj)
 {
+	if (!obj)
+		return NULL;
+	GetPhysicsInterface();
+	if (!m_pPhysicsWorld)
+		return NULL;
+
 	ParaPhysicsSimpleShapeDesc desc;
 	desc.m_shape = obj->GetPhysicsShape();
+	if (desc.m_shape.empty())
+		desc.m_shape = "box";
 
 	bool bHasModel = false;
+	CParaXModel* pParaXModel = NULL;
 	auto pAsset = obj->GetPrimaryAsset();
+	float fScale = obj->GetScaling();
+	Vector3 vScaleVec(fScale, fScale, fScale);
+	float halfHeightUnscaled = 0.5f;
+
 	if (pAsset && pAsset->GetType() == AssetEntity::parax)
 	{
-		CParaXModel* pModel = ((ParaXEntity*)pAsset)->GetModel();
-		if (pModel != 0)
+		pParaXModel = ((ParaXEntity*)pAsset)->GetModel();
+		if (pParaXModel != 0)
 		{
-			float fScale = obj->GetScaling();
-			Vector3 vMin = pModel->GetHeader().minExtent;
-			Vector3 vMax = pModel->GetHeader().maxExtent;
+			Vector3 vMin = pParaXModel->GetHeader().minExtent;
+			Vector3 vMax = pParaXModel->GetHeader().maxExtent;
+			halfHeightUnscaled = vMax.y * 0.5f;
 			desc.m_halfWidth = max(abs(vMax.x), abs(vMin.x)) * fScale;
-			desc.m_halfHeight = vMax.y * 0.5f * fScale;
+			desc.m_halfHeight = halfHeightUnscaled * fScale;
 			desc.m_halfLength = max(abs(vMax.z), abs(vMin.z)) * fScale;
 			bHasModel = true;
 		}
@@ -660,7 +1124,75 @@ IParaPhysicsActor* ParaEngine::CPhysicsWorld::CreateDynamicMesh(CBaseObject* obj
 	if (!bHasModel)
 		return NULL; // model is not ready, such as not loaded from disk. 
 
-	IParaPhysicsShape* pShape = m_pPhysicsWorld->CreateSimpleShape(desc);
+	IParaPhysicsShape* pShape = NULL;
+	std::string requestedShape = desc.m_shape;
+	if (requestedShape == "auto")
+	{
+		requestedShape = (!pParaXModel->GetPhysicsBoxes().empty()) ? "compound" : "box";
+	}
+
+	// Look up cached dynamic shape for compound / convex shapes
+	if (requestedShape == "compound" || requestedShape == "convex")
+	{
+		for (const auto& cached : m_listDynamicShapes)
+		{
+			if (cached.m_pAsset == pAsset && cached.m_shapeType == requestedShape &&
+				(cached.m_vScale - vScaleVec).squaredLength() < FLT_TOLERANCE)
+			{
+				pShape = cached.m_pShape;
+				break;
+			}
+		}
+
+		if (!pShape)
+		{
+			if (requestedShape == "compound" && !pParaXModel->GetPhysicsBoxes().empty())
+			{
+				const auto& boxes = pParaXModel->GetPhysicsBoxes();
+				std::vector<ParaPhysicsCompoundChildDesc> children;
+				children.reserve(boxes.size());
+				for (const auto& b : boxes)
+				{
+					ParaPhysicsCompoundChildDesc cd;
+					cd.m_shape = "box";
+					cd.m_halfExtents = PARAVECTOR3(b.m_halfExtents.x * fScale, b.m_halfExtents.y * fScale, b.m_halfExtents.z * fScale);
+					Vector3 shifted = (b.m_center - Vector3(0.f, halfHeightUnscaled, 0.f)) * fScale;
+					cd.m_localOrigin = PARAVECTOR3(shifted.x, shifted.y, shifted.z);
+					children.push_back(cd);
+				}
+				pShape = m_pPhysicsWorld->CreateCompoundShape(children.data(), (int)children.size());
+			}
+			else if (pParaXModel->m_origVertices && pParaXModel->GetObjectNum().nVertices > 0)
+			{
+				int nVerts = (int)pParaXModel->GetObjectNum().nVertices;
+				int step = (nVerts > 512) ? (nVerts / 512) : 1;
+				std::vector<PARAVECTOR3> pts;
+				pts.reserve(nVerts / step + 1);
+				for (int i = 0; i < nVerts; i += step)
+				{
+					const Vector3& vp = pParaXModel->m_origVertices[i].pos;
+					pts.push_back(PARAVECTOR3(vp.x, vp.y - halfHeightUnscaled, vp.z));
+				}
+				pShape = m_pPhysicsWorld->CreateConvexHullShape(pts.data(), (int)pts.size(), PARAVECTOR3(fScale, fScale, fScale));
+			}
+
+			if (pShape)
+			{
+				CachedDynamicShape entry;
+				entry.m_pAsset = pAsset;
+				entry.m_shapeType = requestedShape;
+				entry.m_vScale = vScaleVec;
+				entry.m_pShape = pShape;
+				m_listDynamicShapes.push_back(entry);
+			}
+		}
+	}
+
+	if (!pShape)
+	{
+		desc.m_shape = (requestedShape == "compound" || requestedShape == "convex") ? "box" : requestedShape;
+		pShape = m_pPhysicsWorld->CreateSimpleShape(desc);
+	}
 	if (!pShape)
 		return NULL;
 	ParaPhysicsActorDesc ActorDesc;
@@ -688,6 +1220,10 @@ IParaPhysicsActor* ParaEngine::CPhysicsWorld::CreateDynamicMesh(CBaseObject* obj
 		return NULL;
 	pActor->SetUserData(obj);
 	m_mapDynamicActors.insert(pActor);
+	if (pParaXModel && !pParaXModel->GetDefaultPhysicsProperty().empty())
+	{
+		SetActorPhysicsProperty(pActor, pParaXModel->GetDefaultPhysicsProperty().c_str());
+	}
 	return pActor;
 }
 
@@ -1144,6 +1680,7 @@ void CPhysicsWorld::ReleaseActor(IParaPhysicsActor* pActor)
 	{
 		ReleaseConstraintsByActor(pActor);
 		ReleaseVehicleByActor(pActor);
+		m_mapKinematicMotions.erase(pActor);
 		m_mapDynamicActors.erase(pActor);
 		m_pPhysicsWorld->ReleaseActor(pActor);
 		if (CGlobals::WillGenReport())
@@ -1292,18 +1829,57 @@ void ParaEngine::CPhysicsWorld::SetConstraintProperty(IParaPhysicsConstraint* pC
 	// Slider-specific properties
 	if (pConstraint->GetType() == ConstraintType_Slider)
 	{
-		if (msg["LowerLinLimit"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number)
+		if (msg["LowerLinLimit"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number ||
+			msg["LowLimit"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number)
 		{
-			float lower = (float)(double)msg["LowerLinLimit"];
-			float upper = msg["UpperLinLimit"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number ? (float)(double)msg["UpperLinLimit"] : lower;
+			float lower = (msg["LowerLinLimit"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number)
+				? (float)(double)msg["LowerLinLimit"] : (float)(double)msg["LowLimit"];
+			float upper = lower;
+			if (msg["UpperLinLimit"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number)
+				upper = (float)(double)msg["UpperLinLimit"];
+			else if (msg["HighLimit"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number)
+				upper = (float)(double)msg["HighLimit"];
 			pConstraint->SetSliderLimit(lower, upper);
 		}
-		if (msg["EnableLinMotor"].GetType() == NPL::NPLObjectBase::NPLObjectType_Bool)
+		if (msg["EnableLinMotor"].GetType() == NPL::NPLObjectBase::NPLObjectType_Bool ||
+			msg["EnableMotor"].GetType() == NPL::NPLObjectBase::NPLObjectType_Bool)
 		{
-			bool enable = (bool)msg["EnableLinMotor"];
-			float targetVelocity = msg["TargetLinMotorVelocity"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number ? (float)(double)msg["TargetLinMotorVelocity"] : 0.0f;
-			float maxForce = msg["MaxLinMotorForce"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number ? (float)(double)msg["MaxLinMotorForce"] : 1.0f;
+			bool enable = (msg["EnableLinMotor"].GetType() == NPL::NPLObjectBase::NPLObjectType_Bool)
+				? (bool)msg["EnableLinMotor"] : (bool)msg["EnableMotor"];
+			float targetVelocity = 0.0f;
+			if (msg["TargetLinMotorVelocity"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number)
+				targetVelocity = (float)(double)msg["TargetLinMotorVelocity"];
+			else if (msg["MotorTargetVelocity"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number)
+				targetVelocity = (float)(double)msg["MotorTargetVelocity"];
+			float maxForce = 10.0f;
+			if (msg["MaxLinMotorForce"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number)
+				maxForce = (float)(double)msg["MaxLinMotorForce"];
+			else if (msg["MaxMotorImpulse"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number)
+				maxForce = (float)(double)msg["MaxMotorImpulse"];
 			pConstraint->EnableSliderMotor(enable, targetVelocity, maxForce);
+		}
+	}
+
+	// Spring-specific properties
+	if (pConstraint->GetType() == ConstraintType_Spring)
+	{
+		if (msg["LowLimit"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number ||
+			msg["HighLimit"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number)
+		{
+			float low = (msg["LowLimit"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number) ? (float)(double)msg["LowLimit"] : -1.f;
+			float high = (msg["HighLimit"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number) ? (float)(double)msg["HighLimit"] : 1.f;
+			pConstraint->SetLinearLimits3D(PARAVECTOR3(low, 0.f, 0.f), PARAVECTOR3(high, 0.f, 0.f));
+		}
+		if (msg["SpringStiffness"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number ||
+			msg["SpringDamping"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number)
+		{
+			int axis = (msg["SpringAxis"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number) ? (int)(double)msg["SpringAxis"] : 0;
+			bool enable = (msg["EnableSpring"].GetType() == NPL::NPLObjectBase::NPLObjectType_Bool) ? (bool)msg["EnableSpring"] : true;
+			float stiffness = (msg["SpringStiffness"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number) ? (float)(double)msg["SpringStiffness"] : 50.f;
+			float damping = (msg["SpringDamping"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number) ? (float)(double)msg["SpringDamping"] : 0.5f;
+			bool hasEq = (msg["Equilibrium"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number);
+			float eq = hasEq ? (float)(double)msg["Equilibrium"] : 0.f;
+			pConstraint->SetSpringParams(axis, enable, stiffness, damping, eq, !hasEq);
 		}
 	}
 }
@@ -1330,6 +1906,111 @@ const char* ParaEngine::CPhysicsWorld::GetConstraintProperty(IParaPhysicsConstra
 
 	NPL::NPLHelper::NPLTableToString(NULL, msg, sCode);
 	return sCode.c_str();
+}
+
+const char* ParaEngine::CPhysicsWorld::RaycastWorldStr(const char* queryTableStr)
+{
+	static std::string sResult;
+	NPL::NPLObjectProxy outMsg;
+	outMsg["Hit"] = false;
+
+	IParaPhysics* pPhysics = GetPhysicsInterface();
+	if (!pPhysics || !queryTableStr || !queryTableStr[0])
+	{
+		NPL::NPLHelper::NPLTableToString(NULL, outMsg, sResult);
+		return sResult.c_str();
+	}
+
+	NPL::NPLObjectProxy q = NPL::NPLHelper::StringToNPLTable(queryTableStr, (int)strlen(queryTableStr));
+	if (q.GetType() != NPL::NPLObjectBase::NPLObjectType_Table)
+	{
+		NPL::NPLHelper::NPLTableToString(NULL, outMsg, sResult);
+		return sResult.c_str();
+	}
+
+	PARAVECTOR3 orig((float)(double)q["FromX"], (float)(double)q["FromY"], (float)(double)q["FromZ"]);
+	Vector3 dir((float)(double)q["DirX"], (float)(double)q["DirY"], (float)(double)q["DirZ"]);
+	if (dir.squaredLength() < 1e-8f)
+		dir = Vector3(0.f, -1.f, 0.f);
+	else
+		dir.normalise();
+
+	float maxDist = (q["MaxDist"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number) ? (float)(double)q["MaxDist"] : 50.f;
+	short groupMask = (q["GroupMask"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number) ? (short)(int)(double)q["GroupMask"] : (short)-1;
+	bool includeBlocks = (q["IncludeBlocks"].GetType() == NPL::NPLObjectBase::NPLObjectType_Bool) ? (bool)q["IncludeBlocks"] : true;
+
+	RayCastHitResult hit;
+	IParaPhysicsActor* hitActor = pPhysics->RaycastClosestShapeEx(orig, PARAVECTOR3(dir.x, dir.y, dir.z), 0, hit, groupMask, maxDist, includeBlocks);
+	if (hitActor && hit.m_fDistance <= maxDist)
+	{
+		outMsg["Hit"] = true;
+		outMsg["Distance"] = (double)hit.m_fDistance;
+		outMsg["HitX"] = (double)hit.m_vHitPointWorld.x;
+		outMsg["HitY"] = (double)hit.m_vHitPointWorld.y;
+		outMsg["HitZ"] = (double)hit.m_vHitPointWorld.z;
+		outMsg["NormalX"] = (double)hit.m_vHitNormalWorld.x;
+		outMsg["NormalY"] = (double)hit.m_vHitNormalWorld.y;
+		outMsg["NormalZ"] = (double)hit.m_vHitNormalWorld.z;
+		CBaseObject* pObj = (CBaseObject*)hitActor->GetUserData();
+		if (pObj)
+		{
+			outMsg["ObjectName"] = pObj->GetIdentifier();
+		}
+	}
+
+	NPL::NPLHelper::NPLTableToString(NULL, outMsg, sResult);
+	return sResult.c_str();
+}
+
+const char* ParaEngine::CPhysicsWorld::GetActiveContactsStr(const char* queryTableStr)
+{
+	static std::string sResult;
+	NPL::NPLObjectProxy outMsg;
+	outMsg["Count"] = 0.0;
+
+	if (!m_pPhysicsWorld)
+	{
+		NPL::NPLHelper::NPLTableToString(NULL, outMsg, sResult);
+		return sResult.c_str();
+	}
+
+	float minImpulse = 0.0f;
+	if (queryTableStr && queryTableStr[0])
+	{
+		NPL::NPLObjectProxy q = NPL::NPLHelper::StringToNPLTable(queryTableStr, (int)strlen(queryTableStr));
+		if (q.GetType() == NPL::NPLObjectBase::NPLObjectType_Table && q["MinImpulse"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number)
+		{
+			minImpulse = (float)(double)q["MinImpulse"];
+		}
+	}
+
+	std::vector<ParaPhysicsContactPair> pairs;
+	m_pPhysicsWorld->GetActiveContacts(pairs, minImpulse);
+	int validCount = 0;
+	for (size_t i = 0; i < pairs.size() && validCount < 64; ++i)
+	{
+		const auto& cp = pairs[i];
+		CBaseObject* objA = cp.m_pActorA ? (CBaseObject*)cp.m_pActorA->GetUserData() : nullptr;
+		CBaseObject* objB = cp.m_pActorB ? (CBaseObject*)cp.m_pActorB->GetUserData() : nullptr;
+		if (!objA && !objB)
+			continue; // skip pure block-block contacts
+
+		++validCount;
+		NPL::NPLObjectProxy item;
+		item["NameA"] = objA ? objA->GetIdentifier() : "";
+		item["NameB"] = objB ? objB->GetIdentifier() : "";
+		item["HitX"] = (double)cp.m_hitPointWorld.x;
+		item["HitY"] = (double)cp.m_hitPointWorld.y;
+		item["HitZ"] = (double)cp.m_hitPointWorld.z;
+		item["NormalX"] = (double)cp.m_hitNormalWorld.x;
+		item["NormalY"] = (double)cp.m_hitNormalWorld.y;
+		item["NormalZ"] = (double)cp.m_hitNormalWorld.z;
+		item["Impulse"] = (double)cp.m_appliedImpulse;
+		outMsg[validCount] = item;
+	}
+	outMsg["Count"] = (double)validCount;
+	NPL::NPLHelper::NPLTableToString(NULL, outMsg, sResult);
+	return sResult.c_str();
 }
 
 //////////////////////////////////////////////////////////////////////////

@@ -130,6 +130,37 @@ namespace ParaEngine
 			TriangleMeshShape ():m_pMeshEntity(NULL), m_vScale (1.f,1.f,1.f){}
 		};
 
+		struct CachedDynamicShape
+		{
+			void* m_pAsset = nullptr;
+			std::string m_shapeType;
+			Vector3 m_vScale = Vector3(1.f, 1.f, 1.f);
+			IParaPhysicsShape* m_pShape = nullptr;
+		};
+
+		enum KinematicMotionMode
+		{
+			KinematicMotion_None = 0,
+			KinematicMotion_Rotate = 1,
+			KinematicMotion_PingPong = 2,
+			KinematicMotion_Pendulum = 3,
+		};
+
+		struct KinematicMotionDesc
+		{
+			KinematicMotionMode m_mode = KinematicMotion_None;
+			Vector3 m_baseOrigin = Vector3::ZERO;     // Anchor CoM position in world space
+			Quaternion m_baseRot = Quaternion::IDENTITY;
+			Vector3 m_axis = Vector3::UNIT_Y;         // Local rotation or pendulum axis
+			Vector3 m_localPivot = Vector3::ZERO;     // Pivot offset relative to CoM in local space
+			Vector3 m_linearOffset = Vector3::ZERO;   // PingPong travel delta in world space
+			float m_speed = 1.0f;                     // Angular speed (rad/s) or linear speed (m/s)
+			float m_pauseTime = 0.0f;                 // Pause duration at PingPong endpoints (seconds)
+			float m_maxAngle = 0.785398f;             // Pendulum max angle (radians)
+			float m_period = 2.0f;                    // Pendulum period (seconds)
+			float m_phaseOffset = 0.0f;               // Normalized phase [0..1] or radian offset
+		};
+
 	public:
 		/** set actor physics property from a NPL table string.
 		* @param actor: the physics actor
@@ -380,13 +411,31 @@ namespace ParaEngine
 		/** get the physics interface. create one if one does not exist. */
 		IParaPhysics* GetPhysicsInterface();
 
+		/** Step built-in C++ kinematic controllers (elevators, turntables, pendulums). */
+		void StepKinematicControllers(double dTime);
+
+		/** Sync Bullet actor world transform back to scene CBaseObject. */
+		void SyncActorTransformToObject(IParaPhysicsActor* actor, CBaseObject* obj);
+
+		/** Reset deterministic simulation clock for kinematic contraptions. */
+		void ResetSimulationTime(double t = 0.0) { m_dSimulationTime = t; }
+		double GetSimulationTime() const { return m_dSimulationTime; }
+
+		/** Script-friendly raycast against physics world (returns NPL table string). */
+		const char* RaycastWorldStr(const char* queryTableStr);
+
+		/** Script-friendly active contact query after StepSimulation (returns NPL table string). */
+		const char* GetActiveContactsStr(const char* queryTableStr = nullptr);
+
 	public:
 		/** the main physic interface. */
 		IParaPhysics*     m_pPhysicsWorld;
 
 		/// all shapes used to composed the physical world. There may be multiple object using the same shape
 		TriangleMeshShape_Map_Type  m_listMeshShapes;
+		std::vector<CachedDynamicShape> m_listDynamicShapes;
 		IParaPhysicsActor_Map_Type m_mapDynamicActors;
+		std::unordered_map<IParaPhysicsActor*, KinematicMotionDesc> m_mapKinematicMotions;
 		std::unordered_map<uint64_t, std::shared_ptr<CPhysicsBlock>> m_mapPhysicsBlocks;
 
 		/// all constraints/joints created in the physics world
@@ -397,5 +446,6 @@ namespace ParaEngine
 
 		/// whether to do dynamic simulation. It is turned off by default, which only provide basic collision detection. 
 		bool m_bRunDynamicSimulation;
+		double m_dSimulationTime = 0.0;
 	};
 }
