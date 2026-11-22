@@ -139,6 +139,9 @@ namespace ParaEngine
 		Matrix4 m_matWorldViewProject;
 		Matrix4 m_matWorldView;
 		Vector3 m_vWorldScaling;
+		bool m_scissorStateValid = false;
+		bool m_activeScissorEnabled = false;
+		RECT m_activeScissorRect = { 0, 0, 0, 0 };
 	};
 
 	

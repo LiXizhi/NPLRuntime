@@ -97,11 +97,13 @@ void ParaEngine::CPaintEngineGPU::InvalidateDeviceObjects()
 {
 	m_pSprite->InvalidateDeviceObjects();
 	m_bInitialized = false;
+	m_scissorStateValid = false;
 }
 
 void ParaEngine::CPaintEngineGPU::DeleteDeviceObjects()
 {
 	m_pSprite->DeleteDeviceObjects();
+	m_scissorStateValid = false;
 }
 
 bool ParaEngine::CPaintEngineGPU::begin(CPaintDevice *pdev)
@@ -111,6 +113,8 @@ bool ParaEngine::CPaintEngineGPU::begin(CPaintDevice *pdev)
 	if (!pd3dDevice)
 		return false;
 
+	m_scissorStateValid = false;
+	m_activeScissorEnabled = false;
 	CGlobals::GetEffectManager()->EndEffect();
 	if (!IsUse3DTransform())
 	{
@@ -137,6 +141,8 @@ bool ParaEngine::CPaintEngineGPU::end()
 	{
 		CGlobals::GetRenderDevice()->SetRenderState(ERenderState::SCISSORTESTENABLE, FALSE);
 	}
+	m_scissorStateValid = false;
+	m_activeScissorEnabled = false;
 	return true;
 }
 
@@ -624,8 +630,6 @@ void ParaEngine::CPaintEngineGPU::clip(const QRect & rect, ClipOperation op /*= 
 	if (!state)
 		return;
 	state->clipChanged = true;
-	
-	Flush();
 
 	if (op == ReplaceClip || op == IntersectClip)
 	{
@@ -707,8 +711,6 @@ void ParaEngine::CPaintEngineGPU::updateClipScissorTest()
 	if (!state)
 		return;
 
-	Flush();
-
 	if (IsScissorRectSupported())
 	{
 		if (state->clipTestEnabled)
@@ -730,16 +732,34 @@ void ParaEngine::CPaintEngineGPU::updateClipScissorTest()
 					clipRect.bottom = viewHeight - clipRect2.left;
 				}
 			}
+			if (m_scissorStateValid && m_activeScissorEnabled &&
+				m_activeScissorRect.left == clipRect.left &&
+				m_activeScissorRect.top == clipRect.top &&
+				m_activeScissorRect.right == clipRect.right &&
+				m_activeScissorRect.bottom == clipRect.bottom)
+			{
+				return;
+			}
+			Flush();
 			CGlobals::GetRenderDevice()->SetRenderState(ERenderState::SCISSORTESTENABLE, TRUE);
 			CGlobals::GetRenderDevice()->SetScissorRect(&clipRect);
+			m_scissorStateValid = true;
+			m_activeScissorEnabled = true;
+			m_activeScissorRect = clipRect;
 		}
 		else
 		{
+			if (m_scissorStateValid && !m_activeScissorEnabled)
+				return;
+			Flush();
 			CGlobals::GetRenderDevice()->SetRenderState(ERenderState::SCISSORTESTENABLE, FALSE);
+			m_scissorStateValid = true;
+			m_activeScissorEnabled = false;
 		}
 	}
 	else if (IsStencilSupported())
 	{
+		Flush();
 		if (state->clipTestEnabled)
 		{
 			RECT clipRect = state->rectangleClip.isValid() ? (RECT)state->rectangleClip : RECT{ 0, 0, 0, 0 };

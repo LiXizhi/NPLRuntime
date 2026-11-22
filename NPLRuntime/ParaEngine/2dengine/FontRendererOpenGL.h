@@ -1,6 +1,7 @@
 #pragma once
 #include "OpenGLWrapper/GLLabel.h"
 #include <list>
+#include <unordered_map>
 #include <utility>
 namespace ParaEngine
 {
@@ -32,6 +33,23 @@ namespace ParaEngine
 		void RendererRecreated();
 
 	protected:
+		struct CachedTextLayout
+		{
+			uint64_t keyHash = 0;
+			std::u16string rawText;
+			std::u16string formattedText;
+			std::vector<LetterInfo> lettersInfo;
+			Size contentSize;
+			int currNumLines = 0;
+			int limitShowCount = 0;
+			int scaledWidth = 0;
+			int scaledHeight = 0;
+			DWORD format = 0;
+			uint64_t atlasRevision = 0;
+			bool lineBreakWithoutSpaces = false;
+			bool clipEnabled = true;
+		};
+
 		GLFontAtlas* GetScaledFontAtlas(int nRealFontSize, CSpriteRenderer* pSprite);
 		void ReleaseScaledFontAtlases();
 		static int SelectRenderFontSize(float screenFontSize);
@@ -47,6 +65,8 @@ namespace ParaEngine
 		// Most recently used first. Keep glyphs across alternating label scales,
 		// but bound the number of retained sizes when the camera keeps zooming.
 		std::list<std::pair<int, GLFontAtlas*>> m_scaledFontAtlases;
+		std::list<CachedTextLayout> m_layoutCache;
+		std::unordered_multimap<uint64_t, std::list<CachedTextLayout>::iterator> m_layoutCacheIndex;
 	};
 }
 

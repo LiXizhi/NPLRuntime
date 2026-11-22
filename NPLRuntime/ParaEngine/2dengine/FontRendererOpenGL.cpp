@@ -448,11 +448,6 @@ bool ParaEngine::CFontRendererOpenGL::DrawTextW(CSpriteRenderer* pSprite, const 
 {
 	if (!strText || strText[0] == '\0')
 		return false;
-	SetUTF16Text(strText);
-	// remove all '\r', since cocos font rendering only support '\n', not "\r\n"
-	if (_contentDirty)
-		_currentUTF16String.erase(std::remove(_currentUTF16String.begin(), _currentUTF16String.end(), '\r'), _currentUTF16String.end());
-
 	if (!pSprite) return false;
 	int nWidth = CGUIBase::RectWidth(rect);
 	int nHeight = CGUIBase::RectHeight(rect);
@@ -506,12 +501,122 @@ bool ParaEngine::CFontRendererOpenGL::DrawTextW(CSpriteRenderer* pSprite, const 
 		nScaledHeight = _commonLineHeight;
 	}
 
-	setWidth(nScaledWidth);
-	setHeight(nScaledHeight);
+	bool bLayoutReady = false;
+	std::u16string_view rawView(strText);
+	uint64_t cacheHash = 1469598103934665603ULL;
+	const uint64_t atlasRev = _fontAtlas ? _fontAtlas->getLayoutRevision() : 0;
+	const bool canUseLayoutCache = (_fontAtlas != nullptr && !_fontAtlas->getTextures().empty());
+	if (canUseLayoutCache)
+	{
+		for (char16_t ch : rawView)
+		{
+			cacheHash ^= static_cast<uint64_t>(ch);
+			cacheHash *= 1099511628211ULL;
+		}
+		cacheHash ^= static_cast<uint64_t>(static_cast<uint32_t>(nScaledWidth)) * 0x9e3779b97f4a7c15ULL;
+		cacheHash ^= static_cast<uint64_t>(static_cast<uint32_t>(nScaledHeight)) * 0xbf58476d1ce4e5b9ULL;
+		cacheHash ^= static_cast<uint64_t>(dwTextFormat) * 0x94d049bb133111ebULL;
+		cacheHash ^= atlasRev;
 
-	setAlignment(hAlignment_, vAlignment_);
+		auto range = m_layoutCacheIndex.equal_range(cacheHash);
+		for (auto it = range.first; it != range.second; ++it)
+		{
+			auto listIt = it->second;
+			if (listIt->scaledWidth == nScaledWidth &&
+				listIt->scaledHeight == nScaledHeight &&
+				listIt->format == dwTextFormat &&
+				listIt->atlasRevision == atlasRev &&
+				listIt->lineBreakWithoutSpaces == _lineBreakWithoutSpaces &&
+				listIt->clipEnabled == _clipEnabled &&
+				listIt->rawText == rawView)
+			{
+				if (listIt != m_layoutCache.begin())
+					m_layoutCache.splice(m_layoutCache.begin(), m_layoutCache, listIt);
+				_labelWidth = static_cast<unsigned int>(nScaledWidth);
+				_labelHeight = static_cast<unsigned int>(nScaledHeight);
+				_labelDimensions.width = static_cast<float>(nScaledWidth);
+				_labelDimensions.height = static_cast<float>(nScaledHeight);
+				_maxLineWidth = static_cast<unsigned int>(nScaledWidth);
+				_hAlignment = hAlignment_;
+				_vAlignment = vAlignment_;
+				_currentUTF16String = listIt->formattedText;
+				_lettersInfo.assign(listIt->lettersInfo.begin(), listIt->lettersInfo.end());
+				_contentSize = listIt->contentSize;
+				_currNumLines = listIt->currNumLines;
+				_limitShowCount = listIt->limitShowCount;
+				m_layoutAtlasRevision = atlasRev;
+				m_layoutFormat = dwTextFormat;
+				_contentDirty = false;
+				bLayoutReady = true;
+				break;
+			}
+		}
+	}
 
-	if (UpdateLetterSprites(dwTextFormat))
+	if (!bLayoutReady)
+	{
+		SetUTF16Text(strText);
+		// remove all '\r', since cocos font rendering only support '\n', not "\r\n"
+		if (_contentDirty)
+			_currentUTF16String.erase(std::remove(_currentUTF16String.begin(), _currentUTF16String.end(), '\r'), _currentUTF16String.end());
+
+		setWidth(nScaledWidth);
+		setHeight(nScaledHeight);
+		setAlignment(hAlignment_, vAlignment_);
+
+		bLayoutReady = UpdateLetterSprites(dwTextFormat);
+		if (bLayoutReady && _fontAtlas != nullptr && !_fontAtlas->getTextures().empty())
+		{
+			const uint64_t finalRev = _fontAtlas->getLayoutRevision();
+			uint64_t storeHash = cacheHash;
+			if (!canUseLayoutCache || finalRev != atlasRev)
+			{
+				storeHash = 1469598103934665603ULL;
+				for (char16_t ch : rawView)
+				{
+					storeHash ^= static_cast<uint64_t>(ch);
+					storeHash *= 1099511628211ULL;
+				}
+				storeHash ^= static_cast<uint64_t>(static_cast<uint32_t>(nScaledWidth)) * 0x9e3779b97f4a7c15ULL;
+				storeHash ^= static_cast<uint64_t>(static_cast<uint32_t>(nScaledHeight)) * 0xbf58476d1ce4e5b9ULL;
+				storeHash ^= static_cast<uint64_t>(dwTextFormat) * 0x94d049bb133111ebULL;
+				storeHash ^= finalRev;
+			}
+			constexpr size_t kMaxLayoutCacheEntries = 64;
+			if (m_layoutCache.size() >= kMaxLayoutCacheEntries)
+			{
+				auto evictIt = std::prev(m_layoutCache.end());
+				auto eqRange = m_layoutCacheIndex.equal_range(evictIt->keyHash);
+				for (auto idxIt = eqRange.first; idxIt != eqRange.second; ++idxIt)
+				{
+					if (idxIt->second == evictIt)
+					{
+						m_layoutCacheIndex.erase(idxIt);
+						break;
+					}
+				}
+				m_layoutCache.pop_back();
+			}
+			CachedTextLayout entry;
+			entry.keyHash = storeHash;
+			entry.rawText.assign(rawView.data(), rawView.size());
+			entry.formattedText = _currentUTF16String;
+			entry.lettersInfo = _lettersInfo;
+			entry.contentSize = _contentSize;
+			entry.currNumLines = _currNumLines;
+			entry.limitShowCount = _limitShowCount;
+			entry.scaledWidth = nScaledWidth;
+			entry.scaledHeight = nScaledHeight;
+			entry.format = dwTextFormat;
+			entry.atlasRevision = finalRev;
+			entry.lineBreakWithoutSpaces = _lineBreakWithoutSpaces;
+			entry.clipEnabled = _clipEnabled;
+			m_layoutCache.push_front(std::move(entry));
+			m_layoutCacheIndex.emplace(storeHash, m_layoutCache.begin());
+		}
+	}
+
+	if (bLayoutReady)
 	{
 		if (dwTextFormat & DT_CALCRECT)
 		{
@@ -628,6 +733,8 @@ float ParaEngine::CFontRendererOpenGL::GetFontScaling() const
 
 void ParaEngine::CFontRendererOpenGL::RendererRecreated()
 {
+	m_layoutCacheIndex.clear();
+	m_layoutCache.clear();
 	ReleaseScaledFontAtlases();
 	FontAtlasCache::purgeCachedData();
 }
