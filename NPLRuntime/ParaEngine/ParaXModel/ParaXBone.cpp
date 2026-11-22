@@ -35,7 +35,9 @@ void Bone::RemoveRedundentKeys()
 	scale.SetConstantKey(Vector3(1.f, 1.f, 1.f), 0.0001f);
 	trans.SetConstantKey(Vector3(0, 0, 0), 0.00001f);
 #endif
-
+	rot.CompactConstantRanges();
+	trans.CompactConstantRanges();
+	scale.CompactConstantRanges();
 }
 void Bone::calcMatrix(Bone* allbones)
 {

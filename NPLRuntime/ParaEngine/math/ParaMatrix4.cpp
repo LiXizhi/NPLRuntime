@@ -224,6 +224,12 @@ namespace ParaEngine
 		const float SquareSum0 = (m[0][0] * m[0][0]) + (m[0][1] * m[0][1]) + (m[0][2] * m[0][2]);
 		const float SquareSum1 = (m[1][0] * m[1][0]) + (m[1][1] * m[1][1]) + (m[1][2] * m[1][2]);
 		const float SquareSum2 = (m[2][0] * m[2][0]) + (m[2][1] * m[2][1]) + (m[2][2] * m[2][2]);
+		if (std::fabs(SquareSum0 - 1.0f) < 1e-5f &&
+			std::fabs(SquareSum1 - 1.0f) < 1e-5f &&
+			std::fabs(SquareSum2 - 1.0f) < 1e-5f)
+		{
+			return;
+		}
 		const float Scale0 = Math::FloatSelect(SquareSum0 - Tolerance, Math::InvSqrt(SquareSum0), 1.0f);
 		const float Scale1 = Math::FloatSelect(SquareSum1 - Tolerance, Math::InvSqrt(SquareSum1), 1.0f);
 		const float Scale2 = Math::FloatSelect(SquareSum2 - Tolerance, Math::InvSqrt(SquareSum2), 1.0f);

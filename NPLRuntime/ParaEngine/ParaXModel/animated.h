@@ -89,6 +89,34 @@ namespace ParaEngine
 			used = false;
 		}
 
+		/** Collapse per-animation key ranges whose values are all identical to a single-key O(1) lookup. */
+		void CompactConstantRanges()
+		{
+			if (!used || seq != -1 || data.size() <= 1)
+				return;
+			if (type != INTERPOLATION_LINEAR && type != INTERPOLATION_NONE && type != INTERPOLATION_LINEAR_CROSSFRAME)
+				return;
+			const uint32 nData = static_cast<uint32>(data.size());
+			for (size_t animIdx = 0; animIdx < ranges.size(); ++animIdx)
+			{
+				AnimRange& range = ranges[animIdx];
+				if (range.second <= range.first || range.second >= nData)
+					continue;
+				const T& firstVal = data[range.first];
+				bool allEqual = true;
+				for (uint32 k = range.first + 1; k <= range.second; ++k)
+				{
+					if (data[k] != firstVal)
+					{
+						allEqual = false;
+						break;
+					}
+				}
+				if (allEqual)
+					range.second = range.first;
+			}
+		}
+
 		/** this function will return the interpolated animation vector at the specified anim id and frame number*/
 		T getValue(int anim, int time)
 		{
