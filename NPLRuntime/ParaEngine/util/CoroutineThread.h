@@ -135,6 +135,7 @@ public:
     }
 
     void AsyncSleep(unsigned long long timestmap) { m_sleep_timestmap = GetTimeStamp() + timestmap; }
+    void WakeUp() { m_sleep_timestmap = 0; }
 
     void Rusume() 
     { 

@@ -236,18 +236,8 @@ void ParaEngine::ChunkVertexBuilderManager::StartChunkBuildThread(CBlockWorld* p
 #ifndef EMSCRIPTEN_SINGLE_THREAD
 		m_chunk_build_thread = std::thread(std::bind(&ChunkVertexBuilderManager::ChunkBuildThreadProc, this));
 #else
-		static CoroutineThread* s_chunk_build_thread = nullptr;
-		if (s_chunk_build_thread == nullptr)
-		{
-			s_chunk_build_thread = CoroutineThread::StartCoroutineThread([this](CoroutineThread* co_thread) -> CO_ASYNC {
-				while (true)
-				{
-					this->ChunkBuildThreadProc();
-					CO_AWAIT(co_thread->Sleep(10));
-				}
-				CO_RETURN;
-			}, nullptr);
-		}
+		// Single-threaded WASM rebuilds budgeted chunks directly in BlockWorldClient::CheckRebuildVisibleChunks;
+		// avoid spawning an idle 10ms polling coroutine.
 #endif
 	}
 }

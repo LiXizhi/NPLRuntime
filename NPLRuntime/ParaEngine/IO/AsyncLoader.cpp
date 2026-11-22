@@ -54,6 +54,7 @@ IndirectServerAddress=http://patch.paraengine.com/assets/
 */
 #include "ParaEngine.h"
 #include "util/CSingleton.h"
+#include "util/ParaTime.h"
 #ifdef PARAENGINE_CLIENT
 #include "GDIEngine.h"
 #include "ParaWorldAsset.h"
@@ -576,22 +577,30 @@ int CAsyncLoader::Start(int nWorkerCount)
 				OUTPUT_LOG("CAsyncLoader IO Thread started"); // deleted
 
 				int nRes = 0;
+				int64 sliceStartUS = GetTimeUS();
 				while(nRes != -1)
 				{
 					while (id > m_UsedIOThread) 
 					{
 						CO_AWAIT(co_thread->Sleep(10));
+						sliceStartUS = GetTimeUS();
 					}
 
 					while (!m_IOQueue.try_pop(ResourceRequest))
 					{
-						CO_AWAIT(co_thread->Sleep(100));
+						CO_AWAIT(co_thread->Sleep(16));
+						sliceStartUS = GetTimeUS();
 					}
 					if(ResourceRequest->m_nType == ResourceRequestType_Quit)
 					{
 						break;
 					}
 					hr = FileIOThreadProc_HandleRequest(ResourceRequest);
+					if ((GetTimeUS() - sliceStartUS) >= 2500)
+					{
+						CO_AWAIT(co_thread->Sleep(0));
+						sliceStartUS = GetTimeUS();
+					}
 				}
 			}, (void*)(i+1)));
 #endif
@@ -666,6 +675,17 @@ int CAsyncLoader::FileIOThreadProc_HandleRequest(ResourceRequest_ptr& ResourceRe
 		{
 			OUTPUT_LOG("ERROR: AsyncLoader IO msg(to proc) failed push to m_ProcessQueues because queue is full\n");
 		}
+#ifdef EMSCRIPTEN_SINGLE_THREAD
+		else
+		{
+			const int targetQueueID = ResourceRequest->m_nProcessorQueueID;
+			for (auto* worker : m_workers)
+			{
+				if (worker && worker->GetProcessorQueueID() == targetQueueID && worker->m_thread)
+					worker->m_thread->WakeUp();
+			}
+		}
+#endif
 	}
 
 	// Handle a copy request
@@ -775,12 +795,14 @@ CO_ASYNC CAsyncLoader::ProcessingCorountineThreadProc(CoroutineThread* co_thread
 	}
 
 	int nRes = 0;
+	int64 sliceStartUS = GetTimeUS();
 
 	while(nRes != -1)
 	{
 		while (!m_ProcessQueues[nQueueID].try_pop(ResourceRequest)) 
 		{
-			CO_AWAIT(co_thread->Sleep(300));
+			CO_AWAIT(co_thread->Sleep(16));
+			sliceStartUS = GetTimeUS();
 		}
 
 		if(ResourceRequest->m_nType == ResourceRequestType_Quit)
@@ -829,6 +851,11 @@ CO_ASYNC CAsyncLoader::ProcessingCorountineThreadProc(CoroutineThread* co_thread
 		else
 		{
 			ProcessDeviceWorkItemImp(ResourceRequest);
+		}
+		if ((GetTimeUS() - sliceStartUS) >= 2500)
+		{
+			CO_AWAIT(co_thread->Sleep(0));
+			sliceStartUS = GetTimeUS();
 		}
 	}
 }
@@ -1027,6 +1054,13 @@ int ParaEngine::CAsyncLoader::AddWorkItem( ResourceRequest_ptr& msg)
 		ParaEngine::Lock lock_(this->m_request_stats);
 		this->m_nRemainingBytes += nSizeBytes;
 		this->m_NumOutstandingResources ++;
+#ifdef EMSCRIPTEN_SINGLE_THREAD
+		for (auto& t : this->m_io_threads)
+		{
+			if (t)
+				t->WakeUp();
+		}
+#endif
 	}
 	else
 	{
@@ -1069,6 +1103,16 @@ void ParaEngine::CAsyncLoader::ProcessDeviceWorkItemImp(ResourceRequest_ptr& Res
 			{
 				OUTPUT_LOG("ERROR: AsyncLoader render msg(lock) failed push to m_IOQueue because queue is full\n");
 			}
+#ifdef EMSCRIPTEN_SINGLE_THREAD
+			else
+			{
+				for (auto& t : m_io_threads)
+				{
+					if (t)
+						t->WakeUp();
+				}
+			}
+#endif
 		}
 		else
 		{

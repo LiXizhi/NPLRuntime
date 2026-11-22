@@ -3150,6 +3150,10 @@ namespace ParaEngine
 		});
 
 		int nMaxBufferRebuildPerTick = GetMaxBufferRebuildPerTick();
+#ifdef EMSCRIPTEN_SINGLE_THREAD
+		const bool bBudgetSyncRebuild = m_bAsyncChunkMode && !m_bMovieOutputMode && !bIsShadowPass;
+		const int64 nRebuildStartUS = bBudgetSyncRebuild ? GetTimeUS() : 0;
+#endif
 		for (RenderableChunk* pRenderChunk : m_tempDirtyChunks)
 		{
 			if (pRenderChunk->RebuildRenderBuffer(this, bAsyncMode))
@@ -3168,6 +3172,10 @@ namespace ParaEngine
 				}
 				if (bAsyncMode && m_nBufferRebuildCountThisTick >= nMaxBufferRebuildPerTick)
 					break;
+#ifdef EMSCRIPTEN_SINGLE_THREAD
+				if (bBudgetSyncRebuild && (m_nBufferRebuildCountThisTick >= nMaxBufferRebuildPerTick || (GetTimeUS() - nRebuildStartUS) >= 4000))
+					break;
+#endif
 			}
 			else
 				break;
