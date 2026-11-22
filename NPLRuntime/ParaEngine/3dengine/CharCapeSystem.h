@@ -133,6 +133,13 @@ namespace ParaEngine
 			CapeCapsule* outCapsules,
 			size_t& outCapsuleCount) const;
 
+		void BuildCanonicalBodyCollider(
+			CParaXModel* pModel,
+			const CapeVec3& neckAnchor,
+			const CapeVec3& leftShoulder,
+			const CapeVec3& rightShoulder,
+			CapeBodyCollider& outBody) const;
+
 		void ApplyBoneChainOverrides(CParaXModel* pTargetModel);
 		void BuildProxyDeformedTriangles(CParaXModel* pBaseModel);
 

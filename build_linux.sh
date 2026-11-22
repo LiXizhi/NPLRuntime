@@ -34,7 +34,9 @@ ensure_cmake_and_deps() {
             "/usr/local/bin" \
             "/Applications/CMake.app/Contents/bin" \
             "$REPO_ROOT/../deps/cmake/CMake.app/Contents/bin" \
-            "$HOME/lxzsrc/deps/cmake/CMake.app/Contents/bin"; do
+            "$HOME/lxzsrc/deps/cmake/CMake.app/Contents/bin" \
+            "$REPO_ROOT"/../deps/cmake-*/CMake.app/Contents/bin \
+            "$HOME"/lxzsrc/deps/cmake-*/CMake.app/Contents/bin; do
             if [ -x "$dir/cmake" ]; then
                 export PATH="$dir:$PATH"
                 break
@@ -255,9 +257,15 @@ case "${1:-}" in
         if [ -d "$REPO_ROOT/build-server" ]; then
             ctest --test-dir "$REPO_ROOT/build-server" --output-on-failure || true
         fi
-        if [ -d "$REPO_ROOT/build-client" ]; then
-            ctest --test-dir "$REPO_ROOT/build-client" --output-on-failure || true
-        fi
+        for client_test_dir in \
+            "$REPO_ROOT/build/mac" \
+            "$REPO_ROOT/build/mac-current" \
+            "$REPO_ROOT/build-client"; do
+            if [ -f "$client_test_dir/CTestTestfile.cmake" ]; then
+                ctest --test-dir "$client_test_dir" --output-on-failure || true
+                break
+            fi
+        done
         exit 0
         ;;
 esac
@@ -319,13 +327,6 @@ if [ "$USE_XCODE" -eq 1 ]; then
     CMAKE_EXTRA_ARGS+=("-G" "Xcode")
 fi
 
-ENABLE_ROBOTICS=0
-if [ "$ROBOTICS_OPT" = "on" ]; then
-    ENABLE_ROBOTICS=1
-elif [ "$ROBOTICS_OPT" = "auto" ] && [ "$MODE" = "client" ] && [ "$HOST_OS" = "Darwin" ]; then
-    ENABLE_ROBOTICS=1
-fi
-
 BUILD_TARGET_ARGS=()
 if [ "$MODE" = "server" ]; then
     BUILD_DIR="${BUILD_DIR:-$REPO_ROOT/build-server}"
@@ -336,7 +337,14 @@ if [ "$MODE" = "server" ]; then
 else
     if [ "$HOST_OS" = "Darwin" ]; then
         if [ -z "${BUILD_DIR:-}" ]; then
-            if [ -f "$REPO_ROOT/build-client/CMakeCache.txt" ] && [ ! -f "$REPO_ROOT/build/mac/CMakeCache.txt" ]; then
+            if [ -f "$REPO_ROOT/build/mac-current/CMakeCache.txt" ] && [ ! -e "$REPO_ROOT/build/mac" ] && [ ! -L "$REPO_ROOT/build/mac" ]; then
+                ln -s mac-current "$REPO_ROOT/build/mac" 2>/dev/null || true
+            fi
+            if [ -f "$REPO_ROOT/build/mac/CMakeCache.txt" ]; then
+                BUILD_DIR="$REPO_ROOT/build/mac"
+            elif [ -f "$REPO_ROOT/build/mac-current/CMakeCache.txt" ]; then
+                BUILD_DIR="$REPO_ROOT/build/mac-current"
+            elif [ -f "$REPO_ROOT/build-client/CMakeCache.txt" ]; then
                 BUILD_DIR="$REPO_ROOT/build-client"
             else
                 BUILD_DIR="$REPO_ROOT/build/mac"
@@ -357,21 +365,59 @@ else
     fi
 fi
 
-if [ "$ENABLE_ROBOTICS" -eq 1 ]; then
-    CMAKE_EXTRA_ARGS+=("-DNPLRUNTIME_ENABLE_ROBOTICS=ON")
-elif [ "$ROBOTICS_OPT" = "off" ]; then
-    CMAKE_EXTRA_ARGS+=("-DNPLRUNTIME_ENABLE_ROBOTICS=OFF" "-DNPLRUNTIME_MUJOCO=OFF" "-DNPLRUNTIME_ONNXRUNTIME=OFF")
-fi
-
 if [ "$CLEAN_BUILD" -eq 1 ] && [ -d "$BUILD_DIR" ]; then
     echo "[build_linux] Cleaning $BUILD_DIR..."
     rm -rf "$BUILD_DIR"
 fi
 
-if [ "$MODE" = "client" ] && [ "$ENABLE_ROBOTICS" -eq 1 ] && [ -f "$BUILD_DIR/CMakeCache.txt" ]; then
-    if ! grep -q "^NPLRUNTIME_ENABLE_ROBOTICS:BOOL=ON" "$BUILD_DIR/CMakeCache.txt" 2>/dev/null; then
-        echo "[build_linux] Enabling MuJoCo + ONNX Runtime in $BUILD_DIR..."
-        FORCE_CONFIGURE=1
+if [ "$HOST_OS" = "Darwin" ]; then
+    OSX_ARCHS="${NPL_OSX_ARCHS:-}"
+    if [ -z "$OSX_ARCHS" ] && [ -f "$BUILD_DIR/CMakeCache.txt" ]; then
+        OSX_ARCHS="$(sed -n 's/^NPL_OSX_ARCHS:[^=]*=//p' "$BUILD_DIR/CMakeCache.txt" | head -n 1)"
+    fi
+    if [ -z "$OSX_ARCHS" ] && [ -n "${BOOST_LIBRARYDIR:-}" ] && command -v lipo >/dev/null 2>&1; then
+        for boost_lib in "$BOOST_LIBRARYDIR"/libboost_*.a; do
+            if [ -f "$boost_lib" ]; then
+                boost_archs="$(lipo -archs "$boost_lib" 2>/dev/null || true)"
+                if [ -n "$boost_archs" ] && [[ "$boost_archs" != *" "* ]]; then
+                    OSX_ARCHS="$boost_archs"
+                fi
+                break
+            fi
+        done
+    fi
+    if [ -n "$OSX_ARCHS" ]; then
+        CMAKE_EXTRA_ARGS+=("-DNPL_OSX_ARCHS=$OSX_ARCHS")
+    fi
+fi
+
+if [ "$ROBOTICS_OPT" = "on" ]; then
+    CMAKE_EXTRA_ARGS+=("-DNPLRUNTIME_ENABLE_ROBOTICS=ON")
+    if [ "$MODE" = "client" ] && [ -f "$BUILD_DIR/CMakeCache.txt" ]; then
+        if ! grep -q "^NPLRUNTIME_ENABLE_ROBOTICS:BOOL=ON" "$BUILD_DIR/CMakeCache.txt" 2>/dev/null; then
+            echo "[build_linux] Enabling MuJoCo + ONNX Runtime in $BUILD_DIR..."
+            FORCE_CONFIGURE=1
+        fi
+    fi
+elif [ "$ROBOTICS_OPT" = "off" ]; then
+    CMAKE_EXTRA_ARGS+=("-DNPLRUNTIME_ENABLE_ROBOTICS=OFF" "-DNPLRUNTIME_MUJOCO=OFF" "-DNPLRUNTIME_ONNXRUNTIME=OFF")
+    if [ "$MODE" = "client" ] && [ -f "$BUILD_DIR/CMakeCache.txt" ]; then
+        if grep -q "^NPLRUNTIME_ENABLE_ROBOTICS:BOOL=ON" "$BUILD_DIR/CMakeCache.txt" 2>/dev/null; then
+            echo "[build_linux] Disabling MuJoCo + ONNX Runtime in $BUILD_DIR..."
+            FORCE_CONFIGURE=1
+        fi
+    fi
+elif [ "$MODE" = "client" ] && [ "$HOST_OS" = "Darwin" ]; then
+    if [ -f "$BUILD_DIR/CMakeCache.txt" ]; then
+        if grep -q "^NPLRUNTIME_ENABLE_ROBOTICS:BOOL=OFF" "$BUILD_DIR/CMakeCache.txt" 2>/dev/null; then
+            CMAKE_EXTRA_ARGS+=("-DNPLRUNTIME_ENABLE_ROBOTICS=OFF" "-DNPLRUNTIME_MUJOCO=OFF" "-DNPLRUNTIME_ONNXRUNTIME=OFF")
+        elif grep -q "^NPLRUNTIME_ENABLE_ROBOTICS:BOOL=ON" "$BUILD_DIR/CMakeCache.txt" 2>/dev/null; then
+            CMAKE_EXTRA_ARGS+=("-DNPLRUNTIME_ENABLE_ROBOTICS=ON")
+        fi
+    elif [ -n "${MUJOCO_ROOT:-}" ] && [ -n "${ONNXRUNTIME_ROOT:-}" ]; then
+        CMAKE_EXTRA_ARGS+=("-DNPLRUNTIME_ENABLE_ROBOTICS=ON")
+    else
+        CMAKE_EXTRA_ARGS+=("-DNPLRUNTIME_ENABLE_ROBOTICS=OFF" "-DNPLRUNTIME_MUJOCO=OFF" "-DNPLRUNTIME_ONNXRUNTIME=OFF")
     fi
 fi
 
@@ -387,8 +433,12 @@ cmake --build "$BUILD_DIR" --config "$BUILD_TYPE" "${BUILD_TARGET_ARGS[@]}" --pa
 
 echo ""
 echo "[build_linux] Build succeeded!"
-echo "  Build bin : $BUILD_DIR/bin/"
-echo "  Copied to : $REPO_ROOT/ParaWorld/bin64/"
+echo "  Build bin  : $BUILD_DIR/bin/"
+if [ "$MODE" = "client" ] && [ "$HOST_OS" = "Darwin" ]; then
+    echo "  App bundle : $BUILD_DIR/bin/Paracraft.app"
+else
+    echo "  Copied to  : $REPO_ROOT/ParaWorld/bin64/"
+fi
 
 if [ "$MODE" = "server" ] && [ "$DO_INSTALL" -eq 1 ]; then
     SERVER_OUT="$REPO_ROOT/ParaWorld/bin64/ParaEngineServer"

@@ -53,6 +53,8 @@
                 "debug=main",
                 "isDevEnv=true",
                 "noupdate=true",
+                "noclientupdate=true",
+                "bootstrapper=script/apps/Aries/main_loop.lua",
                 "pid=530",
                 "paracraft://cmd/loadworld/530"
             ],

@@ -58,13 +58,16 @@ the macOS wrapper uses `python3`.
 ### macOS Release builds and performance checks
 
 Old macOS CMake caches may retain the previous forced `-O0` Release flags.
-Clear those two cache entries once, then rebuild (substitute your build directory):
+Clear those two cache entries once, then rebuild in the canonical `build/mac`
+directory (for A/B comparisons, stage baselines separately via `BUILD_DIR=build/mac-baseline`
+or copy `Paracraft.app` to `build/ab-baseline/` and pass `--exe`, keeping `build/mac`
+current for VSCode tasks):
 
 ```bash
-cmake -S NPLRuntime -B build/mac-current -U CMAKE_C_FLAGS_RELEASE -U CMAKE_CXX_FLAGS_RELEASE
-BUILD_DIR="$PWD/build/mac-current" ./build_linux.sh client --no-robotics
-cmake --build build/mac-current --target MacLuaJITSmoke
-ctest --test-dir build/mac-current -R mac_luajit_gc_smoke --output-on-failure
+cmake -S NPLRuntime -B build/mac -U CMAKE_C_FLAGS_RELEASE -U CMAKE_CXX_FLAGS_RELEASE
+./build_linux.sh client --no-robotics
+cmake --build build/mac --target MacLuaJITSmoke
+ctest --test-dir build/mac -R mac_luajit_gc_smoke --output-on-failure
 ```
 
 The macOS client links a universal LuaJIT 2.1 archive built from
@@ -136,8 +139,8 @@ With `NPLRUNTIME_BUILD_TESTS=ON`, run the portable frame-budget test and the
 actual Foundation-based iOS file utility on macOS:
 
 ```bash
-cmake --build build/mac-current --target FramePacingTest IOSWritablePathTest
-ctest --test-dir build/mac-current -R 'frame_pacing_unit|ios_writable_path_host' --output-on-failure
+cmake --build build/mac --target FramePacingTest IOSWritablePathTest
+ctest --test-dir build/mac -R 'frame_pacing_unit|ios_writable_path_host' --output-on-failure
 ```
 
 The file test uses a temporary directory and covers the default path, overrides,
@@ -363,7 +366,7 @@ adaptation. A zero or negative base retains the previous rendering behavior.
 Other culling and per-importance character-count limits still apply.
 
 Build `AdaptiveCharacterBudgetTest` and run
-`ctest --test-dir build/mac-current -R adaptive_character_budget_unit --output-on-failure`
+`ctest --test-dir build/mac -R adaptive_character_budget_unit --output-on-failure`
 for the FPS/budget regression cases. In a crowded Haqi plaza, compare strict
 and adaptive modes without moving the camera, wait for the budget to grow,
 and check that previously omitted characters appear while FPS stays healthy.

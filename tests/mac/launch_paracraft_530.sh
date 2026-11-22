@@ -33,17 +33,22 @@ if [ -z "${PARAWORLD_ROOT:-}" ] || { [ ! -d "$PARAWORLD_ROOT/script" ] && [ ! -f
 fi
 
 if [ -z "${PARAENGINE_EXE:-}" ]; then
-    # Prefer the most recently modified built Paracraft binary across build/mac and build-client
+    # Prefer the most recently modified built Paracraft binary across build/mac-current, build/mac, and build-client
     best_exe=""
     best_mtime=0
     for candidate in \
         "$REPO_ROOT/build/mac/bin/Paracraft.app/Contents/MacOS/Paracraft" \
+        "$REPO_ROOT/build/mac/bin/Release/Paracraft.app/Contents/MacOS/Paracraft" \
+        "$REPO_ROOT/build/mac/bin/Debug/Paracraft.app/Contents/MacOS/Paracraft" \
+        "$REPO_ROOT/build/mac-current/bin/Paracraft.app/Contents/MacOS/Paracraft" \
+        "$REPO_ROOT/build/mac-current/bin/Release/Paracraft.app/Contents/MacOS/Paracraft" \
+        "$REPO_ROOT/build/mac-current/bin/Debug/Paracraft.app/Contents/MacOS/Paracraft" \
         "$REPO_ROOT/build-client/bin/Paracraft.app/Contents/MacOS/Paracraft" \
         "$REPO_ROOT/build-client/bin/Release/Paracraft.app/Contents/MacOS/Paracraft" \
         "$REPO_ROOT/build-client/bin/Debug/Paracraft.app/Contents/MacOS/Paracraft"; do
         if [ -x "$candidate" ]; then
             mtime="$(stat -f %m "$candidate" 2>/dev/null || echo 1)"
-            if [ "$mtime" -ge "$best_mtime" ]; then
+            if [ "$mtime" -gt "$best_mtime" ]; then
                 best_mtime="$mtime"
                 best_exe="$candidate"
             fi
@@ -53,12 +58,15 @@ if [ -z "${PARAENGINE_EXE:-}" ]; then
 fi
 
 if [ -z "${PARAENGINE_EXE:-}" ] || [ ! -x "$PARAENGINE_EXE" ]; then
-    echo "[ERROR] Built Paracraft binary not found under build/mac/bin/ or build-client/bin/." >&2
+    echo "[ERROR] Built Paracraft binary not found under build/mac-current/bin/, build/mac/bin/, or build-client/bin/." >&2
     echo "        Run './build_linux.sh client' (or VSCode task 'Mac: Build Paracraft') first." >&2
     exit 1
 fi
 
-APP_BUNDLE="$(cd "$(dirname "$PARAENGINE_EXE")/../.." && pwd)"
+APP_BUNDLE="$(cd "$(dirname "$PARAENGINE_EXE")/../.." && pwd -P)"
+if [[ "$APP_BUNDLE" == *.app ]]; then
+    PARAENGINE_EXE="$APP_BUNDLE/Contents/MacOS/$(basename "$PARAENGINE_EXE")"
+fi
 
 # Ensure the bundle has a valid ad-hoc signature on Apple Silicon before launching
 if [[ "$APP_BUNDLE" == *.app ]]; then
@@ -115,6 +123,8 @@ CMD_ARGS=(
     "debug=main"
     "isDevEnv=true"
     "noupdate=true"
+    "noclientupdate=true"
+    "bootstrapper=script/apps/Aries/main_loop.lua"
     "pid=$WORLD_PID"
     "${EXTRA_ARGS[@]}"
     "paracraft://cmd/loadworld/$WORLD_PID"
@@ -127,13 +137,24 @@ else
     if [ -n "$EXISTING_PIDS" ]; then
         echo "  Stopping previous Paracraft instance ($EXISTING_PIDS)..."
         kill $EXISTING_PIDS 2>/dev/null || true
-        sleep 0.5
+        for _ in 1 2 3 4 5 6 7 8 9 10; do
+            if ! pgrep -f "$PARAENGINE_EXE" >/dev/null 2>&1; then
+                break
+            fi
+            sleep 0.2
+        done
     fi
     # Launch via macOS LaunchServices (`open -n -a`) so launchd owns the GUI process (PPID=1)
     # and VSCode closing/reusing the task terminal never terminates Paracraft.
     open -n -a "$APP_BUNDLE" --args "${CMD_ARGS[@]}"
-    sleep 1
-    APP_PID="$(pgrep -n -f "$PARAENGINE_EXE" || true)"
+    APP_PID=""
+    for _ in 1 2 3 4 5 6; do
+        sleep 0.5
+        APP_PID="$(pgrep -n -f "$PARAENGINE_EXE" || true)"
+        if [ -n "$APP_PID" ]; then
+            break
+        fi
+    done
     if [ -z "$APP_PID" ]; then
         echo "[ERROR] Paracraft failed to stay running after launch. Check ~/Documents/Paracraft/files/log.txt" >&2
         exit 1

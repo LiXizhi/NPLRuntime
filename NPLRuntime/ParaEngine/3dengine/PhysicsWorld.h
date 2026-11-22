@@ -161,6 +161,16 @@ namespace ParaEngine
 			float m_phaseOffset = 0.0f;               // Normalized phase [0..1] or radian offset
 		};
 
+		struct ActorFramePose
+		{
+			uint64_t m_uid = 0;
+			Vector3 m_prevOrigin = Vector3::ZERO;
+			Quaternion m_prevRot = Quaternion::IDENTITY;
+			Vector3 m_curOrigin = Vector3::ZERO;
+			Quaternion m_curRot = Quaternion::IDENTITY;
+			bool m_hasPrev = false;
+		};
+
 	public:
 		/** set actor physics property from a NPL table string.
 		* @param actor: the physics actor
@@ -418,8 +428,19 @@ namespace ParaEngine
 		void SyncActorTransformToObject(IParaPhysicsActor* actor, CBaseObject* obj);
 
 		/** Reset deterministic simulation clock for kinematic contraptions. */
-		void ResetSimulationTime(double t = 0.0) { m_dSimulationTime = t; }
+		void ResetSimulationTime(double t = 0.0);
 		double GetSimulationTime() const { return m_dSimulationTime; }
+
+		/** Check whether actor is a live dynamic/kinematic actor and optionally retrieve its unique generation ID. */
+		bool IsValidDynamicActor(IParaPhysicsActor* actor, uint64_t* outUid = nullptr) const;
+
+		/** Retrieve exact per-frame rigid transform delta (prev -> cur) recorded across StepSimulation. */
+		bool GetActorFrameDelta(IParaPhysicsActor* actor, uint64_t expectedUid,
+			Vector3& prevOrigin, Quaternion& prevRot, Vector3& curOrigin, Quaternion& curRot) const;
+
+		/** Compute instantaneous world velocity at a contact point on a dynamic or kinematic actor. */
+		bool GetActorPointVelocity(IParaPhysicsActor* actor, const Vector3& worldPoint, Vector3& outVel,
+			bool* pIsKinematic = nullptr, bool* pIsStatic = nullptr) const;
 
 		/** Script-friendly raycast against physics world (returns NPL table string). */
 		const char* RaycastWorldStr(const char* queryTableStr);
@@ -436,6 +457,7 @@ namespace ParaEngine
 		std::vector<CachedDynamicShape> m_listDynamicShapes;
 		IParaPhysicsActor_Map_Type m_mapDynamicActors;
 		std::unordered_map<IParaPhysicsActor*, KinematicMotionDesc> m_mapKinematicMotions;
+		std::unordered_map<IParaPhysicsActor*, ActorFramePose> m_mapActorFramePoses;
 		std::unordered_map<uint64_t, std::shared_ptr<CPhysicsBlock>> m_mapPhysicsBlocks;
 
 		/// all constraints/joints created in the physics world
@@ -447,5 +469,6 @@ namespace ParaEngine
 		/// whether to do dynamic simulation. It is turned off by default, which only provide basic collision detection. 
 		bool m_bRunDynamicSimulation;
 		double m_dSimulationTime = 0.0;
+		uint64_t m_nextActorPoseUid = 1;
 	};
 }

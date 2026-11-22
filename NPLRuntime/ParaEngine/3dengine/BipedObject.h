@@ -222,6 +222,12 @@ namespace ParaEngine
 		ATTRIBUTE_METHOD1(CBipedObject, IsKinematic_s, bool*) { *p1 = cls->IsKinematic(); return S_OK; }
 		ATTRIBUTE_METHOD1(CBipedObject, SetKinematic_s, bool) { cls->SetKinematic(p1); return S_OK; }
 
+		ATTRIBUTE_METHOD1(CBipedObject, GetExternalImpulseVelocity_s, Vector3*) { *p1 = cls->GetExternalImpulseVelocity(); return S_OK; }
+		ATTRIBUTE_METHOD1(CBipedObject, SetExternalImpulseVelocity_s, Vector3) { cls->SetExternalImpulseVelocity(p1); return S_OK; }
+
+		ATTRIBUTE_METHOD1(CBipedObject, GetExternalSurfaceVelocity_s, Vector3*) { *p1 = cls->GetExternalSurfaceVelocity(); return S_OK; }
+		ATTRIBUTE_METHOD1(CBipedObject, SetExternalSurfaceVelocity_s, Vector3) { cls->SetExternalSurfaceVelocity(p1); return S_OK; }
+
 	protected:
 		/** Move the biped in the physical scene.move the biped towards the target using its current speed and facing
 		* the biped may slide along a wall or be stopped.
@@ -380,6 +386,14 @@ namespace ParaEngine
 		/// animate biped according to its current waypoint lists and speed.
 		/// assuming that no obstacles are in the way it moves.
 		virtual void AnimateBiped(double dTimeDelta, bool bSharpTurning = false /*reserved*/);
+
+		const Vector3& GetExternalImpulseVelocity() const { return m_vExternalImpulseVel; }
+		void SetExternalImpulseVelocity(const Vector3& v) { m_vExternalImpulseVel = v; }
+
+		const Vector3& GetExternalSurfaceVelocity() const { return m_vExternalSurfaceVel; }
+		void SetExternalSurfaceVelocity(const Vector3& v) { m_vExternalSurfaceVel = v; }
+
+		void ClearParkourPhysicsState();
 
 		/** set asset file name */
 		virtual void SetAssetFileName(const std::string& sFilename);
@@ -891,6 +905,8 @@ namespace ParaEngine
 	protected:
 		void AnimateIdle(double dTimeDelta);
 		void AnimateMoving(double dTimeDelta, bool bSharpTurning = false);
+		void PreAnimateParkourPhysics(double dTimeDelta);
+		void PostAnimateParkourPhysics(double dTimeDelta);
 
 		void AnimateUserControl(double dTimeDelta);
 
@@ -1028,6 +1044,12 @@ namespace ParaEngine
 		bool m_bAutoAnimation : 1;
 		/** if true, the biped can push dynamic physical objects by applying forces based on mass, speed and shape */
 		bool m_bKinematic : 1;
+
+		/** Lockstep 60Hz/120Hz platform carry, conveyor drift, and external impulse state */
+		IParaPhysicsActor* m_pStandingPhysicsActor = nullptr;
+		uint64_t m_nStandingActorUid = 0;
+		Vector3 m_vExternalImpulseVel = Vector3::ZERO;
+		Vector3 m_vExternalSurfaceVel = Vector3::ZERO;
 	};
 
 }

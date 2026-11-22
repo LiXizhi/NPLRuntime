@@ -147,18 +147,35 @@ See [`README.md`](README.md) for the full Host × Target build & run matrix acro
 
 ### Linux / macOS / WSL Client & Headless Server
 - **macOS VSCode Tasks ([`.vscode/tasks.json`](.vscode/tasks.json)):**
-  - `Mac: Build and Run Project 530` — builds `Paracraft.app` and launches Project `530` (`CodeBlockTest`)
-  - `Mac: Build Paracraft` — incremental CMake build of `Paracraft` (Metal + OpenGL)
+  - `Mac: Build and Run Project 530` — builds `build/mac/bin/Paracraft.app` and launches Project `530` (`CodeBlockTest`)
+  - `Mac: Build Paracraft` — incremental CMake build of `Paracraft` in `build/mac` (Metal + OpenGL)
   - `Mac: Run Project 530` — launches Project `530` (`./build_linux.sh run auto 530`)
-  - `Mac: Configure Paracraft (CMake)` — re-runs CMake configure
+  - `Mac: Configure Paracraft (CMake)` — re-runs CMake configure in `build/mac`
 - **Root Script (`./build_linux.sh`):**
   ```bash
   ./build_linux.sh server                  # Headless server -> build-server/bin/ParaEngineServer
   ./build_linux.sh run-server              # Smoke-test ParaEngineServer with helloworld.lua
-  ./build_linux.sh client                  # Desktop client (ParaCraftSDL2 on Linux, Paracraft.app on macOS)
+  ./build_linux.sh client                  # Desktop client (build-client/ on Linux, build/mac/ on macOS)
   ./build_linux.sh run auto 530            # Launch World 530 (auto | metal | opengl on macOS; ParaCraftSDL2 on Linux)
   ./build_linux.sh web build               # Emscripten WASM -> web/auto_generate_files/
   ```
+
+### Canonical Build Directories & A/B Performance Comparisons
+
+AI agents **must** build active changes in the canonical build directory so the user's VSCode tasks (`Mac: Build Paracraft`, `Mac: Run Project 530`, `Build ParaEngineClient`, etc.) and F5 debug configs always run the latest build:
+- **macOS Client:** `build/mac` (`build/mac/bin/Paracraft.app`)
+- **Linux Client:** `build-client` (`build-client/bin/ParaCraftSDL2`)
+- **Windows Client:** `build-win64` (`build-win64/bin/ParaEngineClient.exe`)
+- **Headless Server:** `build-server` (`build-server/bin/ParaEngineServer`)
+- **WebAssembly:** `web/auto_generate_files/`
+
+When running **A/B performance or regression comparisons** between two engine builds (or against an installed release app):
+1. **Keep the candidate ("after" / current tree) in the canonical directory** (`build/mac`, `build-win64`, or `web/auto_generate_files/`). Never abandon the canonical build directory in favor of an ad-hoc directory like `build/mac-current` or `build/test-*`.
+2. **Stage only the baseline ("before") build separately** under git-ignored `build/` — either copy the app/binary before applying changes (e.g., `mkdir -p build/ab-baseline && cp -R build/mac/bin/Paracraft.app build/ab-baseline/`) or build a baseline checkout with `BUILD_DIR="$PWD/build/mac-baseline" ./build_linux.sh client`.
+3. **Select the baseline explicitly at launch** via environment variable or CLI flag:
+   - **Paracraft 530 (macOS):** `PARAENGINE_EXE="$PWD/build/ab-baseline/Paracraft.app/Contents/MacOS/Paracraft" ./build_linux.sh run opengl 530` (or `PARAENGINE_EXE="/Applications/Paracraft.app/Contents/MacOS/Paracraft"` for the installed release client)
+   - **Haqi native (macOS / Windows):** `tests/haqi/run_haqi_mac.sh --exe build/ab-baseline/Paracraft.app/Contents/MacOS/Paracraft --renderer opengl --profile-unlimited-fps`
+   - **Haqi Web:** `python3 tests/haqi/launch_haqi.py --engine-dir build/ab-baseline/web ...`
 
 ### Android emulator and iOS Simulator
 

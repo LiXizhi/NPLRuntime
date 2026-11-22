@@ -19,7 +19,8 @@
                 "${workspaceRoot}/NPLRuntime/ParaEngine/Engine"
             ],
             "defines": [],
-            "intelliSenseMode": "clang-x64",
+            "intelliSenseMode": "macos-clang-arm64",
+            "compileCommands": "${workspaceFolder}/build/mac/compile_commands.json",
             "browse": {
                 "path": [
                     "/usr/include",

@@ -93,6 +93,212 @@ namespace ParaEngine
 		float radius = 0.1f;
 	};
 
+	/**
+	 * Canonical standing character body collider in character-local space (+X forward, +Y up, -Z right).
+	 * Assumes the character's torso, shoulders/arms, hips/tunic, and legs occupy a solid 8-slice
+	 * envelope from baseY (feet) up to neckY, preventing cape cloth from passing through the body
+	 * when standing idle, running, turning, or walking backward.
+	 */
+	struct CapeBodyCollider
+	{
+		static constexpr int NUM_SLICES = 8;
+		bool enabled = true;
+		float baseY = 0.0f;
+		float neckY = 1.20f;
+		float centerX = 0.0f;
+		float centerZ = 0.0f;
+		float headBackRadius = 0.16f;
+		float backRadius[NUM_SLICES] = {};
+		float frontRadius[NUM_SLICES] = {};
+		float sideRadius[NUM_SLICES] = {};
+
+		void InitCanonical(float inBaseY, float inNeckY, float shoulderHalfSpan, float modelScale = 1.0f, float inCenterX = 0.0f, float inCenterZ = 0.0f)
+		{
+			enabled = true;
+			const float sc = (modelScale > 0.05f) ? modelScale : 1.0f;
+			baseY = inBaseY;
+			neckY = (std::max)(inBaseY + 0.32f * sc, inNeckY);
+			centerX = inCenterX;
+			centerZ = inCenterZ;
+
+			const float bodyH = neckY - baseY;
+			const float shHalf = (std::max)(0.15f * sc, (std::max)(shoulderHalfSpan, bodyH * 0.24f));
+			const float torsoDepth = (std::max)(0.13f * sc, bodyH * 0.21f);
+			headBackRadius = (std::max)(0.16f * sc, torsoDepth * 1.15f);
+
+			// 8 slices from s=0 (collar/neck) down to s=1 (ankles/boots)
+			static constexpr float kBackMul[NUM_SLICES]  = { 0.82f, 1.04f, 1.12f, 1.10f, 1.22f, 1.16f, 1.04f, 0.96f };
+			static constexpr float kFrontMul[NUM_SLICES] = { 0.78f, 1.00f, 1.08f, 1.02f, 1.06f, 0.98f, 0.90f, 0.92f };
+			static constexpr float kSideMul[NUM_SLICES]  = { 0.76f, 1.14f, 1.16f, 1.06f, 1.10f, 0.98f, 0.84f, 0.78f };
+
+			for (int i = 0; i < NUM_SLICES; ++i)
+			{
+				backRadius[i]  = torsoDepth * kBackMul[i];
+				frontRadius[i] = torsoDepth * kFrontMul[i];
+				sideRadius[i]  = shHalf * kSideMul[i];
+			}
+		}
+
+		void SampleSlice(float sNorm, float& outBackR, float& outFrontR, float& outSideR) const
+		{
+			const float clamped = (std::max)(0.0f, (std::min)(1.0f, sNorm));
+			const float fIdx = clamped * static_cast<float>(NUM_SLICES - 1);
+			const int i0 = (std::min)(NUM_SLICES - 2, static_cast<int>(fIdx));
+			const int i1 = i0 + 1;
+			const float t = fIdx - static_cast<float>(i0);
+			outBackR  = backRadius[i0]  + (backRadius[i1]  - backRadius[i0])  * t;
+			outFrontR = frontRadius[i0] + (frontRadius[i1] - frontRadius[i0]) * t;
+			outSideR  = sideRadius[i0]  + (sideRadius[i1]  - sideRadius[i0])  * t;
+		}
+
+		bool CollideParticle(
+			CapeVec3& p,
+			CapeVec3* ioPrevPos,
+			float uNorm,
+			float vNorm,
+			const CapeVec3& forwardDir,
+			const CapeVec3& upDir,
+			const CapeVec3& rightDir,
+			float horizSpeed,
+			bool isFlying) const
+		{
+			if (!enabled)
+				return false;
+
+			const float bodyH = (std::max)(0.25f, neckY - baseY);
+			const CapeVec3 spineOrigin = forwardDir * centerX + rightDir * centerZ;
+			const CapeVec3 rel = p - spineOrigin;
+			float dx = rel.Dot(forwardDir); // >0 front, <0 back
+			const float y = rel.Dot(upDir);
+			float dz = rel.Dot(rightDir);   // left/right
+			bool modified = false;
+
+			// 1. Ground plane clearance when standing/running so long capes trail behind heels instead of sinking underground
+			const float floorY = baseY + 0.02f;
+			if (!isFlying && y < floorY)
+			{
+				const float liftUp = floorY - y;
+				p += upDir * liftUp - forwardDir * (liftUp * 0.35f);
+				dx -= liftUp * 0.35f;
+				if (ioPrevPos)
+					*ioPrevPos += upDir * (liftUp * 0.5f);
+				modified = true;
+			}
+
+			// 2. Back-of-head / hair sphere clearance above neckY when jumping or billowing high
+			if (y > neckY + 0.02f && y < neckY + bodyH * 0.90f)
+			{
+				const float headCenterY = neckY + headBackRadius * 0.85f;
+				const float dy = y - headCenterY;
+				const float rHead = headBackRadius;
+				const float dSq = dx * dx + dy * dy + dz * dz;
+				if (dSq < rHead * rHead)
+				{
+					float pushX = dx;
+					float pushZ = dz;
+					if (pushX > -rHead * 0.35f && std::fabs(pushZ) < rHead * 0.80f)
+					{
+						pushX = -rHead * 0.85f;
+					}
+					const float norm = std::sqrt(pushX * pushX + dy * dy + pushZ * pushZ);
+					if (norm > 1e-5f)
+					{
+						const float k = rHead / norm;
+						const CapeVec3 newPos = spineOrigin + forwardDir * (pushX * k) + upDir * (headCenterY + dy * k) + rightDir * (pushZ * k);
+						const CapeVec3 corr = newPos - p;
+						p = newPos;
+						if (ioPrevPos)
+							*ioPrevPos += corr * 0.35f;
+						return true;
+					}
+				}
+				return modified;
+			}
+
+			if (y < baseY - 0.15f || y > neckY + 0.04f)
+				return modified;
+
+			// 3. 8-slice torso / shoulder / hip / leg envelope with anti-tunneling back-hemisphere guard
+			const float s = (std::max)(0.0f, (std::min)(1.0f, (neckY - y) / bodyH));
+			float backR = 0.15f, frontR = 0.14f, sideR = 0.18f;
+			SampleSlice(s, backR, frontR, sideR);
+
+			// Expand mid- and lower-body envelope during walking/running to cover swinging elbows, tunic hems, and stride
+			if (s > 0.20f && horizSpeed > 0.15f && !isFlying)
+			{
+				const float runFactor = (std::min)(1.0f, horizSpeed / 4.2f);
+				const float swingT = (s - 0.20f) / 0.80f;
+				backR += runFactor * (0.045f + 0.22f * swingT) * bodyH;
+				sideR += runFactor * (0.030f + 0.045f * swingT) * bodyH;
+			}
+
+			const float absZ = std::fabs(dz);
+			const bool isOuterWrapEdge = (vNorm < 0.16f) && (uNorm < 0.16f || uNorm > 0.84f);
+
+			// Coronal anti-tunneling barrier: interior cape cloth can NEVER cross through the torso/arms into the front (+X)
+			if (!isOuterWrapEdge && absZ < sideR * 1.32f)
+			{
+				const float sideBlend = (std::min)(1.0f, absZ / (sideR * 1.15f)); // 0 at spine -> 1 past outer arm edge
+				const float maxAllowedDx = -backR * (0.52f - 0.34f * sideBlend) - 0.015f;
+				if (dx > maxAllowedDx)
+				{
+					dx = maxAllowedDx;
+					modified = true;
+				}
+			}
+
+			const float rx = (dx <= 0.0f) ? backR : frontR;
+			const float rz = (std::max)(0.05f, sideR);
+			float nx = dx / (std::max)(0.05f, rx);
+			float nz = dz / rz;
+			const float ellipSq = nx * nx + nz * nz;
+			// Rounded-box (superellipse) corner expansion so boxy coats/tunics & side-by-side legs don't poke out at 45 degrees
+			const float corner2 = (ellipSq > 1e-6f) ? ((nx * nx * nz * nz) / (ellipSq * ellipSq)) : 0.0f;
+			const float targetR = 1.0f + 0.72f * corner2;
+
+			if (ellipSq < targetR * targetR)
+			{
+				// Bias near-center penetrations toward the back hemisphere so cloth parts cleanly around back/sides
+				if (!isOuterWrapEdge && nx > -0.25f && std::fabs(nz) < 0.85f)
+				{
+					nx = -0.75f;
+					nz += (uNorm < 0.5f) ? -0.25f : 0.25f;
+				}
+				const float len = std::sqrt(nx * nx + nz * nz);
+				if (len > 1e-5f)
+				{
+					const float ux = nx / len;
+					const float uz = nz / len;
+					const float outTargetR = 1.0f + 0.72f * (ux * ux * uz * uz);
+					nx = ux * outTargetR;
+					nz = uz * outTargetR;
+				}
+				else
+				{
+					nx = -1.0f;
+					nz = 0.0f;
+				}
+				const float outRx = (nx <= 0.0f) ? backR : frontR;
+				dx = nx * outRx;
+				dz = nz * rz;
+				modified = true;
+			}
+
+			if (modified)
+			{
+				const CapeVec3 newPos = spineOrigin + forwardDir * dx + upDir * y + rightDir * dz;
+				const CapeVec3 corr = newPos - p;
+				p = newPos;
+				if (ioPrevPos)
+				{
+					// Dampen normal bounce so cape glides smoothly against the character's back
+					*ioPrevPos += corr * 0.40f;
+				}
+			}
+			return modified;
+		}
+	};
+
 	struct CapeStyleParams
 	{
 		CapeCollarStyle collarStyle = CapeCollarStyle::WrapPoncho;
@@ -233,6 +439,7 @@ namespace ParaEngine
 		std::vector<CapeParticle> particles;
 		std::vector<CapeDistanceConstraint> constraints;
 		std::vector<uint16_t> triIndices; // Single-layer CCW indices (outer surface)
+		CapeBodyCollider bodyCollider;
 		float simAccumulator = 0.0f;
 
 		void BuildProcedural(
@@ -243,7 +450,8 @@ namespace ParaEngine
 			const CapeVec3& forwardDir,
 			const CapeVec3& upDir,
 			const CapeVec3& rightDir,
-			float modelScale = 1.0f)
+			float modelScale = 1.0f,
+			const CapeBodyCollider* customBody = nullptr)
 		{
 			static constexpr float kPi = 3.14159265358979323846f;
 			cols = (std::max)(4, (std::min)(15, rawStyle.gridCols));
@@ -255,6 +463,16 @@ namespace ParaEngine
 
 			const CapeVec3 backDir = forwardDir * -1.0f;
 			const float scale = (modelScale > 0.05f) ? modelScale : 1.0f;
+			if (customBody)
+			{
+				bodyCollider = *customBody;
+			}
+			else if (bodyCollider.backRadius[0] <= 1e-4f)
+			{
+				const float shHalf = 0.5f * std::fabs((rightShoulderAnchor - leftShoulderAnchor).Dot(rightDir));
+				bodyCollider.InitCanonical(0.0f, neckAnchor.Dot(upDir), shHalf, scale, 0.0f, 0.0f);
+			}
+
 			const float topW = (rawStyle.collarStyle == CapeCollarStyle::Scarf ? rawStyle.topWidth * 0.42f : rawStyle.topWidth) * scale;
 			const float botW = (rawStyle.collarStyle == CapeCollarStyle::Scarf ? rawStyle.bottomWidth * 0.32f : rawStyle.bottomWidth) * scale;
 			const float capeLen = (std::max)(0.15f, rawStyle.length * scale);
@@ -264,7 +482,15 @@ namespace ParaEngine
 			const float drop = rawStyle.shoulderDrop * scale;
 			const CapeVec3 userOffset = rawStyle.attachOffset * scale;
 
-			const CapeVec3 collarCenter = neckAnchor + userOffset;
+			// Anchor collar relative to canonical spine X/Z at neck height so neck bone offsets never bury collar inside chest
+			const CapeVec3 spineCollarOrigin = forwardDir * bodyCollider.centerX
+				+ upDir * neckAnchor.Dot(upDir)
+				+ rightDir * bodyCollider.centerZ
+				+ userOffset;
+
+			const float collarMinBackR = bodyCollider.enabled ? (bodyCollider.backRadius[0] * 1.04f) : 0.0f;
+			const float collarMinFrontR = bodyCollider.enabled ? (bodyCollider.frontRadius[0] * 1.05f) : 0.0f;
+			const float collarMinSideR = bodyCollider.enabled ? (bodyCollider.sideRadius[0] * 0.98f) : 0.0f;
 
 			particles.clear();
 			particles.resize(static_cast<size_t>(cols * rows));
@@ -284,34 +510,48 @@ namespace ParaEngine
 					CapeVec3 pLocal;
 					if (rawStyle.collarStyle == CapeCollarStyle::WrapPoncho)
 					{
-						// Horseshoe collar arc centered behind the neck, wrapping over left/right shoulders
+						// Horseshoe collar arc centered around canonical neck/shoulder envelope
 						const float theta = s * (wrapRad * 0.5f);
-						// Blend from tight horseshoe at collar (v=0) to wide fan arc at hem (v=1)
-						const float effTheta = theta * (1.0f - 0.28f * v);
-						const float radiusX = (topW * 0.42f) * (1.0f - v) + (botW * 0.38f + bell * std::sin(v * kPi * 0.85f)) * v;
-						const float radiusZ = (topW * 0.52f) * (1.0f - v) + (botW * 0.55f) * v;
+						const float effTheta = theta * (1.0f - 0.30f * v);
+						const float cosT = std::cos(effTheta);
+						const float sinT = std::sin(effTheta);
 
-						const float backComp = std::cos(effTheta) * radiusX + backOff * (0.45f + 0.55f * v);
-						const float sideComp = std::sin(effTheta) * radiusZ;
+						const float collarRx = (cosT >= 0.0f)
+							? (std::max)(topW * 0.44f, collarMinBackR)
+							: (std::max)(topW * 0.44f, collarMinFrontR);
+						const float collarRz = (std::max)(topW * 0.54f, collarMinSideR);
+
+						const float radiusX = collarRx * (1.0f - v) + (botW * 0.42f + bell * std::sin(v * kPi * 0.85f)) * v;
+						const float radiusZ = collarRz * (1.0f - v) + (botW * 0.56f) * v;
+
+						const float backComp = cosT * radiusX + backOff * (0.35f + 0.65f * v);
+						const float sideComp = sinT * radiusZ;
 						const float shoulderCurve = drop * (s * s) * (1.0f - 0.6f * v);
 
-						pLocal = collarCenter
+						pLocal = spineCollarOrigin
 							+ backDir * backComp
 							+ rightDir * sideComp
 							- upDir * (rowLen + shoulderCurve);
 					}
 					else
 					{
-						// ClassicBack or Scarf: flat/gently curved shoulder line flaring out down the back
+						// ClassicBack or Scarf: curved shoulder line flaring cleanly outside back
 						const float halfW = 0.5f * (topW + (botW - topW) * v);
 						const float sideComp = s * halfW;
-						const float archBack = backOff + bell * std::sin(v * kPi * 0.8f) + (1.0f - s * s) * 0.03f * scale * (0.3f + v);
+						const float baseBack = (std::max)(backOff, collarMinBackR);
+						const float archBack = baseBack + bell * std::sin(v * kPi * 0.8f) + (1.0f - s * s) * 0.03f * scale * (0.3f + v);
 						const float shoulderCurve = drop * (s * s) * (1.0f - 0.5f * v);
 
-						pLocal = collarCenter
+						pLocal = spineCollarOrigin
 							+ backDir * archBack
 							+ rightDir * sideComp
 							- upDir * (rowLen + shoulderCurve);
+					}
+
+					if (r > 0 && bodyCollider.enabled)
+					{
+						// Drape rest-pose rows naturally outside the character's canonical body/shoulders/hips/legs
+						bodyCollider.CollideParticle(pLocal, nullptr, u, v, forwardDir, upDir, rightDir, 0.0f, false);
 					}
 
 					CapeParticle& pt = particles[static_cast<size_t>(r * cols + c)];
@@ -431,7 +671,7 @@ namespace ParaEngine
 			simAccumulator = 0.0f;
 		}
 
-		static void ProjectPointOutOfCapsule(CapeVec3& p, const CapeCapsule& cap)
+		static void ProjectPointOutOfCapsule(CapeVec3& p, const CapeCapsule& cap, const CapeVec3* pBackDir = nullptr)
 		{
 			const CapeVec3 ab = cap.b - cap.a;
 			const float abLenSq = ab.LengthSq();
@@ -442,19 +682,29 @@ namespace ParaEngine
 				t = (std::max)(0.0f, (std::min)(1.0f, t));
 			}
 			const CapeVec3 closest = cap.a + ab * t;
-			const CapeVec3 diff = p - closest;
+			CapeVec3 diff = p - closest;
 			const float distSq = diff.LengthSq();
 			const float r = cap.radius;
 			if (distSq < r * r)
 			{
-				if (distSq > 1e-10f)
+				// Never push a cape particle forward through a leg/torso capsule; bias toward backDir
+				if (pBackDir)
 				{
-					const float dist = std::sqrt(distSq);
+					const float backComp = diff.Dot(*pBackDir);
+					if (backComp < -r * 0.10f)
+					{
+						diff += (*pBackDir) * (-backComp + r * 0.55f);
+					}
+				}
+				const float newDistSq = diff.LengthSq();
+				if (newDistSq > 1e-10f)
+				{
+					const float dist = std::sqrt(newDistSq);
 					p = closest + diff * (r / dist);
 				}
 				else
 				{
-					p = closest + CapeVec3{ -r, 0.0f, 0.0f };
+					p = closest + (pBackDir ? (*pBackDir * r) : CapeVec3{ -r, 0.0f, 0.0f });
 				}
 			}
 		}
@@ -503,13 +753,19 @@ namespace ParaEngine
 				motion.localVelocity.z * motion.localVelocity.z);
 			const float vertSpeed = motion.localVelocity.Dot(motion.upDir);
 
-			// Clamp inertial reaction so sudden sprints feel punchy without stretching
+			// Clamp inertial reaction so sudden sprints feel punchy without stretching;
+			// dampen reverse (-forwardDir) drag when walking backward so cloth rests naturally against the back
 			CapeVec3 clampedVel = motion.localVelocity;
 			const float speedSq = clampedVel.LengthSq();
 			static constexpr float kMaxInertiaSpeed = 10.0f;
 			if (speedSq > kMaxInertiaSpeed * kMaxInertiaSpeed)
 			{
 				clampedVel *= (kMaxInertiaSpeed / std::sqrt(speedSq));
+			}
+			const float clampedFwd = clampedVel.Dot(motion.forwardDir);
+			if (clampedFwd < 0.0f)
+			{
+				clampedVel -= motion.forwardDir * (clampedFwd * 0.72f);
 			}
 			const float clampedYawVel = (std::max)(-8.0f, (std::min)(8.0f, motion.yawAngularVel));
 
@@ -550,11 +806,22 @@ namespace ParaEngine
 					const float runFactor = (std::min)(1.0f, horizSpeed / 5.5f);
 					if (horizSpeed > 0.15f)
 					{
-						// Push backward along backDir and lift upward so cape streams at 30-55 degrees
-						const float backPush = (std::max)(0.0f, forwardSpeed) * 2.2f + horizSpeed * 1.1f;
-						const float lift = horizSpeed * tuning.liftFactor * (0.4f + 0.8f * pt.vNorm);
-						accel += backDir * (backPush * tuning.windResponse);
-						accel += motion.upDir * lift;
+						if (forwardSpeed >= -0.05f)
+						{
+							// Forward / strafe motion: push backward along backDir and lift upward at 30-55 degrees
+							const float backPush = (std::max)(0.0f, forwardSpeed) * 2.2f + horizSpeed * 0.85f;
+							const float lift = horizSpeed * tuning.liftFactor * (0.4f + 0.8f * pt.vNorm);
+							accel += backDir * (backPush * tuning.windResponse);
+							accel += motion.upDir * lift;
+						}
+						else
+						{
+							// Walking backward: inertia presses cloth onto back collider while airflow parts it gently around sides
+							const float backWalkSpeed = -forwardSpeed;
+							const float sideSign = (pt.uNorm - 0.5f) * 2.0f;
+							accel += motion.rightDir * (sideSign * backWalkSpeed * 1.1f * tuning.windResponse * pt.vNorm);
+							accel += motion.upDir * (backWalkSpeed * tuning.liftFactor * 0.30f * pt.vNorm);
+						}
 					}
 
 					// Falling billows the cape upward and outward like a gentle parachute
@@ -624,17 +891,62 @@ namespace ParaEngine
 						}
 					}
 
-					// Character body & leg capsule collision
-					if (capsules && capsuleCount > 0)
+					// Canonical character body envelope + animated limb capsule collision
+					for (size_t i = static_cast<size_t>(cols); i < particles.size(); ++i)
 					{
-						for (size_t i = static_cast<size_t>(cols); i < particles.size(); ++i)
+						CapeParticle& pt = particles[i];
+						if (pt.invMass <= 0.0f)
+							continue;
+
+						if (capsules && capsuleCount > 0)
 						{
-							CapeParticle& pt = particles[i];
-							if (pt.invMass <= 0.0f)
-								continue;
 							for (size_t ci = 0; ci < capsuleCount; ++ci)
 							{
-								ProjectPointOutOfCapsule(pt.pos, capsules[ci]);
+								ProjectPointOutOfCapsule(pt.pos, capsules[ci], &backDir);
+							}
+						}
+
+						if (bodyCollider.enabled)
+						{
+							bodyCollider.CollideParticle(
+								pt.pos,
+								&pt.prevPos,
+								pt.uNorm,
+								pt.vNorm,
+								motion.forwardDir,
+								motion.upDir,
+								motion.rightDir,
+								horizSpeed,
+								motion.isFlying);
+						}
+					}
+
+					// Final iteration: prevent horizontal triangle chords from cutting across curved back/waist
+					if (iter + 1 == iters && bodyCollider.enabled)
+					{
+						for (int r = 1; r < rows; ++r)
+						{
+							for (int c = 0; c + 1 < cols; ++c)
+							{
+								CapeParticle& pL = particles[static_cast<size_t>(r * cols + c)];
+								CapeParticle& pR = particles[static_cast<size_t>(r * cols + c + 1)];
+								CapeVec3 mid = (pL.pos + pR.pos) * 0.5f;
+								const CapeVec3 origMid = mid;
+								if (bodyCollider.CollideParticle(
+									mid,
+									nullptr,
+									0.5f * (pL.uNorm + pR.uNorm),
+									pL.vNorm,
+									motion.forwardDir,
+									motion.upDir,
+									motion.rightDir,
+									horizSpeed,
+									motion.isFlying))
+								{
+									const CapeVec3 push = (mid - origMid) * 0.85f;
+									pL.pos += push;
+									pR.pos += push;
+								}
 							}
 						}
 					}

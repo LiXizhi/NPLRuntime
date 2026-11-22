@@ -852,6 +852,7 @@ void CPhysicsWorld::ExitPhysics()
 	m_listMeshShapes.clear();
 	m_listDynamicShapes.clear();
 	m_mapKinematicMotions.clear();
+	m_mapActorFramePoses.clear();
 	m_mapDynamicActors.clear();
 	// 清空块
 	m_mapPhysicsBlocks.clear();
@@ -1010,6 +1011,80 @@ void CPhysicsWorld::StepKinematicControllers(double dTime)
 	}
 }
 
+namespace
+{
+	void ExtractPhysicsActorWorldPose(ParaEngine::IParaPhysicsActor* actor, ParaEngine::Vector3& outOrigin, ParaEngine::Quaternion& outRot)
+	{
+		alignas(16) ParaEngine::Matrix4 mat;
+		mat.identity();
+		actor->GetWorldTransform((ParaEngine::PARAMATRIX*)&mat);
+		outOrigin = mat.getTrans();
+		mat.setTrans(ParaEngine::Vector3::ZERO);
+		outRot.FromRotationMatrix(mat);
+		outRot.normalise();
+	}
+}
+
+void CPhysicsWorld::ResetSimulationTime(double t)
+{
+	m_dSimulationTime = t;
+	for (auto& kv : m_mapActorFramePoses)
+	{
+		kv.second.m_hasPrev = false;
+	}
+}
+
+bool CPhysicsWorld::IsValidDynamicActor(IParaPhysicsActor* actor, uint64_t* outUid) const
+{
+	if (!actor || m_mapDynamicActors.find(actor) == m_mapDynamicActors.end())
+		return false;
+	if (outUid)
+	{
+		auto it = m_mapActorFramePoses.find(actor);
+		*outUid = (it != m_mapActorFramePoses.end()) ? it->second.m_uid : 0;
+	}
+	return true;
+}
+
+bool CPhysicsWorld::GetActorFrameDelta(IParaPhysicsActor* actor, uint64_t expectedUid,
+	Vector3& prevOrigin, Quaternion& prevRot, Vector3& curOrigin, Quaternion& curRot) const
+{
+	if (!actor || m_mapDynamicActors.find(actor) == m_mapDynamicActors.end())
+		return false;
+	auto it = m_mapActorFramePoses.find(actor);
+	if (it == m_mapActorFramePoses.end() || !it->second.m_hasPrev)
+		return false;
+	if (expectedUid != 0 && it->second.m_uid != expectedUid)
+		return false;
+	prevOrigin = it->second.m_prevOrigin;
+	prevRot = it->second.m_prevRot;
+	curOrigin = it->second.m_curOrigin;
+	curRot = it->second.m_curRot;
+	return true;
+}
+
+bool CPhysicsWorld::GetActorPointVelocity(IParaPhysicsActor* actor, const Vector3& worldPoint, Vector3& outVel,
+	bool* pIsKinematic, bool* pIsStatic) const
+{
+	outVel = Vector3::ZERO;
+	if (!actor || m_mapDynamicActors.find(actor) == m_mapDynamicActors.end())
+		return false;
+	if (pIsKinematic)
+		*pIsKinematic = actor->IsKinematicObject();
+	if (pIsStatic)
+		*pIsStatic = actor->IsStaticObject();
+
+	PARAVECTOR3 o = actor->GetOrigin();
+	PARAVECTOR3 lv = actor->GetLinearVelocity();
+	PARAVECTOR3 av = actor->GetAngularVelocity();
+	Vector3 origin(o.x, o.y, o.z);
+	Vector3 linVel(lv.x, lv.y, lv.z);
+	Vector3 angVel(av.x, av.y, av.z);
+	Vector3 relPos = worldPoint - origin;
+	outVel = linVel + angVel.crossProduct(relPos);
+	return true;
+}
+
 void CPhysicsWorld::StepSimulation(double dTime)
 {
 	static int16_t s_block_frame_id = 0;
@@ -1017,6 +1092,28 @@ void CPhysicsWorld::StepSimulation(double dTime)
 	
 	if (IsDynamicsSimulationEnabled())
 	{
+		// Snapshot pre-step poses from last completed step so both kinematic controllers,
+		// script SetKinematicTransform calls, and Bullet dynamic substeps yield exact frame deltas.
+		for (IParaPhysicsActor* actor : m_mapDynamicActors)
+		{
+			if (!actor)
+				continue;
+			ActorFramePose& pose = m_mapActorFramePoses[actor];
+			if (pose.m_uid == 0)
+				pose.m_uid = m_nextActorPoseUid++;
+			if (pose.m_hasPrev)
+			{
+				pose.m_prevOrigin = pose.m_curOrigin;
+				pose.m_prevRot = pose.m_curRot;
+			}
+			else
+			{
+				ExtractPhysicsActorWorldPose(actor, pose.m_prevOrigin, pose.m_prevRot);
+				pose.m_curOrigin = pose.m_prevOrigin;
+				pose.m_curRot = pose.m_prevRot;
+			}
+		}
+
 		m_dSimulationTime += dTime;
 		StepKinematicControllers(dTime);
 
@@ -1049,10 +1146,16 @@ void CPhysicsWorld::StepSimulation(double dTime)
 			m_pPhysicsWorld->StepSimulation((float)dTime);
 		}
 
-		// Update transforms for active dynamic actors only
+		// Re-lock kinematic controllers to exact render-frame m_dSimulationTime pose after Bullet substeps
+		// so visual mesh, raycast broadphase AABB, and platform delta carry agree to sub-millimeter precision.
+		StepKinematicControllers(0.0);
+
+		// Update transforms for active dynamic actors and record post-step poses
 		for (itCurCP = m_mapDynamicActors.begin(); itCurCP != itEndCP; itCurCP++)
 		{
 			IParaPhysicsActor* actor = *itCurCP;
+			if (!actor)
+				continue;
 			
 			if (!actor->IsStaticOrKinematicObject())
 			{
@@ -1066,6 +1169,21 @@ void CPhysicsWorld::StepSimulation(double dTime)
 					}
 				}
 			}
+
+			ActorFramePose& pose = m_mapActorFramePoses[actor];
+			if (pose.m_uid == 0)
+				pose.m_uid = m_nextActorPoseUid++;
+			Vector3 curO;
+			Quaternion curQ;
+			ExtractPhysicsActorWorldPose(actor, curO, curQ);
+			float qDot = pose.m_prevRot.x * curQ.x + pose.m_prevRot.y * curQ.y + pose.m_prevRot.z * curQ.z + pose.m_prevRot.w * curQ.w;
+			if (qDot < 0.f)
+			{
+				curQ = Quaternion(-curQ.w, -curQ.x, -curQ.y, -curQ.z);
+			}
+			pose.m_curOrigin = curO;
+			pose.m_curRot = curQ;
+			pose.m_hasPrev = true;
 		}
 
 		// Remove stale physics blocks
@@ -1220,6 +1338,14 @@ IParaPhysicsActor* ParaEngine::CPhysicsWorld::CreateDynamicMesh(CBaseObject* obj
 		return NULL;
 	pActor->SetUserData(obj);
 	m_mapDynamicActors.insert(pActor);
+	{
+		ActorFramePose& pose = m_mapActorFramePoses[pActor];
+		pose.m_uid = m_nextActorPoseUid++;
+		ExtractPhysicsActorWorldPose(pActor, pose.m_prevOrigin, pose.m_prevRot);
+		pose.m_curOrigin = pose.m_prevOrigin;
+		pose.m_curRot = pose.m_prevRot;
+		pose.m_hasPrev = true;
+	}
 	if (pParaXModel && !pParaXModel->GetDefaultPhysicsProperty().empty())
 	{
 		SetActorPhysicsProperty(pActor, pParaXModel->GetDefaultPhysicsProperty().c_str());
@@ -1272,6 +1398,14 @@ IParaPhysicsActor* ParaEngine::CPhysicsWorld::CreateDynamicShape(CBaseObject* ob
 		return NULL;
 	pActor->SetUserData(obj);
 	m_mapDynamicActors.insert(pActor);
+	{
+		ActorFramePose& pose = m_mapActorFramePoses[pActor];
+		pose.m_uid = m_nextActorPoseUid++;
+		ExtractPhysicsActorWorldPose(pActor, pose.m_prevOrigin, pose.m_prevRot);
+		pose.m_curOrigin = pose.m_prevOrigin;
+		pose.m_curRot = pose.m_prevRot;
+		pose.m_hasPrev = true;
+	}
 	return pActor;
 }
 
@@ -1681,6 +1815,7 @@ void CPhysicsWorld::ReleaseActor(IParaPhysicsActor* pActor)
 		ReleaseConstraintsByActor(pActor);
 		ReleaseVehicleByActor(pActor);
 		m_mapKinematicMotions.erase(pActor);
+		m_mapActorFramePoses.erase(pActor);
 		m_mapDynamicActors.erase(pActor);
 		m_pPhysicsWorld->ReleaseActor(pActor);
 		if (CGlobals::WillGenReport())

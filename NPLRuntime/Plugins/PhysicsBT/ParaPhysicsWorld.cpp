@@ -50,6 +50,15 @@ PARAMATRIX* ParaEngine::BulletPhysicsActor::GetWorldTransform(PARAMATRIX* pOut)
 	static PARAMATRIX s_OutputMatrix;
 	if (pOut == NULL)
 		pOut = &s_OutputMatrix;
+#ifdef USE_MOTIONSTATE
+	if (m_pActor->getMotionState() && !IsStaticOrKinematicObject())
+	{
+		btTransform interpTransform;
+		m_pActor->getMotionState()->getWorldTransform(interpTransform);
+		interpTransform.getOpenGLMatrix((float*)pOut);
+		return pOut;
+	}
+#endif
 	btTransform& transform = m_pActor->getWorldTransform();
 	transform.getOpenGLMatrix((float*)pOut);
 	return pOut;
@@ -71,6 +80,8 @@ void ParaEngine::BulletPhysicsActor::SetWorldTransform(const PARAMATRIX* pMatrix
 	m_pActor->setCenterOfMassTransform(transform);
 	if (IsKinematicObject())
 		m_pActor->setInterpolationWorldTransform(transform);
+	if (m_pWorld && m_pWorld->GetScene())
+		m_pWorld->GetScene()->updateSingleAabb(m_pActor);
 #else
 	m_pActor->getWorldTransform().setFromOpenGLMatrix((const float*)pMatrix);
 #endif

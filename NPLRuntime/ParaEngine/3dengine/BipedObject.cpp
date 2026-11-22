@@ -873,14 +873,408 @@ float g_fLastBipedFacing;
 float g_fLastBipedFacingTarget;
 Vector3 g_fLastBipedPos;
 
+void CBipedObject::ClearParkourPhysicsState()
+{
+	m_pStandingPhysicsActor = nullptr;
+	m_nStandingActorUid = 0;
+	m_vExternalSurfaceVel = Vector3::ZERO;
+}
+
+void CBipedObject::PreAnimateParkourPhysics(double dTimeDelta)
+{
+	if (dTimeDelta <= 0.0 || IsDynamicPhysicsEnabled() || GetIsFlying() || GetAlwaysFlying() || IsControlledExternally())
+	{
+		ClearParkourPhysicsState();
+		return;
+	}
+	if (GetLastWayPoint().GetPointType() == BipedWayPoint::COMMAND_MOUNT)
+	{
+		ClearParkourPhysicsState();
+		return;
+	}
+
+	CPhysicsWorld* pPhysicsWorld = CGlobals::GetPhysicsWorld();
+	if (!pPhysicsWorld)
+		return;
+
+	const float dt = (std::min)(0.05f, (std::max)(0.0001f, (float)dTimeDelta));
+
+	if (m_pStandingPhysicsActor)
+	{
+		// If the player just initiated a jump from a moving/spinning platform, inherit horizontal platform velocity once
+		if (m_fSpeedVertical > 1.0f)
+		{
+			Vector3 platVel = Vector3::ZERO;
+			if (pPhysicsWorld->GetActorPointVelocity(m_pStandingPhysicsActor, Vector3((float)m_vPos.x, (float)m_vPos.y, (float)m_vPos.z), platVel))
+			{
+				if (platVel.x * platVel.x + platVel.z * platVel.z > 0.04f)
+				{
+					m_vExternalImpulseVel.x += platVel.x * 0.85f;
+					m_vExternalImpulseVel.z += platVel.z * 0.85f;
+				}
+			}
+			ClearParkourPhysicsState();
+			return;
+		}
+
+		Vector3 prevO, curO;
+		Quaternion prevQ, curQ;
+		if (pPhysicsWorld->GetActorFrameDelta(m_pStandingPhysicsActor, m_nStandingActorUid, prevO, prevQ, curO, curQ))
+		{
+			Matrix4 prevRotMat, curRotMat;
+			prevQ.ToRotationMatrix(prevRotMat, Vector3::ZERO);
+			curQ.ToRotationMatrix(curRotMat, Vector3::ZERO);
+			Matrix4 invPrevRotMat = prevRotMat.transpose();
+
+			Vector3 relPos = Vector3((float)m_vPos.x, (float)m_vPos.y, (float)m_vPos.z) - prevO;
+			Vector3 localPos = relPos * invPrevRotMat;
+			Vector3 newWorldPos = curO + (localPos * curRotMat);
+
+			DVector3 deltaPos(
+				(double)newWorldPos.x - m_vPos.x,
+				(double)newWorldPos.y - m_vPos.y,
+				(double)newWorldPos.z - m_vPos.z);
+
+			if (deltaPos.squaredLength() > 1e-12 && deltaPos.squaredLength() < 25.0)
+			{
+				m_vPos += deltaPos;
+				for (auto& wp : m_vPosTarget)
+				{
+					if (wp.GetPointType() == BipedWayPoint::COMMAND_POINT || wp.GetPointType() == BipedWayPoint::PATHFINDING_POINT)
+					{
+						wp.vPos += Vector3((float)deltaPos.x, (float)deltaPos.y, (float)deltaPos.z);
+					}
+				}
+			}
+
+			// Incremental world-Y yaw carry on rotating platforms (turntables / spinning discs)
+			Vector3 u = (Vector3::UNIT_X * invPrevRotMat) * curRotMat;
+			if (u.x * u.x + u.z * u.z > 1e-4f)
+			{
+				float dYaw = std::atan2(-u.z, u.x);
+				if (std::fabs(dYaw) > 1e-6f && std::fabs(dYaw) < 1.5f)
+				{
+					m_fYaw += dYaw;
+					m_fFacingTarget += dYaw;
+					m_fSpeedAngle += dYaw;
+				}
+			}
+		}
+		else
+		{
+			m_pStandingPhysicsActor = nullptr;
+			m_nStandingActorUid = 0;
+		}
+	}
+
+	// Smooth render-frame integration of tangential conveyor surface velocity
+	if (m_vExternalSurfaceVel.squaredLength() > 1e-6f)
+	{
+		Vector3 step = m_vExternalSurfaceVel * dt;
+		BlockWorldClient* pBlockWorld = BlockWorldClient::GetInstance();
+		if (pBlockWorld && pBlockWorld->IsInBlockWorld())
+		{
+			Vector3 horizDir(step.x, 0.f, step.z);
+			float horizLen = horizDir.length();
+			if (horizLen > 1e-5f)
+			{
+				horizDir /= horizLen;
+				PickResult pickRes;
+				Vector3 rayOrig((float)m_vPos.x, (float)m_vPos.y + 0.5f, (float)m_vPos.z);
+				if (pBlockWorld->Pick(rayOrig, horizDir, horizLen + 0.28f, pickRes, BlockTemplate::batt_solid | BlockTemplate::batt_obstruction)
+					&& pickRes.Distance < horizLen + 0.28f)
+				{
+					step.x = 0.f;
+					step.z = 0.f;
+				}
+			}
+		}
+		m_vPos.x += step.x;
+		m_vPos.y += step.y;
+		m_vPos.z += step.z;
+	}
+}
+
+void CBipedObject::PostAnimateParkourPhysics(double dTimeDelta)
+{
+	if (dTimeDelta <= 0.0 || IsDynamicPhysicsEnabled() || GetIsFlying() || GetAlwaysFlying() || IsControlledExternally())
+		return;
+	if (GetLastWayPoint().GetPointType() == BipedWayPoint::COMMAND_MOUNT)
+		return;
+
+	CPhysicsWorld* pPhysicsWorld = CGlobals::GetPhysicsWorld();
+	IParaPhysics* pPhysics = pPhysicsWorld ? pPhysicsWorld->GetPhysicsInterface() : nullptr;
+	if (!pPhysicsWorld || !pPhysics)
+		return;
+
+	const float dt = (std::min)(0.05f, (std::max)(0.0001f, (float)dTimeDelta));
+	const float fPushRadius = (std::max)(0.22f, GetPhysicsRadius());
+	BlockWorldClient* pBlockWorld = BlockWorldClient::GetInstance();
+	const bool inBlockWorld = (pBlockWorld && pBlockWorld->IsInBlockWorld());
+	bool movedExternally = false;
+
+	auto clampStepAgainstBlocks = [&](float& dx, float& dz) {
+		if (!inBlockWorld)
+			return;
+		Vector3 horiz(dx, 0.f, dz);
+		float len = horiz.length();
+		if (len <= 1e-5f)
+			return;
+		Vector3 dir = horiz / len;
+		const float clearance = 0.26f;
+		const float probeHeights[2] = { 0.45f, 1.25f };
+		for (int hi = 0; hi < 2; ++hi)
+		{
+			PickResult pickRes;
+			Vector3 orig((float)m_vPos.x, (float)m_vPos.y + probeHeights[hi], (float)m_vPos.z);
+			if (pBlockWorld->Pick(orig, dir, len + clearance, pickRes, BlockTemplate::batt_solid | BlockTemplate::batt_obstruction)
+				&& pickRes.Distance < len + clearance)
+			{
+				Vector3 n = BlockCommon::GetNormalBySide(pickRes.Side);
+				float into = dx * n.x + dz * n.z;
+				if (into < 0.f)
+				{
+					dx -= into * n.x;
+					dz -= into * n.z;
+				}
+			}
+		}
+	};
+
+	// 1. Frame-locked integration of decaying horizontal knockback / jump-carry / bounce impulse
+	float impSpeedSq = m_vExternalImpulseVel.x * m_vExternalImpulseVel.x + m_vExternalImpulseVel.z * m_vExternalImpulseVel.z;
+	if (impSpeedSq > 1e-4f)
+	{
+		float speedHoriz = std::sqrt(impSpeedSq);
+		Vector3 dir(m_vExternalImpulseVel.x / speedHoriz, 0.f, m_vExternalImpulseVel.z / speedHoriz);
+		float stepX = m_vExternalImpulseVel.x * dt;
+		float stepZ = m_vExternalImpulseVel.z * dt;
+		float stepLen = std::sqrt(stepX * stepX + stepZ * stepZ);
+
+		RayCastHitResult wallHit;
+		Vector3 rayOrig((float)m_vPos.x, (float)m_vPos.y + 0.7f, (float)m_vPos.z);
+		IParaPhysicsActor* hitWallActor = pPhysics->RaycastClosestShape(
+			CONVERT_PARAVECTOR3(rayOrig), CONVERT_PARAVECTOR3(dir), 0, wallHit, (int16)GetPhysicsGroupMask(), stepLen + fPushRadius);
+		if (hitWallActor && hitWallActor != m_dynamicPhysicsActor && hitWallActor->GetUserData() != (CBaseObject*)this
+			&& wallHit.m_fDistance < fPushRadius + stepLen)
+		{
+			Vector3 wn(wallHit.m_vHitNormalWorld.x, 0.f, wallHit.m_vHitNormalWorld.z);
+			if (wn.squaredLength() > 1e-4f)
+			{
+				wn.normalise();
+				float dot = m_vExternalImpulseVel.x * wn.x + m_vExternalImpulseVel.z * wn.z;
+				if (dot < 0.f)
+				{
+					m_vExternalImpulseVel.x = (m_vExternalImpulseVel.x - 1.25f * dot * wn.x) * 0.55f;
+					m_vExternalImpulseVel.z = (m_vExternalImpulseVel.z - 1.25f * dot * wn.z) * 0.55f;
+					stepX = m_vExternalImpulseVel.x * dt;
+					stepZ = m_vExternalImpulseVel.z * dt;
+				}
+			}
+		}
+
+		clampStepAgainstBlocks(stepX, stepZ);
+		if (stepX * stepX + stepZ * stepZ > 1e-10f)
+		{
+			m_vPos.x += stepX;
+			m_vPos.z += stepZ;
+			movedExternally = true;
+		}
+
+		bool onGround = (std::fabs(m_fSpeedVertical) < 0.05f);
+		float damping = std::exp(-(onGround ? 7.5f : 1.8f) * dt);
+		m_vExternalImpulseVel.x *= damping;
+		m_vExternalImpulseVel.z *= damping;
+	}
+	else
+	{
+		m_vExternalImpulseVel = Vector3::ZERO;
+	}
+
+	// 2. Single-MTV sweeping obstacle depenetration at exact GetPhysicsRadius() (only when obstacle approaches or deeply overlaps!)
+	if (pPhysicsWorld->IsDynamicsSimulationEnabled() && !pPhysicsWorld->m_mapDynamicActors.empty())
+	{
+		static const float kDirs[8][2] = {
+			{ 1.f, 0.f }, { -1.f, 0.f }, { 0.f, 1.f }, { 0.f, -1.f },
+			{ 0.70710678f, 0.70710678f }, { -0.70710678f, 0.70710678f },
+			{ 0.70710678f, -0.70710678f }, { -0.70710678f, -0.70710678f }
+		};
+		const float kHeights[2] = { 0.35f, (std::min)(1.05f, GetPhysicsHeight() * 0.65f) };
+
+		for (int iter = 0; iter < 2; ++iter)
+		{
+			float maxPenetration = 0.f;
+			Vector3 bestNormal = Vector3::ZERO;
+
+			for (int hi = 0; hi < 2; ++hi)
+			{
+				Vector3 orig((float)m_vPos.x, (float)m_vPos.y + kHeights[hi], (float)m_vPos.z);
+				for (int di = 0; di < 8; ++di)
+				{
+					Vector3 rayDir(kDirs[di][0], 0.f, kDirs[di][1]);
+					RayCastHitResult hit;
+					IParaPhysicsActor* hitActor = pPhysics->RaycastClosestShape(
+						CONVERT_PARAVECTOR3(orig), CONVERT_PARAVECTOR3(rayDir), 0, hit, (int16)GetPhysicsGroupMask(), fPushRadius);
+					if (!hitActor || hitActor == m_dynamicPhysicsActor || hitActor == m_pStandingPhysicsActor)
+						continue;
+					if (hitActor->GetUserData() == (CBaseObject*)this || !pPhysicsWorld->IsValidDynamicActor(hitActor))
+						continue;
+
+					Vector3 hitNormal(hit.m_vHitNormalWorld.x, hit.m_vHitNormalWorld.y, hit.m_vHitNormalWorld.z);
+					// Skip walkable top surfaces
+					if (hitNormal.y > 0.65f)
+						continue;
+
+					Vector3 horizN(hitNormal.x, 0.f, hitNormal.z);
+					if (horizN.squaredLength() > 1e-4f)
+					{
+						horizN.normalise();
+						if (horizN.x * rayDir.x + horizN.z * rayDir.z > 0.f)
+							horizN = -horizN;
+					}
+					else
+					{
+						horizN = -rayDir;
+					}
+
+					Vector3 hitPt(hit.m_vHitPointWorld.x, hit.m_vHitPointWorld.y, hit.m_vHitPointWorld.z);
+					Vector3 obsVel = Vector3::ZERO;
+					pPhysicsWorld->GetActorPointVelocity(hitActor, hitPt, obsVel);
+					float approachSpeed = obsVel.x * horizN.x + obsVel.y * hitNormal.y + obsVel.z * horizN.z;
+
+					// Crucial: when running into a stationary or receding physics object, CBipedObject::MoveTowards
+					// already resolves collision smoothly without fighting! Only push out to full radius when the
+					// obstacle is actively sweeping into the character (or resolve deep interior overlap).
+					float targetClearance = (approachSpeed > 0.02f) ? fPushRadius : (fPushRadius * 0.55f);
+					float pen = targetClearance - hit.m_fDistance;
+					if (pen > maxPenetration)
+					{
+						maxPenetration = pen;
+						bestNormal = horizN;
+					}
+				}
+			}
+
+			if (maxPenetration > 0.0005f)
+			{
+				float pushX = bestNormal.x * maxPenetration;
+				float pushZ = bestNormal.z * maxPenetration;
+				clampStepAgainstBlocks(pushX, pushZ);
+				m_vPos.x += pushX;
+				m_vPos.z += pushZ;
+				movedExternally = true;
+			}
+			else
+			{
+				break;
+			}
+		}
+	}
+
+	// 3. Detect standing dynamic/kinematic platform for next-frame carry & smooth ground lock
+	IParaPhysicsActor* newStandActor = nullptr;
+	uint64_t newStandUid = 0;
+	float standHitY = (float)m_vPos.y;
+	Vector3 standHitPt((float)m_vPos.x, (float)m_vPos.y, (float)m_vPos.z);
+
+	if (m_fSpeedVertical <= 0.5f && !pPhysicsWorld->m_mapDynamicActors.empty())
+	{
+		static const float kFootOffsets[5][2] = {
+			{ 0.f, 0.f }, { 0.16f, 0.f }, { -0.16f, 0.f }, { 0.f, 0.16f }, { 0.f, -0.16f }
+		};
+		const Vector3 downDir(0.f, -1.f, 0.f);
+		for (int pi = 0; pi < 5; ++pi)
+		{
+			Vector3 probeOrig((float)m_vPos.x + kFootOffsets[pi][0], (float)m_vPos.y + 0.55f, (float)m_vPos.z + kFootOffsets[pi][1]);
+			RayCastHitResult hit;
+			float rayLen = (pi == 0) ? 1.00f : 0.92f;
+			IParaPhysicsActor* hitActor = pPhysics->RaycastClosestShape(
+				CONVERT_PARAVECTOR3(probeOrig), CONVERT_PARAVECTOR3(downDir), 0, hit, (int16)GetPhysicsGroupMask(), rayLen);
+			uint64_t uid = 0;
+			if (hitActor && hitActor != m_dynamicPhysicsActor && hitActor->GetUserData() != (CBaseObject*)this
+				&& hit.m_vHitNormalWorld.y > 0.35f && pPhysicsWorld->IsValidDynamicActor(hitActor, &uid))
+			{
+				float hitY = hit.m_vHitPointWorld.y;
+				float heightDiff = (float)m_vPos.y - hitY;
+				float maxSnap = (m_pStandingPhysicsActor == hitActor && m_nStandingActorUid == uid) ? 0.38f : 0.18f;
+				if (heightDiff >= -0.25f && heightDiff <= maxSnap)
+				{
+					// Verify no higher solid terrain/block is directly supporting the player above hitY
+					float terrainY = CGlobals::GetGlobalTerrain()->GetElevation((float)m_vPos.x, (float)m_vPos.z);
+					bool supportedByHigherTerrain = (GetIsAlwaysAboveTerrain() && terrainY > hitY + 0.03f && std::fabs((float)m_vPos.y - terrainY) < 0.08f);
+					if (!supportedByHigherTerrain)
+					{
+						newStandActor = hitActor;
+						newStandUid = uid;
+						standHitY = hitY;
+						standHitPt = Vector3(hit.m_vHitPointWorld.x, hit.m_vHitPointWorld.y, hit.m_vHitPointWorld.z);
+						break;
+					}
+				}
+			}
+		}
+	}
+
+	if (newStandActor)
+	{
+		bool wasSamePlatform = (m_pStandingPhysicsActor == newStandActor && m_nStandingActorUid == newStandUid);
+		m_pStandingPhysicsActor = newStandActor;
+		m_nStandingActorUid = newStandUid;
+		if (m_fSpeedVertical <= 0.05f)
+		{
+			if (!wasSamePlatform || newStandActor->IsStaticOrKinematicObject())
+			{
+				// Kinematic platforms are evaluated analytically at render time; snap directly on landing or kinematic surface
+				m_vPos.y = standHitY;
+			}
+			else
+			{
+				// Dynamic rigid bodies step collision shapes at fixed 60Hz while visual mesh & PreAnimateParkourPhysics
+				// carry m_vPos via btMotionState render-interpolated pose; blend gently so 60Hz raycasts never stair-step at 144/240Hz!
+				float errY = standHitY - (float)m_vPos.y;
+				m_vPos.y += errY * (std::min)(1.f, 15.f * dt);
+			}
+			m_fSpeedVertical = 0.f;
+			if (m_pBipedStateManager && m_pBipedStateManager->IsFlying())
+			{
+				m_pBipedStateManager->AddAction(CBipedStateManager::S_JUMP_END);
+			}
+		}
+
+		// Continuous 60Hz/120Hz player contact weight onto non-kinematic dynamic bodies (seesaws & bridges)
+		if (pPhysicsWorld->IsDynamicsSimulationEnabled() && !newStandActor->IsStaticOrKinematicObject()
+			&& CGlobals::GetScene() && CGlobals::GetScene()->GetCurrentPlayer() == this)
+		{
+			PARAVECTOR3 ao = newStandActor->GetOrigin();
+			PARAVECTOR3 rel((float)m_vPos.x - ao.x, standHitY - ao.y, (float)m_vPos.z - ao.z);
+			PARAVECTOR3 imp(0.f, -42.0f * dt, 0.f);
+			newStandActor->ApplyImpulse(imp, rel);
+		}
+	}
+	else
+	{
+		bool wasOnPlatform = (m_pStandingPhysicsActor != nullptr);
+		m_pStandingPhysicsActor = nullptr;
+		m_nStandingActorUid = 0;
+
+		// If swept/pushed horizontally off a ledge while standing idle, wake vertical gravity smoothly
+		if ((wasOnPlatform || movedExternally) && m_fSpeedVertical == 0.f)
+		{
+			FallDown();
+		}
+	}
+}
+
 void CBipedObject::AnimateBiped(double dTimeDelta, bool bSharpTurning)
 {
 	// animate biped according to biped state and physics
 	if (!IsControlledExternally())
 	{
+		PreAnimateParkourPhysics(dTimeDelta);
 		// update action state from state manager
 		UpdateState((float)dTimeDelta);
 		AnimateMoving(dTimeDelta);       // moving or waiting - turning toward
+		PostAnimateParkourPhysics(dTimeDelta);
 	}
 }
 
@@ -1212,6 +1606,10 @@ void ParaEngine::CBipedObject::SetPosition(const DVector3& v)
 {
 	if (m_vPos != v)
 	{
+		if ((v - m_vPos).squaredLength() > 1.0)
+		{
+			ClearParkourPhysicsState();
+		}
 		m_vPos = v;
 		UnloadPhysics();
 	}
@@ -2298,6 +2696,13 @@ bool CBipedObject::MoveTowards(double dTimeDelta, const DVector3& vPosTarget, fl
 			orig.y += fSensorHeight;
 			// compute sensor group 0. 
 			g_sensorGroups[0].ComputeSensorGroup(orig, vBipedFacing, fRadius, GetPhysicsGroupMask());
+			// Also check knee/shin height so low physics obstacles (e.g. sweeper bars at 0.35m) block walking cleanly
+			if (!g_sensorGroups[0].HasHitAnything() && fSensorHeight > 0.45f)
+			{
+				Vector3 lowOrig = m_vPos;
+				lowOrig.y += 0.35f;
+				g_sensorGroups[0].ComputeSensorGroup(lowOrig, vBipedFacing, fRadius, GetPhysicsGroupMask());
+			}
 		}
 
 		bool bCanMove = false; // whether the character can move either directly or sliding along wall.
@@ -2529,6 +2934,12 @@ bool CBipedObject::MoveTowards(double dTimeDelta, const DVector3& vPosTarget, fl
 	if (closestShape)
 	{
 		dist = hit.m_fDistance;
+		// Prevent snapping feet onto the high roof (>0.55m step height) of a dynamic/kinematic obstacle when running into its side
+		if ((orig.y - dist) > (float)m_vPos.y + 0.55f && CGlobals::GetPhysicsWorld()->IsValidDynamicActor(closestShape))
+		{
+			dist = MAX_DIST * OBJ_UNIT;
+			closestShape = nullptr;
+		}
 	}
 	else
 	{
@@ -3669,6 +4080,13 @@ bool CBipedObject::FlyTowards(double dTimeDelta, const DVector3& vPosTarget, flo
 			orig.y += fSensorHeight;
 			// compute sensor group 0. 
 			g_sensorGroups[0].ComputeSensorGroup(orig, vBipedFacing, fRadius, GetPhysicsGroupMask());
+			// Also check knee/shin height so low physics obstacles (e.g. sweeper bars at 0.35m) block walking cleanly
+			if (!g_sensorGroups[0].HasHitAnything() && fSensorHeight > 0.45f)
+			{
+				Vector3 lowOrig = m_vPos;
+				lowOrig.y += 0.35f;
+				g_sensorGroups[0].ComputeSensorGroup(lowOrig, vBipedFacing, fRadius, GetPhysicsGroupMask());
+			}
 		}
 
 		bool bCanMove = false; // whether the character can move either directly or sliding along wall.
@@ -3829,6 +4247,12 @@ bool CBipedObject::FlyTowards(double dTimeDelta, const DVector3& vPosTarget, flo
 	if (closestShape)
 	{
 		dist = hit.m_fDistance;
+		// Prevent snapping feet onto the high roof (>0.55m step height) of a dynamic/kinematic obstacle when running into its side
+		if ((orig.y - dist) > (float)m_vPos.y + 0.55f && CGlobals::GetPhysicsWorld()->IsValidDynamicActor(closestShape))
+		{
+			dist = MAX_DIST * OBJ_UNIT;
+			closestShape = nullptr;
+		}
 	}
 	else
 	{
@@ -5751,6 +6175,8 @@ int CBipedObject::InstallFields(CAttributeClass* pClass, bool bOverride)
 	pClass->AddField("IsControlledExternally", FieldType_Bool, (void*)SetIsControlledExternally_s, (void*)IsControlledExternally_s, NULL, "", bOverride);
 	pClass->AddField("Kinematic", FieldType_Bool, (void*)SetKinematic_s, (void*)IsKinematic_s, NULL, "if true, biped can push dynamic objects", bOverride);
 	pClass->AddField("BlendingFactor", FieldType_Float, (void*)SetBlendingFactor_s, NULL, NULL, "", bOverride);
+	pClass->AddField("ExternalImpulseVelocity", FieldType_Vector3, (void*)SetExternalImpulseVelocity_s, (void*)GetExternalImpulseVelocity_s, NULL, "", bOverride);
+	pClass->AddField("ExternalSurfaceVelocity", FieldType_Vector3, (void*)SetExternalSurfaceVelocity_s, (void*)GetExternalSurfaceVelocity_s, NULL, "", bOverride);
 
 	return S_OK;
 }

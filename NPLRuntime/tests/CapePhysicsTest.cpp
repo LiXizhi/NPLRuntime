@@ -231,6 +231,70 @@ int main()
 		budget.ResetForTest();
 	}
 
+	// 5. Canonical Character Body Collider: idle hang & walking-backward anti-tunneling
+	{
+		CapeStyleParams style;
+		style.collarStyle = CapeCollarStyle::WrapPoncho;
+		style.hemStyle = CapeHemStyle::Rounded;
+		style.gridCols = 9;
+		style.gridRows = 7;
+		style.length = 0.90f;
+
+		const CapeVec3 neck = { 0.0f, 1.25f, 0.0f };
+		const CapeVec3 leftSh = { 0.0f, 1.21f, 0.18f };
+		const CapeVec3 rightSh = { 0.0f, 1.21f, -0.18f };
+		const CapeVec3 fwd = { 1.0f, 0.0f, 0.0f };
+		const CapeVec3 up = { 0.0f, 1.0f, 0.0f };
+		const CapeVec3 right = { 0.0f, 0.0f, -1.0f };
+
+		CapeClothMesh cloth;
+		cloth.BuildProcedural(style, neck, leftSh, rightSh, fwd, up, right, 1.0f);
+		CHECK(cloth.bodyCollider.enabled);
+
+		CapeSimTuning tuning;
+		CapeMotionInput motion;
+		motion.forwardDir = fwd;
+		motion.upDir = up;
+		motion.rightDir = right;
+
+		// (a) 120 frames of standing completely still (v = 0): cape must rest outside canonical back/hip/leg ellipse
+		for (int step = 0; step < 120; ++step)
+		{
+			motion.timeSeconds = step * (1.0f / 60.0f);
+			cloth.StepSimulation(1.0f / 60.0f, tuning, motion, neck, leftSh, rightSh, neck, nullptr, 0, 4);
+		}
+		for (int r = 1; r < cloth.rows; ++r)
+		{
+			for (int c = 2; c < cloth.cols - 2; ++c)
+			{
+				const CapeParticle& pt = cloth.particles[static_cast<size_t>(r * cloth.cols + c)];
+				const float s = (std::max)(0.0f, (std::min)(1.0f, (cloth.bodyCollider.neckY - pt.pos.y) / (cloth.bodyCollider.neckY - cloth.bodyCollider.baseY)));
+				float backR = 0.0f, frontR = 0.0f, sideR = 0.0f;
+				cloth.bodyCollider.SampleSlice(s, backR, frontR, sideR);
+				const float ellip = (pt.pos.x / backR) * (pt.pos.x / backR) + (pt.pos.z / sideR) * (pt.pos.z / sideR);
+				CHECK(pt.pos.x < 0.0f);
+				CHECK(ellip >= 0.94f);
+			}
+		}
+
+		// (b) 120 frames of walking/running BACKWARD (localVelocity.x = -4.5 m/s):
+		//     cloth must NEVER tunnel through spine/chest to +X!
+		motion.localVelocity = { -4.5f, 0.0f, 0.0f };
+		for (int step = 0; step < 120; ++step)
+		{
+			motion.timeSeconds = 2.0f + step * (1.0f / 60.0f);
+			cloth.StepSimulation(1.0f / 60.0f, tuning, motion, neck, leftSh, rightSh, neck, nullptr, 0, 4);
+		}
+		for (int r = 1; r < cloth.rows; ++r)
+		{
+			for (int c = 2; c < cloth.cols - 2; ++c)
+			{
+				const CapeParticle& pt = cloth.particles[static_cast<size_t>(r * cloth.cols + c)];
+				CHECK(pt.pos.x <= 0.0f); // Interior cape cloth never pokes out the front chest/stomach
+			}
+		}
+	}
+
 	std::puts("Cape physics & simulation budget checks passed");
 	return 0;
 }

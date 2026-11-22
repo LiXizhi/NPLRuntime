@@ -314,6 +314,22 @@
                 "--",
                 "/v:minimal"
             ],
+            "osx": {
+                "command": "${workspaceFolder}/build_linux.sh",
+                "args": [
+                    "server",
+                    "Release"
+                ],
+                "problemMatcher": "$gcc"
+            },
+            "linux": {
+                "command": "${workspaceFolder}/build_linux.sh",
+                "args": [
+                    "server",
+                    "Release"
+                ],
+                "problemMatcher": "$gcc"
+            },
             "group": "build",
             "problemMatcher": "$msCompile",
             "presentation": {

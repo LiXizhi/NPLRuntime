@@ -667,8 +667,152 @@ void CharCapeInstance::ExtractRigAnchorsAndCapsules(
 	CapeVec3 lArm, rArm;
 	if (getBonePos(Bone_L_UpperArm, lArm) && getBonePos(Bone_R_UpperArm, rArm))
 	{
-		outCapsules[outCapsuleCount++] = { lArm, rArm, 0.095f * m_modelScale };
+		outCapsules[outCapsuleCount++] = { lArm, rArm, 0.115f * m_modelScale };
 	}
+}
+
+void CharCapeInstance::BuildCanonicalBodyCollider(
+	CParaXModel* pModel,
+	const CapeVec3& neckAnchor,
+	const CapeVec3& leftShoulder,
+	const CapeVec3& rightShoulder,
+	CapeBodyCollider& outBody) const
+{
+	float baseY = 0.0f;
+	if (pModel)
+	{
+		const Vector3& minE = pModel->GetHeader().minExtent;
+		if (std::fabs(minE.y) < 0.35f)
+			baseY = minE.y;
+	}
+
+	const uint32_t nVerts = pModel ? pModel->GetObjectNum().nVertices : 0;
+	const uint32_t nIndices = pModel ? pModel->GetObjectNum().nIndices : 0;
+	if (pModel && pModel->m_origVertices && nVerts > 0)
+	{
+		float minVertY = 1e9f;
+		const uint32_t step = (nVerts > 2000) ? (nVerts / 1000) : 1;
+		for (uint32_t i = 0; i < nVerts; i += step)
+		{
+			const float vy = pModel->m_origVertices[i].pos.y;
+			if (std::isfinite(vy) && vy < minVertY)
+				minVertY = vy;
+		}
+		if (minVertY > -0.35f && minVertY < 0.35f)
+			baseY = minVertY;
+	}
+
+	const float neckY = (std::max)(baseY + 0.32f * m_modelScale, neckAnchor.y);
+	const float shHalf = 0.5f * std::fabs((rightShoulder - leftShoulder).Dot(m_rightDir));
+	// Center canonical body at (0, 0) in horizontal character space, gently blended toward neck X
+	const float centerX = (std::max)(-0.05f * m_modelScale, (std::min)(0.05f * m_modelScale, neckAnchor.Dot(m_forwardDir) * 0.30f));
+	outBody.InitCanonical(baseY, neckY, shHalf, m_modelScale, centerX, 0.0f);
+
+	if (!pModel || !pModel->m_origVertices || !pModel->m_indices || nVerts == 0 || nIndices == 0)
+		return;
+
+	const float bodyH = (std::max)(0.25f, neckY - baseY);
+	const float maxArmCapZ = (std::max)(shHalf * 1.48f + 0.05f, 0.28f * m_modelScale);
+	float meshBack[CapeBodyCollider::NUM_SLICES] = {};
+	float meshFront[CapeBodyCollider::NUM_SLICES] = {};
+	float meshSide[CapeBodyCollider::NUM_SLICES] = {};
+	float headBackMax = outBody.headBackRadius;
+
+	auto considerVertex = [&](const Vector3& pos)
+	{
+		const float y = pos.y;
+		const float dx = (pos.x - centerX) * m_forwardDir.x + pos.z * m_forwardDir.z;
+		const float dz = std::fabs(pos.x * m_rightDir.x + pos.z * m_rightDir.z);
+		if (!std::isfinite(dx) || !std::isfinite(dz) || !std::isfinite(y))
+			return;
+
+		if (y > neckY + 0.03f && y < neckY + bodyH * 0.85f)
+		{
+			// Back-of-head / helmet / hair envelope (ignore wide elf ears / horns far out on ±Z)
+			if (dx < 0.0f && dz < (std::max)(0.16f * m_modelScale, shHalf * 0.95f))
+			{
+				headBackMax = (std::max)(headBackMax, -dx);
+			}
+			return;
+		}
+
+		if (y < baseY + 0.02f || y > neckY + 0.03f)
+			return;
+		// Exclude outstretched T-pose / A-pose forearms & hands so waist/hip slices fit standing arms
+		if (dz > maxArmCapZ)
+			return;
+
+		const float sNorm = (std::max)(0.0f, (std::min)(0.999f, (neckY - y) / bodyH));
+		const int si = static_cast<int>(sNorm * CapeBodyCollider::NUM_SLICES);
+		if (dx < 0.0f)
+			meshBack[si] = (std::max)(meshBack[si], -dx);
+		else
+			meshFront[si] = (std::max)(meshFront[si], dx);
+		meshSide[si] = (std::max)(meshSide[si], dz);
+	};
+
+	bool scannedAnyPass = false;
+	for (size_t pi = 0; pi < pModel->passes.size(); ++pi)
+	{
+		ModelRenderPass& pass = pModel->passes[pi];
+		if (pass.indexCount == 0 || pass.geoset < 0 || static_cast<size_t>(pass.geoset) >= pModel->geosets.size())
+			continue;
+		const int gid = pModel->geosets[static_cast<size_t>(pass.geoset)].id;
+		const int cat = gid / 100;
+		// Exclude cape & wing geosets from inflating the body collider
+		if (cat == CharModelInstance::CSET_CAPE || cat == CharModelInstance::CSET_WINGS)
+			continue;
+
+		scannedAnyPass = true;
+		const int vOffset = pass.GetVertexStart(pModel);
+		const uint32_t iStart = pass.GetStartIndex();
+		for (uint32_t k = 0; k < pass.indexCount && (iStart + k) < nIndices; k += 3)
+		{
+			const int vIdx = static_cast<int>(pModel->m_indices[iStart + k]) + vOffset;
+			if (vIdx >= 0 && static_cast<uint32_t>(vIdx) < nVerts)
+			{
+				considerVertex(pModel->m_origVertices[vIdx].pos);
+			}
+		}
+	}
+
+	if (!scannedAnyPass)
+	{
+		for (uint32_t i = 0; i < nVerts; ++i)
+			considerVertex(pModel->m_origVertices[i].pos);
+	}
+
+	// Cloth skin thickness + triangle chord clearance margin (~3cm scaled)
+	const float margin = 0.028f * m_modelScale + 0.012f;
+	const float maxBodyBackCap = (std::max)(0.34f * m_modelScale + 0.08f, bodyH * 0.48f);
+	const float maxBodySideCap = maxArmCapZ + margin;
+
+	for (int i = 0; i < CapeBodyCollider::NUM_SLICES; ++i)
+	{
+		if (meshBack[i] > 1e-3f)
+			outBody.backRadius[i] = (std::max)(outBody.backRadius[i], (std::min)(meshBack[i] + margin, maxBodyBackCap));
+		if (meshFront[i] > 1e-3f)
+			outBody.frontRadius[i] = (std::max)(outBody.frontRadius[i], (std::min)(meshFront[i] + margin, maxBodyBackCap));
+		if (meshSide[i] > 1e-3f)
+			outBody.sideRadius[i] = (std::max)(outBody.sideRadius[i], (std::min)(meshSide[i] + margin, maxBodySideCap));
+	}
+
+	// Smooth vertical transitions across the 8 slices so cloth slides down back/tunic without snagging
+	float smoothBack[CapeBodyCollider::NUM_SLICES];
+	float smoothSide[CapeBodyCollider::NUM_SLICES];
+	for (int i = 0; i < CapeBodyCollider::NUM_SLICES; ++i)
+	{
+		const int im = (std::max)(0, i - 1);
+		const int ip = (std::min)(CapeBodyCollider::NUM_SLICES - 1, i + 1);
+		smoothBack[i] = (std::max)(outBody.backRadius[i] * 0.96f, 0.25f * outBody.backRadius[im] + 0.50f * outBody.backRadius[i] + 0.25f * outBody.backRadius[ip]);
+		smoothSide[i] = (std::max)(outBody.sideRadius[i] * 0.96f, 0.25f * outBody.sideRadius[im] + 0.50f * outBody.sideRadius[i] + 0.25f * outBody.sideRadius[ip]);
+	}
+	for (int i = 0; i < CapeBodyCollider::NUM_SLICES; ++i)
+	{
+		outBody.backRadius[i] = smoothBack[i];
+		outBody.sideRadius[i] = smoothSide[i];
+	}
+	outBody.headBackRadius = (std::min)(0.28f * m_modelScale + 0.04f, headBackMax + margin * 0.5f);
 }
 
 bool CharCapeInstance::BuildProceduralCape(CParaXModel* pBaseModel)
@@ -679,9 +823,25 @@ bool CharCapeInstance::BuildProceduralCape(CParaXModel* pBaseModel)
 	const Vector3& minE = pBaseModel->GetHeader().minExtent;
 	const Vector3& maxE = pBaseModel->GetHeader().maxExtent;
 	float charHeight = maxE.y - minE.y;
+	if ((charHeight < 0.4f || charHeight > 5.0f) && pBaseModel->m_origVertices && pBaseModel->GetObjectNum().nVertices > 0)
+	{
+		float minY = 1e9f, maxY = -1e9f;
+		const uint32_t nV = pBaseModel->GetObjectNum().nVertices;
+		const uint32_t step = (nV > 2000) ? (nV / 1000) : 1;
+		for (uint32_t i = 0; i < nV; i += step)
+		{
+			const float vy = pBaseModel->m_origVertices[i].pos.y;
+			if (std::isfinite(vy))
+			{
+				minY = (std::min)(minY, vy);
+				maxY = (std::max)(maxY, vy);
+			}
+		}
+		if (maxY > minY + 0.35f && (maxY - minY) <= 5.0f)
+			charHeight = maxY - minY;
+	}
 	if (charHeight < 0.4f || charHeight > 5.0f)
 	{
-		// Fallback from head/neck pivot height when model header bounds are unpopulated
 		const int neckIdx = pBaseModel->m_boneLookup[Bone_Neck];
 		if (neckIdx >= 0 && static_cast<uint32_t>(neckIdx) < pBaseModel->GetObjectNum().nBones && pBaseModel->bones)
 		{
@@ -692,24 +852,37 @@ bool CharCapeInstance::BuildProceduralCape(CParaXModel* pBaseModel)
 		if (charHeight < 0.4f || charHeight > 5.0f)
 			charHeight = 1.72f;
 	}
-	m_modelScale = m_config.autoScale ? (std::max)(0.45f, (std::min)(2.2f, charHeight / 1.72f)) : 1.0f;
 
 	// Canonical ParaEngine CBipedObject / CParaXModel basis: +X forward, +Y up, -Z right
 	m_upDir = { 0.0f, 1.0f, 0.0f };
 	m_forwardDir = { 1.0f, 0.0f, 0.0f };
 	m_rightDir = { 0.0f, 0.0f, -1.0f };
+	m_modelScale = m_config.autoScale ? (std::max)(0.40f, (std::min)(2.2f, charHeight / 1.72f)) : 1.0f;
 
 	CapeVec3 neck, leftSh, rightSh;
 	size_t capCount = 0;
 	ExtractRigAnchorsAndCapsules(pBaseModel, neck, leftSh, rightSh, nullptr, capCount);
+
+	// Blend overall height scale with neck/torso height scale so chibi big-head avatars get properly proportioned capes
+	if (m_config.autoScale && neck.y > 0.25f && neck.y < 3.5f)
+	{
+		const float neckScale = neck.y / 1.32f;
+		const float fullScale = charHeight / 1.72f;
+		m_modelScale = (std::max)(0.38f, (std::min)(2.2f, 0.55f * neckScale + 0.45f * fullScale));
+	}
+
 	m_initialNeckRef = neck;
 	m_currentNeckAnchor = neck;
+
+	CapeBodyCollider bodyCol;
+	BuildCanonicalBodyCollider(pBaseModel, neck, leftSh, rightSh, bodyCol);
 
 	m_cloth.BuildProcedural(
 		m_config.style,
 		neck, leftSh, rightSh,
 		m_forwardDir, m_upDir, m_rightDir,
-		m_modelScale);
+		m_modelScale,
+		&bodyCol);
 
 	// Precompute zero-physics static fallback triangles so distant characters do 0 math per frame
 	m_cloth.BuildSurfaceTriangles(
