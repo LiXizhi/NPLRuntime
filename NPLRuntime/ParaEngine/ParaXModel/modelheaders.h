@@ -261,6 +261,28 @@ namespace ParaEngine
 	};
 
 
+	enum ParaXParticleEmitterFlags : int32 {
+		PARAX_PS_FLAG_EXTENDED_V2      = 0x0001, // enables v2 fields in p.d[], p.f2[], nZero1/ofsZero1, nZero2/ofsZero2
+		PARAX_PS_FLAG_WORLD_GRAVITY    = 0x0002, // keep gravity (0,-1,0) in world space regardless of bone rotation
+		PARAX_PS_FLAG_LOCAL_SPACE      = 0x0004, // keep particles in local model space (!m_bUseAbsCord)
+		PARAX_PS_FLAG_ROTATE_TO_SPEED  = 0x0008, // align quad with particle velocity vector
+		PARAX_PS_FLAG_NO_BILLBOARD     = 0x1000, // legacy 4096: disable camera billboarding
+	};
+
+	enum ParaXRibbonEmitterFlags : int32 {
+		PARAX_RIBBON_FLAG_EXTENDED_V2   = 0x0001, // enables v2 fields (unk=maxLife, s1=blend, s2=taperPermille, ofsUnknown=colorEnd)
+		PARAX_RIBBON_FLAG_ORIENT_CAMERA = 0x0002, // camera-facing billboard cross-product instead of fixed bone axis
+		PARAX_RIBBON_FLAG_LOCAL_SPACE   = 0x0004, // keep ribbon segments in local model space (!m_bUseAbsCord)
+		PARAX_RIBBON_FLAG_HAS_END_COLOR = 0x0008, // interpolate from animated color/opacity to ofsUnknown ARGB tail color
+	};
+
+	struct ModelParticleBurstDef {
+		int32 animIndex; // animation index (-1 for all animations)
+		int32 timeMs;    // frame time (ms) within animation range
+		int32 count;     // base particle count to emit instantaneously
+		int32 countVar;  // +/- random count variation
+	};
+
 	struct ModelParticleParams {
 		float mid;
 		uint32 colors[3];

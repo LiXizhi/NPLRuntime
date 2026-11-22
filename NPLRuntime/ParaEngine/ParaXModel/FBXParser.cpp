@@ -16,6 +16,7 @@
 #include "ParaWorldAsset.h"
 #include "ParaXBone.h"
 #include "particle.h"
+#include "ParaXGltfExtras.h"
 #include "StringHelper.h"
 #include <math.h>
 #include <numeric>
@@ -144,6 +145,13 @@ CParaXModel* FBXParser::ParseParaXModel(const char* buffer, int nSize, const cha
 	Reset();
 	SetAnimSplitterFilename();
 	// this is not needed: aiProcess_MakeLeftHanded | 
+	auto isGltfHint = [](const char* h) -> bool {
+		if (!h)
+			return false;
+		return (h[0] == 'g' || h[0] == 'G') && (h[1] == 'l' || h[1] == 'L') &&
+			(((h[2] == 'b' || h[2] == 'B') && h[3] == '\0') ||
+			 ((h[2] == 't' || h[2] == 'T') && (h[3] == 'f' || h[3] == 'F') && h[4] == '\0'));
+	};
 	const aiScene* pFbxScene = importer.ReadFileFromMemory(buffer, nSize, aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_FlipUVs | aiProcess_LimitBoneWeights, pHint);
 	if (pFbxScene) {
 		ParaXHeaderDef m_xheader;
@@ -205,12 +213,23 @@ CParaXModel* FBXParser::ParseParaXModel(const char* buffer, int nSize, const cha
 		CalculateScale(pMesh);
 
 		PostProcessParaXModelData(pMesh);
+		if (isGltfHint(pHint))
+		{
+			ParaXGltfExtras::ApplyExtrasFromBuffer(buffer, nSize, pMesh);
+		}
 #ifdef _DEBUG
 		//PrintDebug(pFbxScene);
 #endif
 	}
 	else {
-		OUTPUT_LOG("Error parsing '%s': '%s'\n", m_sFilename.c_str(), importer.GetErrorString());
+		if (isGltfHint(pHint))
+		{
+			pMesh = ParaXGltfExtras::ParseStandaloneModelFromBuffer(buffer, nSize);
+		}
+		if (!pMesh)
+		{
+			OUTPUT_LOG("Error parsing '%s': '%s'\n", m_sFilename.c_str(), importer.GetErrorString());
+		}
 	}
 	return pMesh;
 }

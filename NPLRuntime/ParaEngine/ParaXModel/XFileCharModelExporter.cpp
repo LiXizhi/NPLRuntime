@@ -420,7 +420,7 @@ DWORD ParaEngine::XFileCharModelExporter::CountIsAnimatedValue()
 		(m_pMesh->animBones ? 1 << 2 : 0) |
 		(m_pMesh->animTexRGB ? 1 << 4 : 0);
 	//value = value >0 ?value:
-	if (0 == value && m_pMesh->animated)
+	if ((0 == value && m_pMesh->animated) || m_pMesh->GetObjectNum().nParticleEmitters > 0 || m_pMesh->GetObjectNum().nRibbonEmitters > 0)
 	{
 		value |= (1 << 3);
 	}
@@ -566,13 +566,15 @@ bool ParaEngine::XFileCharModelExporter::WriteXGlobalSequences(XFileDataObjectPt
 
 bool ParaEngine::XFileCharModelExporter::WriteXVertices(XFileDataObjectPtr pData, const string& strName /*= ""*/)
 {
+	int nVertices = m_pMesh->m_objNum.nVertices;
+	if (nVertices <= 0 || m_pMesh->m_origVertices == nullptr)
+		return true;
+
 	pData->m_sTemplateName = "XVertices";
 	pData->m_sName = strName;
 
 	int nSize = sizeof(XVerticesDef);
 	pData->ResizeBuffer(nSize);
-
-	int nVertices = m_pMesh->m_objNum.nVertices;
 
 	XVerticesDef data;
 	data.nType = 0;
@@ -653,7 +655,7 @@ bool ParaEngine::XFileCharModelExporter::WriteXTextures(XFileDataObjectPtr pData
 				else
 					pBuffer->type = 0;
 				string name = m_pMesh->textures[i]->GetKey();
-				if (m_pMesh->textures[i]->GetRawData())
+				if (m_pMesh->textures[i]->GetRawData() && !IsBuiltinParticleTextureName(name))
 				{
 					DWORD data[1] = { (DWORD)(m_pMesh->textures[i]->GetRawDataSize()) };
 					m_pRawData->AddRawData(data, 1);
@@ -918,12 +920,79 @@ bool ParaEngine::XFileCharModelExporter::WriteXParticleEmitters(XFileDataObjectP
 			particleSystems[i].rows = particleSystem.rows;
 			particleSystems[i].cols = particleSystem.cols;
 			particleSystems[i].s1 = particleSystem.type;
+			particleSystems[i].s2 = particleSystem.patternType;
 			particleSystems[i].type = particleSystem.emitter ? particleSystem.emitter->GetEmitterType() : ParticleEmitter::TYPE_NONE;
 
+			particleSystems[i].flags = 0;
 			if (!particleSystem.billboard)
-				particleSystems[i].flags |= 4096;
-			else
-				particleSystems[i].flags = 0;
+				particleSystems[i].flags |= PARAX_PS_FLAG_NO_BILLBOARD;
+
+			const bool needsV2 = particleSystem.m_bExtendedV2
+				|| particleSystem.useWorldGravity
+				|| particleSystem.localSpace
+				|| particleSystem.rotate2SpeedDirection
+				|| particleSystem.trailEmitterIndex >= 0
+				|| particleSystem.deathEmitterIndex >= 0
+				|| !particleSystem.bursts.empty()
+				|| !particleSystem.palette.empty()
+				|| particleSystems[i].type >= ParticleEmitter::TYPE_SPHERE_SHELL_EMITTER
+				|| particleSystem.twinkleFreq > 0.0f;
+
+			if (needsV2)
+			{
+				particleSystems[i].flags |= PARAX_PS_FLAG_EXTENDED_V2;
+				if (particleSystem.useWorldGravity)
+					particleSystems[i].flags |= PARAX_PS_FLAG_WORLD_GRAVITY;
+				if (particleSystem.localSpace)
+					particleSystems[i].flags |= PARAX_PS_FLAG_LOCAL_SPACE;
+				if (particleSystem.rotate2SpeedDirection)
+					particleSystems[i].flags |= PARAX_PS_FLAG_ROTATE_TO_SPEED;
+
+				particleSystems[i].p.d[0] = particleSystem.trailEmitterIndex;
+				particleSystems[i].p.d[1] = particleSystem.deathEmitterIndex;
+				particleSystems[i].p.d[2] = particleSystem.deathCount;
+				particleSystems[i].p.d[3] = particleSystem.deathCountVar;
+
+				particleSystems[i].p.f2[0] = particleSystem.emitDir.x;
+				particleSystems[i].p.f2[1] = particleSystem.emitDir.y;
+				particleSystems[i].p.f2[2] = particleSystem.emitDir.z;
+				particleSystems[i].p.f2[3] = particleSystem.minPolar;
+				particleSystems[i].p.f2[4] = particleSystem.maxPolar;
+				particleSystems[i].p.f2[5] = particleSystem.shellThickness;
+				particleSystems[i].p.f2[6] = particleSystem.trailInterval;
+				particleSystems[i].p.f2[7] = particleSystem.inheritVelocity;
+				particleSystems[i].p.f2[8] = particleSystem.twinkleFreq;
+				particleSystems[i].p.f2[9] = particleSystem.twinkleAmount;
+
+				if (!particleSystem.bursts.empty())
+				{
+					std::vector<ModelParticleBurstDef> rawBursts;
+					rawBursts.reserve(particleSystem.bursts.size());
+					for (const auto& b : particleSystem.bursts)
+					{
+						ModelParticleBurstDef bd;
+						bd.animIndex = b.animIndex;
+						bd.timeMs = b.timeMs;
+						bd.count = b.count;
+						bd.countVar = b.countVar;
+						rawBursts.push_back(bd);
+					}
+					particleSystems[i].nZero1 = (int32)rawBursts.size();
+					particleSystems[i].ofsZero1 = m_pRawData->AddRawData(reinterpret_cast<const char*>(rawBursts.data()), (int)(rawBursts.size() * sizeof(ModelParticleBurstDef)));
+				}
+
+				if (!particleSystem.palette.empty())
+				{
+					std::vector<DWORD> rawPal;
+					rawPal.reserve(particleSystem.palette.size());
+					for (const auto& col : particleSystem.palette)
+					{
+						rawPal.push_back((DWORD)LinearColor((const float*)&col));
+					}
+					particleSystems[i].nZero2 = (int32)rawPal.size();
+					particleSystems[i].ofsZero2 = m_pRawData->AddRawData(rawPal.data(), (int)rawPal.size());
+				}
+			}
 
 			for (uint32 m = 0; m < m_pMesh->GetObjectNum().nBones; ++m) {
 				if ((m_pMesh->bones + m) == particleSystem.parent) {
@@ -975,7 +1044,23 @@ bool ParaEngine::XFileCharModelExporter::WriteXRibbonEmitters(XFileDataObjectPtr
 					break;
 				}
 			}
+			ribbons[i].nTextures = (int32)(ribbon.maxStepDist * 1000.0f + 0.5f);
 			ribbons[i].ofsTextures = ribbon.m_texture_index;
+
+			int32 rflags = PARAX_RIBBON_FLAG_EXTENDED_V2;
+			if (ribbon.orientCamera)
+				rflags |= PARAX_RIBBON_FLAG_ORIENT_CAMERA;
+			if (!ribbon.m_bUseAbsCord)
+				rflags |= PARAX_RIBBON_FLAG_LOCAL_SPACE;
+			if (ribbon.hasEndColor)
+			{
+				rflags |= PARAX_RIBBON_FLAG_HAS_END_COLOR;
+				ribbons[i].ofsUnknown = (int32)((DWORD)LinearColor((const float*)&ribbon.colorEnd));
+			}
+			ribbons[i].nUnknown = rflags;
+			ribbons[i].unk = ribbon.maxLife;
+			ribbons[i].s1 = (int16)ribbon.blend;
+			ribbons[i].s2 = (int16)(ribbon.widthEndScale * 1000.0f + 0.5f);
 
 			WriteAnimationBlock(&ribbons[i].color, ribbon.color);
 			WriteAnimationBlock(&ribbons[i].opacity, ribbon.opacity);
@@ -988,37 +1073,26 @@ bool ParaEngine::XFileCharModelExporter::WriteXRibbonEmitters(XFileDataObjectPtr
 
 bool ParaEngine::XFileCharModelExporter::WriteXCameras(XFileDataObjectPtr pData, const string& strName /*= ""*/)
 {
-	int nRibbonEmitters = m_pMesh->GetObjectNum().nRibbonEmitters;
-	if (nRibbonEmitters > 0)
+	int nCameras = m_pMesh->GetObjectNum().nCameras;
+	if (nCameras > 0 && m_pMesh->hasCamera)
 	{
 		pData->m_sTemplateName = "XCameras";
 		pData->m_sName = strName;
 
-		int nSize = 4 + sizeof(ModelRibbonEmitterDef) * nRibbonEmitters;
+		int nSize = 4 + sizeof(ModelCameraDef);
 		pData->ResizeBuffer(nSize);
 		memset(pData->GetBuffer(), 0, nSize);
-		*(DWORD*)(pData->GetBuffer()) = (DWORD)nRibbonEmitters;
-		ModelRibbonEmitterDef* ribbons = (ModelRibbonEmitterDef*)(pData->GetBuffer() + 4);
-		for (int i = 0; i < nRibbonEmitters; i++) {
-			const RibbonEmitter& ribbon = m_pMesh->ribbons[i];
-
-			ribbons[i].pos = ribbon.pos;
-			ribbons[i].res = (float)ribbon.numsegs;
-			ribbons[i].length = ribbon.seglen;
-
-			for (uint32 m = 0; m < m_pMesh->GetObjectNum().nBones; ++m) {
-				if ((m_pMesh->bones + m) == ribbon.parent) {
-					ribbons[i].bone = m;
-					break;
-				}
-			}
-			ribbons[i].ofsTextures = ribbon.m_texture_index;
-
-			WriteAnimationBlock(&ribbons[i].color, ribbon.color);
-			WriteAnimationBlock(&ribbons[i].opacity, ribbon.opacity);
-			WriteAnimationBlock(&ribbons[i].above, ribbon.above);
-			WriteAnimationBlock(&ribbons[i].below, ribbon.below);
-		}
+		*(DWORD*)(pData->GetBuffer()) = 1;
+		ModelCameraDef* camDef = (ModelCameraDef*)(pData->GetBuffer() + 4);
+		camDef->id = 0;
+		camDef->fov = m_pMesh->cam.fov;
+		camDef->farclip = m_pMesh->cam.farclip;
+		camDef->nearclip = m_pMesh->cam.nearclip;
+		camDef->pos = m_pMesh->cam.pos;
+		camDef->target = m_pMesh->cam.target;
+		WriteAnimationBlock(&camDef->transPos, m_pMesh->cam.tPos);
+		WriteAnimationBlock(&camDef->transTarget, m_pMesh->cam.tTarget);
+		WriteAnimationBlock(&camDef->rot, m_pMesh->cam.rot);
 	}
 
 	return true;

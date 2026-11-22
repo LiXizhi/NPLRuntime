@@ -13,6 +13,7 @@
 #include "ParaXEntity.h"
 #include "ParaXModel/ParaXModel.h"
 #include "ParaXModel/FBXParser.h"
+#include "ParaXModel/ParaXGltfExtras.h"
 #include "ParaXModel/PLYParser.h"
 #include "BMaxModel/BMaxParser.h"
 #include "ParaXSerializer.h"
@@ -385,6 +386,11 @@ HRESULT ParaEngine::CParaXProcessor::CopyToResource()
 					// static or animated fbx model
 					FBXParser parser(iCur->m_sMeshFileName);
 					iCur->m_pParaXMesh = parser.ParseParaXModel(myFile.getBuffer(), myFile.getSize(), sExt.c_str());
+				}
+#else
+				else if (sExt == "gltf" || sExt == "glb")
+				{
+					iCur->m_pParaXMesh = ParaXGltfExtras::ParseStandaloneModelFromBuffer(myFile.getBuffer(), myFile.getSize());
 				}
 #endif
 				else if (sExt == "ply") {

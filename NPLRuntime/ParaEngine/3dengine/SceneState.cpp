@@ -48,6 +48,7 @@ namespace ParaEngine
 		listShadowReceivers.reserve(16);
 		listShadowCasters.reserve(16);
 		listParticleSystems.reserve(32);
+		listRibbonEmitters.reserve(16);
 
 		Cleanup();
 	};
@@ -57,6 +58,7 @@ namespace ParaEngine
 		CleanupSceneState();
 		
 		listParticleSystems.clear();
+		listRibbonEmitters.clear();
 
 		mxView = Matrix4::IDENTITY;
 		mxProj = Matrix4::IDENTITY;
@@ -157,9 +159,23 @@ namespace ParaEngine
 		
 	}
 
+	void SceneState::AddRibbonEmitter(RibbonEmitter* re)
+	{
+		if (re)
+		{
+			for (auto iter = listRibbonEmitters.begin(); iter != listRibbonEmitters.end(); ++iter)
+			{
+				if ((*iter).get() == re)
+					return;
+			}
+			listRibbonEmitters.push_back(RibbonEmitterRef(re));
+		}
+	}
+
 	HRESULT SceneState::DeleteDeviceObjects()
 	{
 		listParticleSystems.clear();
+		listRibbonEmitters.clear();
 		return S_OK;
 	}
 

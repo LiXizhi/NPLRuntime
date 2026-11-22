@@ -9,6 +9,7 @@
 #include "CustomCharModelInstance.h"
 #include "ParaXModelCanvas.h"
 #include "GltfModel.h"
+#include "ParaXGltfExtras.h"
 #include "MeshObject.h"
 
 namespace ParaEngine
@@ -112,6 +113,11 @@ namespace ParaEngine
         std::shared_ptr<GLTFScene> scene = ExportScene();
         ExportSceneNode(paraXModel, scene);
         ExportJson();
+        Json::Value paraxExtras;
+        if (ParaXGltfExtras::ExportExtrasFromModel(paraXModel, paraxExtras))
+        {
+            m_json_gltf["extras"]["parax"] = paraxExtras;
+        }
         if (filepath != "")
         {
             WriteFile(filepath);
@@ -588,6 +594,10 @@ namespace ParaEngine
 
     std::shared_ptr<GLTFMesh> GltfModel::ExportMesh(CParaXModel* paraXModel)
     {
+        if (!paraXModel || paraXModel->m_objNum.nVertices == 0 || paraXModel->passes.empty() || paraXModel->m_origVertices == nullptr)
+        {
+            return nullptr;
+        }
         std::shared_ptr<GLTFMesh> mesh = std::make_shared<GLTFMesh>();
         mesh->index = meshIndex++;
         m_gltf->meshs.push_back(mesh);
@@ -1263,7 +1273,7 @@ namespace ParaEngine
             std::shared_ptr<GLTFMesh> mesh = m_gltf->meshs[i];
             meshes[mesh->index] = ExportJsonMesh(mesh);
         }
-        m_json_gltf["meshes"] = meshes;
+        if (m_gltf->meshs.size() > 0) m_json_gltf["meshes"] = meshes;
 
         // materials
         Json::Value materials = Json::Value(Json::arrayValue);
@@ -1373,8 +1383,28 @@ namespace ParaEngine
         if (file.CreateNewFile(filename.c_str()))
         {
             Json::FastWriter writer;
-            const std::string& data = writer.write(m_json_gltf);
-            file.write(data.c_str(), (int)data.length());
+            std::string data = writer.write(m_json_gltf);
+            std::string ext = CParaFile::GetFileExtension(filename);
+            StringHelper::make_lower(ext);
+            if (ext == "glb")
+            {
+                while ((data.size() % 4) != 0)
+                    data.push_back(' ');
+                GLTFHeader hdr;
+                hdr.magic = 0x46546C67u;
+                hdr.version = 2u;
+                hdr.length = static_cast<uint32_t>(12 + 8 + data.size());
+                GLTFChunk jsonChunk;
+                jsonChunk.chunkLength = static_cast<uint32_t>(data.size());
+                jsonChunk.chunkType = GLTF_JSON;
+                file.write(&hdr, sizeof(GLTFHeader));
+                file.write(&jsonChunk, sizeof(GLTFChunk));
+                file.write(data.c_str(), (int)data.size());
+            }
+            else
+            {
+                file.write(data.c_str(), (int)data.length());
+            }
             file.close();
         }
     }

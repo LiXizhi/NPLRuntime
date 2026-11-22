@@ -219,6 +219,13 @@ CParaXModel* ParaEngine::XFileCharModelParser::LoadParaX_Body()
 				pSubData.reset();
 			}
 
+			if (pMesh->m_objNum.nParticleEmitters > 0 || pMesh->m_objNum.nRibbonEmitters > 0)
+			{
+				pMesh->animated = true;
+				if (pMesh->m_RenderMethod == CParaXModel::NO_ANIM)
+					pMesh->m_RenderMethod = CParaXModel::SOFT_ANIM;
+			}
+
 			if (pMesh->m_RenderMethod == CParaXModel::NO_ANIM)
 			{
 				pMesh->calcBones();
@@ -419,7 +426,10 @@ bool XFileCharModelParser::ReadXVertices(CParaXModel& xmesh, XFileDataObjectPtr 
 	if ((pFileData->Lock(&dwSize, (&pBuffer))))
 	{
 		XVerticesDef* pXVert = (XVerticesDef*)pBuffer;
-		xmesh.initVertices(pXVert->nVertices, (ModelVertex*)(GetRawData(pXVert->ofsVertices)));
+		if (pXVert->nVertices > 0)
+			xmesh.initVertices(pXVert->nVertices, (ModelVertex*)(GetRawData(pXVert->ofsVertices)));
+		else
+			xmesh.m_radius = (xmesh.m_header.maxExtent - xmesh.m_header.minExtent).length() * 0.5f;
 	}
 	else
 		return false;
@@ -504,7 +514,11 @@ bool XFileCharModelParser::ReadXTextures(CParaXModel& xmesh, XFileDataObjectPtr 
 							xmesh.textures[i]->SetRawData(bufferCpy, nSize);
 						}
 					}
-					else
+					else if (IsBuiltinParticleTextureName(sFilename))
+					{
+						xmesh.textures[i] = LoadOrCreateBuiltinParticleTexture(sFilename);
+					}
+					else if (CGlobals::GetAssetManager())
 					{
 						xmesh.textures[i] = CGlobals::GetAssetManager()->LoadTexture("", sFilename.c_str(), TextureEntity::StaticTexture);
 					}
@@ -891,7 +905,7 @@ bool XFileCharModelParser::ReadXParticleEmitters(CParaXModel& xmesh, XFileDataOb
 				ps.order = 0; // triangle winding order is fixed for all types.
 				ps.SetTextureRowsCols(ps.rows, ps.cols);
 
-				ps.parent = xmesh.bones + PSDef.bone;
+				ps.parent = (PSDef.bone >= 0 && PSDef.bone < (int)xmesh.m_objNum.nBones) ? (xmesh.bones + PSDef.bone) : nullptr;
 				ps.m_texture_index = PSDef.texture;
 
 				ReadAnimationBlock(&PSDef.params[0], ps.speed, xmesh.globalSequences);
@@ -905,18 +919,68 @@ bool XFileCharModelParser::ReadXParticleEmitters(CParaXModel& xmesh, XFileDataOb
 				ReadAnimationBlock(&PSDef.params[8], ps.areaw, xmesh.globalSequences);
 				ReadAnimationBlock(&PSDef.params[9], ps.grav2, xmesh.globalSequences);
 
-				switch (PSDef.type) {
-				case ParticleEmitter::TYPE_PLANE_PARTICLE_EMITTER:
-					ps.emitter = new PlaneParticleEmitter(&ps);
-					break;
-				case ParticleEmitter::TYPE_SPHERE_PARTICLE_EMITTER:
-					ps.emitter = new SphereParticleEmitter(&ps);
-					break;
-				default:
-					OUTPUT_LOG("warning: particle system contains unknown emitter type\r\n");
-					break;
+				ps.patternType = PSDef.s2;
+				if ((PSDef.flags & PARAX_PS_FLAG_EXTENDED_V2) != 0)
+				{
+					ps.m_bExtendedV2 = true;
+					ps.useWorldGravity = (PSDef.flags & PARAX_PS_FLAG_WORLD_GRAVITY) != 0;
+					ps.localSpace = (PSDef.flags & PARAX_PS_FLAG_LOCAL_SPACE) != 0;
+					if ((PSDef.flags & PARAX_PS_FLAG_ROTATE_TO_SPEED) != 0)
+						ps.rotate2SpeedDirection = true;
+
+					ps.trailEmitterIndex = PSDef.p.d[0];
+					ps.deathEmitterIndex = PSDef.p.d[1];
+					ps.deathCount = PSDef.p.d[2];
+					ps.deathCountVar = PSDef.p.d[3];
+
+					ps.emitDir = Vector3(PSDef.p.f2[0], PSDef.p.f2[1], PSDef.p.f2[2]);
+					if (ps.emitDir.squaredLength() < 1e-6f)
+						ps.emitDir = Vector3(0.0f, 1.0f, 0.0f);
+					ps.minPolar = PSDef.p.f2[3];
+					ps.maxPolar = (PSDef.p.f2[4] > 0.0f) ? PSDef.p.f2[4] : 3.14159265f;
+					ps.shellThickness = PSDef.p.f2[5];
+					ps.trailInterval = (PSDef.p.f2[6] > 0.0f) ? PSDef.p.f2[6] : 0.03f;
+					ps.inheritVelocity = PSDef.p.f2[7];
+					ps.twinkleFreq = PSDef.p.f2[8];
+					ps.twinkleAmount = PSDef.p.f2[9];
+
+					if (PSDef.nZero1 > 0 && m_pRaw != NULL)
+					{
+						const ModelParticleBurstDef* burstDefs = reinterpret_cast<const ModelParticleBurstDef*>(GetRawData(PSDef.ofsZero1));
+						ps.bursts.reserve(PSDef.nZero1);
+						for (int bIdx = 0; bIdx < PSDef.nZero1; ++bIdx)
+						{
+							ModelParticleBurstDef bd;
+							memcpy(&bd, burstDefs + bIdx, sizeof(ModelParticleBurstDef));
+							ParticleBurst burst;
+							burst.animIndex = bd.animIndex;
+							burst.timeMs = bd.timeMs;
+							burst.count = bd.count;
+							burst.countVar = bd.countVar;
+							ps.bursts.push_back(burst);
+						}
+					}
+
+					if (PSDef.nZero2 > 0 && m_pRaw != NULL)
+					{
+						const uint32* palDefs = reinterpret_cast<const uint32*>(GetRawData(PSDef.ofsZero2));
+						ps.palette.reserve(PSDef.nZero2);
+						for (int pIdx = 0; pIdx < PSDef.nZero2; ++pIdx)
+						{
+							uint32 rawCol = 0;
+							memcpy(&rawCol, palDefs + pIdx, sizeof(uint32));
+							LinearColor lc{Color(rawCol)};
+							ps.palette.push_back(reinterpret_cast<const Vector4&>(lc));
+						}
+					}
 				}
-				ps.billboard = !(PSDef.flags & 4096);
+
+				ps.emitter = ParticleSystem::CreateEmitterByType(&ps, PSDef.type);
+				if (!ps.emitter)
+				{
+					OUTPUT_LOG("warning: particle system contains unknown emitter type %d\r\n", (int)PSDef.type);
+				}
+				ps.billboard = !(PSDef.flags & PARAX_PS_FLAG_NO_BILLBOARD);
 				ps.tofs = frand();
 			}
 		}
@@ -953,10 +1017,11 @@ bool XFileCharModelParser::ReadXRibbonEmitters(CParaXModel& xmesh, XFileDataObje
 				emitter.model = &xmesh;
 
 				emitter.pos = emitterDef.pos;
-				emitter.numsegs = (int)emitterDef.res;
-				emitter.seglen = emitterDef.length;
+				emitter.numsegs = std::max(2, (int)emitterDef.res);
+				emitter.seglen = (emitterDef.length > 0.001f) ? emitterDef.length : 0.2f;
+				emitter.length = emitter.seglen * (float)emitter.numsegs;
 
-				emitter.parent = xmesh.bones + emitterDef.bone;
+				emitter.parent = (emitterDef.bone >= 0 && emitterDef.bone < (int)xmesh.m_objNum.nBones) ? (xmesh.bones + emitterDef.bone) : nullptr;
 				emitter.m_texture_index = emitterDef.ofsTextures;
 
 				ReadAnimationBlock(&emitterDef.color, emitter.color, xmesh.globalSequences);
@@ -964,10 +1029,31 @@ bool XFileCharModelParser::ReadXRibbonEmitters(CParaXModel& xmesh, XFileDataObje
 				ReadAnimationBlock(&emitterDef.above, emitter.above, xmesh.globalSequences);
 				ReadAnimationBlock(&emitterDef.below, emitter.below, xmesh.globalSequences);
 
-				//TODO: create first segment
-				//RibbonSegment rs;
-				//rs.pos = tpos;
-				//rs.len = 0;
+				if ((emitterDef.nUnknown & PARAX_RIBBON_FLAG_EXTENDED_V2) != 0)
+				{
+					emitter.m_bExtendedV2 = true;
+					emitter.orientCamera = (emitterDef.nUnknown & PARAX_RIBBON_FLAG_ORIENT_CAMERA) != 0;
+					emitter.m_bUseAbsCord = (emitterDef.nUnknown & PARAX_RIBBON_FLAG_LOCAL_SPACE) == 0;
+					emitter.hasEndColor = (emitterDef.nUnknown & PARAX_RIBBON_FLAG_HAS_END_COLOR) != 0;
+					if (emitter.hasEndColor)
+					{
+						LinearColor lc{Color((uint32)emitterDef.ofsUnknown)};
+						emitter.colorEnd = reinterpret_cast<const Vector4&>(lc);
+					}
+					emitter.maxLife = (emitterDef.unk > 0.01f) ? emitterDef.unk : ((float)emitter.numsegs * 0.05f);
+					emitter.blend = (emitterDef.s1 >= 0 && emitterDef.s1 <= 4) ? emitterDef.s1 : 4;
+					emitter.widthEndScale = std::min(2.0f, std::max(0.0f, (float)emitterDef.s2 / 1000.0f));
+					if (emitterDef.nTextures > 0)
+						emitter.maxStepDist = (float)emitterDef.nTextures / 1000.0f;
+				}
+				else
+				{
+					emitter.orientCamera = false;
+					emitter.m_bUseAbsCord = true;
+					emitter.maxLife = (float)emitter.numsegs * 0.05f;
+					emitter.blend = 4;
+					emitter.widthEndScale = 1.0f;
+				}
 			}
 		}
 	}

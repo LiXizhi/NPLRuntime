@@ -1084,6 +1084,72 @@ int CMiniSceneGraph::RenderSelection(DWORD dwSelection, double dTimeDelta)
 					nPSInstancesCount += (int)instances.size();
 			}
 		}
+
+		for (auto itCurRE = sceneState.listRibbonEmitters.begin(); itCurRE != sceneState.listRibbonEmitters.end();)
+		{
+			RibbonEmitter* RE = (*itCurRE).get();
+			auto& instances = RE->m_instances;
+			bool bHasInstance = false;
+			for (auto iter = instances.begin(); iter != instances.end();)
+			{
+				RibbonInstance* inst = iter->second;
+				if (inst->m_pSceneState == (&sceneState))
+				{
+					bHasInstance = true;
+				}
+				else
+				{
+					++iter;
+					continue;
+				}
+
+				if (!inst->m_bUpdated)
+				{
+					if (inst->m_bUseAbsCord)
+					{
+						Vector3 vRenderOriginOffset = inst->m_vLastRenderOrigin - vRenderOrigin;
+						inst->m_vLastRenderOrigin = vRenderOrigin;
+						if (RE->AnimateExistingSegments((float)dTimeDelta, vRenderOriginOffset, inst))
+						{
+							if (!bEffectSet) {
+								CGlobals::GetEffectManager()->BeginEffect(TECH_PARTICLES, &(sceneState.m_pCurrentEffect));
+								bEffectSet = true;
+							}
+							RE->drawInstance(inst);
+							++iter;
+						}
+						else
+						{
+							SAFE_DELETE(inst);
+							iter = instances.erase(iter);
+						}
+					}
+					else
+					{
+						SAFE_DELETE(inst);
+						iter = instances.erase(iter);
+					}
+				}
+				else
+				{
+					inst->m_bUpdated = false;
+					if (inst->m_bUseAbsCord && inst->m_bRender)
+					{
+						if (!bEffectSet) {
+							CGlobals::GetEffectManager()->BeginEffect(TECH_PARTICLES, &(sceneState.m_pCurrentEffect));
+							bEffectSet = true;
+						}
+						RE->drawInstance(inst);
+						inst->m_bRender = false;
+					}
+					++iter;
+				}
+			}
+			if (!bHasInstance)
+				itCurRE = sceneState.listRibbonEmitters.erase(itCurRE);
+			else
+				++itCurRE;
+		}
 		nObjCount = nParticlesCount;
 	}
 	return nObjCount;

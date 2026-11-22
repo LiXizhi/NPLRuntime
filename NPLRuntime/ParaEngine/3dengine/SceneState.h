@@ -5,6 +5,7 @@
 #include "util/ParaMemPool.h"
 #include "IRefObject.h"
 #include "ParaXModel/ParticleSystemRef.h"
+#include "ParaXModel/RibbonEmitterRef.h"
 #include "BillBoardViewInfo.h"
 #include "BaseObject.h"
 
@@ -20,6 +21,7 @@ namespace ParaEngine
 	class CBipedObject;
 	struct GUIState;
 	class ParticleSystem;
+	class RibbonEmitter;
 	class CEffectFile;
 	class CSortedFaceGroups;
 	class IScene;
@@ -470,6 +472,7 @@ namespace ParaEngine
 		typedef std::vector<PostRenderObject>	List_PostRenderObject_Type;
 		typedef std::vector<CSpriteObject*>	List_CSpriteObjectPtr_Type;
 		typedef unordered_array<ParticleSystemRef>	List_ParticleSystemPtr_Type;
+		typedef unordered_array<RibbonEmitterRef>	List_RibbonEmitterPtr_Type;
 		typedef std::vector<AlphaPostRenderObject>	List_AlphaPostRenderObject_Type;
 		typedef std::vector<PostRenderObjectWeakPtr>	List_HeadOnRenderObject_Type;
 		typedef std::vector<CLightObject*>				List_LightObject_Type;
@@ -526,6 +529,7 @@ namespace ParaEngine
 		SceneState::List_AlphaPostRenderObject_Type	listPRTransparentObject;
 		SceneState::List_AlphaPostRenderObject_Type	listPRMissiles;
 		SceneState::List_ParticleSystemPtr_Type	listParticleSystems;
+		SceneState::List_RibbonEmitterPtr_Type	listRibbonEmitters;
 
 		SceneState::List_PostRenderObject_Type		listZones;
 		SceneState::List_PostRenderObject_Type		listPortals;
@@ -585,6 +589,7 @@ namespace ParaEngine
 		* during each frame, the scene manager will render all absolute instances in the particle system list.
 		*/
 		void AddParticleSystem(ParticleSystem* ps);
+		void AddRibbonEmitter(RibbonEmitter* re);
 
 		/** get sorted face groups. */
 		CSortedFaceGroups* GetFaceGroups();

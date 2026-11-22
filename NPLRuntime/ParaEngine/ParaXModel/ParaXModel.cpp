@@ -261,6 +261,11 @@ void CParaXModel::LoadTextures()
 		asset_ptr<TextureEntity> pTexture = textures[i];
 		if (pTexture)
 		{
+			if (IsBuiltinParticleTextureName(pTexture->GetKey()))
+			{
+				textures[i] = LoadOrCreateBuiltinParticleTexture(pTexture->GetKey());
+				continue;
+			}
 			textures[i] = CGlobals::GetAssetManager()->LoadTexture("", pTexture->GetKey(), TextureEntity::StaticTexture);
 			if (pTexture != textures[i])
 			{
@@ -2440,6 +2445,7 @@ void CParaXModel::drawModel(SceneState* pSceneState, CParameterBlock* pMaterialP
 		if (nRenderMethod == SOFT_ANIM || nRenderMethod == SHADER_ANIM)
 		{
 			bool compatible = true;
+#ifndef NPLRUNTIME_SERVER
 			if (animGeometry && CGlobals::GetRenderDevice()->GetBackendType() == ERHIBackend::OpenGL)
 			{
 				// Preserve the active shader's material, including RGB-only texture animation.
@@ -2451,6 +2457,7 @@ void CParaXModel::drawModel(SceneState* pSceneState, CParameterBlock* pMaterialP
 						GetRenderPass(pMaterialParam) == 0;
 				}
 			}
+#endif
 			if (compatible && (nPrevTechHandle == TECH_CHARACTER || nPrevTechHandle == TECH_SIMPLE_MESH_NORMAL || nPrevTechHandle == TECH_CHARACTER_SKINNED) &&
 				EnsureGpuSkinBuffers())
 			{
@@ -2938,6 +2945,10 @@ void CParaXModel::updateEmitters(SceneState* pSceneState, float dt)
 	uint32 nParticleEmitters = GetObjectNum().nParticleEmitters;
 	for (size_t i = 0; i < nParticleEmitters; i++) {
 		particleSystems[i].update(pSceneState, dt);
+	}
+	uint32 nRibbonEmitters = GetObjectNum().nRibbonEmitters;
+	for (size_t i = 0; i < nRibbonEmitters; i++) {
+		ribbons[i].update(pSceneState, dt);
 	}
 }
 
