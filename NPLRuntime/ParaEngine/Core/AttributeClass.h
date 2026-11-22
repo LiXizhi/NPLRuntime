@@ -82,6 +82,8 @@ namespace ParaEngine
 		*/
 		bool InsertField(CAttributeField& item, bool bOverride);
 
+		int GetFieldIndexView(std::string_view sFieldname);
+
 		void SortField();
 	};
 

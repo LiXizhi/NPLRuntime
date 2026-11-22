@@ -349,7 +349,24 @@ void CEnvironmentSim::Simulate(double dTimeDelta)
 		points[nPointCount].Set(pScene->GetCurrentCamera()->GetEyePosition(), pScene->GetCurrentCamera()->GetNearPlane() * 2);
 		nPointCount++;
 	}
-	CheckLoadPhysics(points, nPointCount);
+	m_dPhysicsCheckElapsed += dTimeDelta;
+	bool bSamePhysicsQuery = (nPointCount == m_nLastPhysicsPointCount);
+	for (int i = 0; bSamePhysicsQuery && i < nPointCount; ++i)
+	{
+		if ((points[i].GetCenter() - m_lastPhysicsPoints[i].GetCenter()).squaredLength() > 0.0025f ||
+			std::fabs(points[i].GetRadius() - m_lastPhysicsPoints[i].GetRadius()) > 0.01f)
+		{
+			bSamePhysicsQuery = false;
+		}
+	}
+	if (!bSamePhysicsQuery || m_dPhysicsCheckElapsed >= 0.25)
+	{
+		m_nLastPhysicsPointCount = nPointCount;
+		for (int i = 0; i < nPointCount; ++i)
+			m_lastPhysicsPoints[i] = points[i];
+		m_dPhysicsCheckElapsed = 0.0;
+		CheckLoadPhysics(points, nPointCount);
+	}
 
 	UpdateGameObjects(dTimeDelta);
 
@@ -446,8 +463,12 @@ void CEnvironmentSim::CheckLoadPhysics(CShapeSphere* points, int nPointCount)
 {
 	if (nPointCount <= 0)
 		return;
-	queue_CTerrainTilePtr_Type queueTiles;
+	static thread_local std::vector<CTerrainTile*> queueTiles;
+	queueTiles.clear();
+	size_t queueHead = 0;
 	CTerrainTile* pTile = CGlobals::GetScene()->GetRootTile();
+	if (!pTile)
+		return;
 	/// breadth first transversing the scene(the root tile is ignored)
 	/// pTile is now the root tile. object attached to it are never rendered directly
 	bool bQueueTilesEmpty = false;
@@ -466,7 +487,7 @@ void CEnvironmentSim::CheckLoadPhysics(CShapeSphere* points, int nPointCount)
 				{
 					if (pTile->m_subtiles[i]->TestCollisionSphere(&(points[j].GetCenter()), PhysicsMinDistance))
 					{
-						queueTiles.push(pTile->m_subtiles[i]);
+						queueTiles.push_back(pTile->m_subtiles[i]);
 						break;
 					}
 				}
@@ -474,7 +495,7 @@ void CEnvironmentSim::CheckLoadPhysics(CShapeSphere* points, int nPointCount)
 		}
 
 		/// go down the quad tree terrain tile to render objects
-		if (queueTiles.empty())
+		if (queueHead >= queueTiles.size())
 		{
 			/// even we know that the tile is empty, we still need to see if there is anything in the queueNode for rendering
 			/// so when both queue are empty, we can exit the main rendering transversing loop
@@ -482,8 +503,7 @@ void CEnvironmentSim::CheckLoadPhysics(CShapeSphere* points, int nPointCount)
 		}
 		else
 		{
-			pTile = queueTiles.front();
-			queueTiles.pop();
+			pTile = queueTiles[queueHead++];
 
 			{
 				// For each mesh physics object in the tile, load its physics.

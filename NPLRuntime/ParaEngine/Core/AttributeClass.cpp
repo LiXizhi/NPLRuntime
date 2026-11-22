@@ -125,7 +125,7 @@ void CAttributeClass::SetOrder(Field_Order order)
 
 void CAttributeClass::SortField()
 {
-	if (m_bSort && m_attributes.size() > 2)
+	if (m_bSort)
 		return;
 
 	std::sort(m_attributes.begin(), m_attributes.end(), [](const CAttributeField& a, const CAttributeField& b)
@@ -136,34 +136,41 @@ void CAttributeClass::SortField()
 	m_bSort = true;
 }
 
-int CAttributeClass::GetFieldIndex(const std::string& sFieldname)
+int CAttributeClass::GetFieldIndexView(std::string_view sFieldname)
 {
 	SortField();
 
-	auto hash = CAttributeField::HashFunc(sFieldname);
+	const size_t hash = std::hash<std::string_view>{}(sFieldname);
 
 	auto it = std::lower_bound(m_attributes.begin(), m_attributes.end(), hash, [](const CAttributeField& a, size_t hash)
 	{
 		return a.GetHash() < hash;
 	});
 
-	for (; it != m_attributes.end() && it->GetHash() == hash; it++)
+	for (; it != m_attributes.end() && it->GetHash() == hash; ++it)
 	{
 		if (it->GetFieldname() == sFieldname)
-			return it - m_attributes.begin();
+			return static_cast<int>(it - m_attributes.begin());
 	}
 
 	return -1;
 }
 
+int CAttributeClass::GetFieldIndex(const std::string& sFieldname)
+{
+	return GetFieldIndexView(std::string_view(sFieldname));
+}
+
 int CAttributeClass::GetFieldIndex(const char*  sFieldname)
 {
-	return GetFieldIndex(std::string(sFieldname));
+	if (sFieldname == nullptr)
+		return -1;
+	return GetFieldIndexView(std::string_view(sFieldname));
 }
 
 CAttributeField* CAttributeClass::GetField(const std::string& sFieldname)
 {
-	int index = GetFieldIndex(sFieldname);
+	int index = GetFieldIndexView(std::string_view(sFieldname));
 	if (index == -1)
 		return nullptr;
 
@@ -172,7 +179,11 @@ CAttributeField* CAttributeClass::GetField(const std::string& sFieldname)
 
 CAttributeField* CAttributeClass::GetField(const char*  sFieldname)
 {
-	return GetField(std::string(sFieldname));
+	int index = GetFieldIndex(sFieldname);
+	if (index == -1)
+		return nullptr;
+
+	return &m_attributes[index];
 }
 CAttributeClass::Field_Order CAttributeClass::GetOrder()
 {

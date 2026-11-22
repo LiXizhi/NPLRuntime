@@ -95,5 +95,9 @@ private:
 
 	/// very important biped list
 	list <CBipedObject*> m_listVIPBipeds;
+
+	CShapeSphere m_lastPhysicsPoints[2];
+	int m_nLastPhysicsPointCount = 0;
+	double m_dPhysicsCheckElapsed = 1.0;
 };
 }
