@@ -1004,6 +1004,36 @@ exit_function:
 		// we will start refresh from second one in the queue, since the first one is already valid. 
 		int nStartRefreshIndex = (newLightValue == lastLightValue && nUpdateRange == 1) ? 1 : 0;
 
+		constexpr int kLightStampDim = 37; // covers [-18, +18] around blockId_ws
+		constexpr int kLightStampHalf = 18;
+		constexpr int kLightStampPlane = kLightStampDim * kLightStampDim;
+		constexpr int kLightStampVol = kLightStampPlane * kLightStampDim;
+		struct LightQueueStamp
+		{
+			std::array<uint16_t, kLightStampVol> stamp{};
+			uint16_t generation = 0;
+			inline uint16_t NextGen()
+			{
+				if (++generation == 0)
+				{
+					stamp.fill(0);
+					++generation;
+				}
+				return generation;
+			}
+		};
+		static thread_local LightQueueStamp s_queueStamp;
+		auto calcStampIdx = [&](int x, int y, int z) -> int {
+			const int dx = x - static_cast<int>(blockId_ws.x) + kLightStampHalf;
+			const int dy = y - static_cast<int>(blockId_ws.y) + kLightStampHalf;
+			const int dz = z - static_cast<int>(blockId_ws.z) + kLightStampHalf;
+			if (static_cast<unsigned>(dx) >= kLightStampDim ||
+				static_cast<unsigned>(dy) >= kLightStampDim ||
+				static_cast<unsigned>(dz) >= kLightStampDim)
+				return -1;
+			return dy * kLightStampPlane + dz * kLightStampDim + dx;
+		};
+
 		if (newLightValue > lastLightValue)
 		{
 			m_blocksNeedLightRecalcuation[nQueuedCount++] = LightBlock(blockId_ws, lastLightValue);
@@ -1016,6 +1046,10 @@ exit_function:
 		}
 		else
 		{
+			const uint16_t pass1Gen = s_queueStamp.NextGen();
+			const int seedStampIdx = calcStampIdx(blockId_ws.x, blockId_ws.y, blockId_ws.z);
+			if (seedStampIdx >= 0)
+				s_queueStamp.stamp[seedStampIdx] = pass1Gen;
 			m_blocksNeedLightRecalcuation[nQueuedCount++] = LightBlock(blockId_ws, lastLightValue);
 
 			int nIndex = 0;
@@ -1040,6 +1074,8 @@ exit_function:
 							int32 neighborZ = curBlockPos.z + BlockFacing::offsetsZForSide[nFaceIndex];
 
 							if (!BlockConfig::IsBlockY(neighborY) || neighborX < 0 || neighborZ < 0 || neighborX > 65535 || neighborZ > 65535) continue;
+							const int sIdx = calcStampIdx(neighborX, neighborY, neighborZ);
+							if (sIdx >= 0 && s_queueStamp.stamp[sIdx] == pass1Gen) continue;
 							int32 blockOpacity = Math::Max((int32)1, GetBlockOpacity(neighborX, neighborY, neighborZ));
 							int32 lastLightValue = GetSavedLightValue(neighborX, neighborY, neighborZ, isSunLight);
 
@@ -1047,7 +1083,11 @@ exit_function:
 							{
 								Uint16x3 neighborPos((uint16)neighborX, (int16_t)neighborY, (uint16)neighborZ);
 								if (!isSunLight || !IsLightDirty(neighborPos))
+								{
+									if (sIdx >= 0)
+										s_queueStamp.stamp[sIdx] = pass1Gen;
 									m_blocksNeedLightRecalcuation[nQueuedCount++] = LightBlock(neighborPos, (uint8)lastLightValue);
+								}
 							}
 						}
 					}
@@ -1072,11 +1112,23 @@ exit_function:
 		int64 nFromTime = GetTimeUS();
 #endif
 
+		const uint16_t pass2InQueueGen = s_queueStamp.NextGen();
+		for (int qIdx = 0; qIdx < nQueuedCount; ++qIdx)
+		{
+			const Uint16x3& qPos = m_blocksNeedLightRecalcuation[qIdx].blockId;
+			const int sIdx = calcStampIdx(qPos.x, qPos.y, qPos.z);
+			if (sIdx >= 0)
+				s_queueStamp.stamp[sIdx] = pass2InQueueGen;
+		}
+
 		int nIndex = 0;
 		while (nIndex < nQueuedCount)
 		{
 			LightBlock& current = m_blocksNeedLightRecalcuation[nIndex++];
 			Uint16x3& curBlockPos = current.blockId;
+			const int curStampIdx = calcStampIdx(curBlockPos.x, curBlockPos.y, curBlockPos.z);
+			if (curStampIdx >= 0)
+				s_queueStamp.stamp[curStampIdx] = 0;
 
 			int32 lightvalue, newLightValue;
 
@@ -1112,12 +1164,18 @@ exit_function:
 					int32 neighborY = curBlockPos.y + BlockFacing::offsetsYForSide[nFaceIndex];
 					int32 neighborZ = curBlockPos.z + BlockFacing::offsetsZForSide[nFaceIndex];
 					if (!BlockConfig::IsBlockY(neighborY) || neighborX < 0 || neighborZ < 0 || neighborX > 65535 || neighborZ > 65535) continue;
+					const int sIdx = calcStampIdx(neighborX, neighborY, neighborZ);
+					if (sIdx >= 0 && s_queueStamp.stamp[sIdx] == pass2InQueueGen) continue;
 					int32 lastLightValue = GetSavedLightValue(neighborX, neighborY, neighborZ, isSunLight);
 					if (lastLightValue < newLightValue)
 					{
 						Uint16x3 neighborPos((uint16)neighborX, (int16_t)neighborY, (uint16)neighborZ);
 						if(!isSunLight || !IsLightDirty(neighborPos))
+						{
+							if (sIdx >= 0)
+								s_queueStamp.stamp[sIdx] = pass2InQueueGen;
 							m_blocksNeedLightRecalcuation[nQueuedCount++] = LightBlock(neighborPos, (uint8)lastLightValue);
+						}
 					}
 				}
 			}

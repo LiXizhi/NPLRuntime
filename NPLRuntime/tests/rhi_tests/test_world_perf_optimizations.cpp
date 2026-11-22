@@ -28,6 +28,8 @@
 #include "IParaWebView.h"
 #include "ParaXModel/ParaXModel.h"
 #include "ParaXModel/ParaXBone.h"
+#include "ParaXModel/particle.h"
+#include "Core/AttributeClass.h"
 #include "RHIStateTracker.h"
 
 #include <cstdio>
@@ -784,6 +786,90 @@ namespace
 			TEST_CHECK(pool.GetTotalBufferBytes() == 0u);
 		}
 	}
+
+	void TestWaveBRuntimeOptimizations()
+	{
+		// 1. Animated::CompactConstantRanges collapses constant per-animation ranges while preserving varying ranges
+		{
+			Animated<Quaternion> rotTrack;
+			rotTrack.used = true;
+			rotTrack.seq = -1;
+			rotTrack.type = INTERPOLATION_LINEAR;
+			Quaternion qIdle(0.f, 0.70710678f, 0.f, 0.70710678f);
+			Quaternion qWalk0(0.f, 0.f, 0.f, 1.f);
+			Quaternion qWalk1(0.f, 1.f, 0.f, 0.f);
+			for (int k = 0; k < 5; ++k)
+				rotTrack.AppendKey(k * 100, qIdle);
+			rotTrack.AppendKey(500, qWalk0);
+			rotTrack.AppendKey(600, qWalk1);
+			rotTrack.SetRangeByAnimIndex(0, AnimRange(0, 4)); // constant across 5 keys
+			rotTrack.SetRangeByAnimIndex(1, AnimRange(5, 6)); // varying across 2 keys
+
+			rotTrack.CompactConstantRanges();
+			TEST_CHECK(rotTrack.ranges[0].first == 0 && rotTrack.ranges[0].second == 0);
+			TEST_CHECK(rotTrack.ranges[1].first == 5 && rotTrack.ranges[1].second == 6);
+			TEST_CHECK(rotTrack.getValue(0, 250) == qIdle);
+		}
+
+		// 2. Matrix4::RemoveScaling fast-path preserves orthonormal matrices and normalizes scaled matrices
+		{
+			Quaternion q(0.f, 0.70710678f, 0.f, 0.70710678f);
+			Matrix4 mUnit(q);
+			Matrix4 mBefore = mUnit;
+			mUnit.RemoveScaling();
+			TEST_CHECK(std::fabs(mUnit._11 - mBefore._11) < 1e-6f && std::fabs(mUnit._13 - mBefore._13) < 1e-6f);
+
+			Matrix4 mScaled;
+			mScaled.makeScale(Vector3(2.f, 3.f, 4.f));
+			mScaled.RemoveScaling();
+			TEST_CHECK(std::fabs(mScaled._11 - 1.f) < 1e-4f);
+			TEST_CHECK(std::fabs(mScaled._22 - 1.f) < 1e-4f);
+			TEST_CHECK(std::fabs(mScaled._33 - 1.f) < 1e-4f);
+		}
+
+		// 3. CAttributeClass::GetFieldIndex zero-alloc string_view lookup and <=2 attribute sort stability
+		{
+			CAttributeClass smallCls(999901, "WaveBSmallAttr", "test");
+			smallCls.AddField("Alpha", FieldType_Int, nullptr, nullptr, nullptr, nullptr, true);
+			smallCls.AddField("Beta", FieldType_Float, nullptr, nullptr, nullptr, nullptr, true);
+			const int idxA = smallCls.GetFieldIndex("Alpha");
+			const int idxB = smallCls.GetFieldIndex("Beta");
+			TEST_CHECK(idxA >= 0 && idxB >= 0 && idxA != idxB);
+			TEST_CHECK(smallCls.GetFieldIndex("MissingFieldWithLongNameExceedingSSO") == -1);
+			TEST_CHECK(smallCls.GetFieldIndex(static_cast<const char*>(nullptr)) == -1);
+			TEST_CHECK(smallCls.GetField("Beta") != nullptr && smallCls.GetField("Beta")->GetFieldname() == "Beta");
+		}
+
+		// 4. ParticleSystem std::vector FIFO compaction preserves particle order when expiring middle particles
+		{
+			ParticleSystem ps;
+			ps.gravity.AppendKey(0, 0.f);
+			ps.slowdown = 0.f;
+			ps.mid = 0.5f;
+			ps.sizes[0] = ps.sizes[1] = ps.sizes[2] = 1.f;
+			ps.colors[0] = ps.colors[1] = ps.colors[2] = Vector4(1, 1, 1, 1);
+			ps.billboard = true;
+
+			ParticleList list;
+			list.m_bUseAbsCord = true;
+			for (int i = 0; i < 4; ++i)
+			{
+				Particle p{};
+				p.pos = Vector3(static_cast<float>(i + 1), 0.f, 0.f);
+				p.speed = Vector3::ZERO;
+				p.down = Vector3::ZERO;
+				p.origin = p.pos;
+				p.life = (i == 1) ? 0.95f : 0.1f; // particle #1 expires on dt=0.1
+				p.maxlife = 1.0f;
+				p.tile = i + 10;
+				list.particles.push_back(p);
+			}
+			TEST_CHECK(ps.AnimateExistingParticles(0.1f, Vector3::ZERO, &list));
+			TEST_CHECK(list.particles.size() == 3);
+			TEST_CHECK(list.particles[0].tile == 10 && list.particles[1].tile == 12 && list.particles[2].tile == 13);
+			TEST_CHECK(std::fabs(list.m_positionSum.x - (1.f + 3.f + 4.f)) < 1e-4f);
+		}
+	}
 }
 
 int main()
@@ -801,6 +887,7 @@ int main()
 	TestSoftwareOcclusionBufferMode(false);  // OpenGL [-1, 1] clip Z
 	TestRigidBodyFastPathAndPsoStateHashCache();
 	TestChunkCompactMemoryAndBucketPool();
+	TestWaveBRuntimeOptimizations();
 
 	std::printf("=== Summary: %d passed, %d failed ===\n", g_passed, g_failed);
 	return (g_failed == 0) ? EXIT_SUCCESS : EXIT_FAILURE;

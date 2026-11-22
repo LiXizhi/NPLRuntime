@@ -5,6 +5,7 @@
 #include "FileManager.h"
 #include <list>
 #include <map>
+#include <vector>
 
 
 namespace ParaEngine
@@ -24,8 +25,7 @@ struct Particle {
 	Vector4 color;
 };
 
-typedef FixedSizedAllocator<Particle>	DL_Allocator_ParticleList;
-typedef std::list<Particle, DL_Allocator_ParticleList >	ParticleListType;
+typedef std::vector<Particle>	ParticleListType;
 /**
 it represents the instance of the particle system.
 */

@@ -164,10 +164,13 @@ void ParticleSystem::update(SceneState* pSceneState, float dt)
 				ftospawn = 1.0f;
 			int tospawn = (int)ftospawn;
 			instancePS->m_rem = ftospawn - (float)tospawn;
+			const size_t targetCap = std::min<size_t>(MAX_PARTICLES, particles.size() + static_cast<size_t>(tospawn));
+			if (particles.capacity() < targetCap)
+				particles.reserve(targetCap);
 			for (int i = 0; i < tospawn; i++) {
 				if (particles.size() >= MAX_PARTICLES)
 					break;
-				particles.resize(particles.size() + 1, emitter->newParticle(manim, mtime));
+				particles.push_back(emitter->newParticle(manim, mtime));
 				if (instancePS->m_bUseAbsCord)
 				{
 					Particle& p = particles.back();
@@ -198,9 +201,10 @@ bool ParticleSystem::AnimateExistingParticles(float dt, const Vector3& vOffset, 
 
 	Vector3 positionSum(0, 0, 0);
 	const bool sumPositions = billboard && instancePS->m_bUseAbsCord;
-	ParticleListType::iterator it;
-	for (it = particles.begin(); it != particles.end(); ) {
-		Particle& p = *it;
+	size_t writeIdx = 0;
+	const size_t nCount = particles.size();
+	for (size_t readIdx = 0; readIdx < nCount; ++readIdx) {
+		Particle& p = particles[readIdx];
 
 		p.speed += p.down * (grav * dt);
 
@@ -241,18 +245,20 @@ bool ParticleSystem::AnimateExistingParticles(float dt, const Vector3& vOffset, 
 		p.size = lifeRamp<float>(rlife, mid, sizes[0], sizes[1], sizes[2]);
 		p.color = lifeRamp<Vector4>(rlife, mid, colors[0], colors[1], colors[2]);
 
-		// kill off old particles
-		if (rlife >= 1.0f)
-			it = particles.erase(it);
-		else
+		// kill off old particles while preserving FIFO draw order for alpha-blended systems
+		if (rlife < 1.0f)
 		{
 			if (sumPositions)
 				positionSum += p.pos;
-			++it;
+			if (writeIdx != readIdx)
+				particles[writeIdx] = p;
+			++writeIdx;
 		}
 	}
+	if (writeIdx != nCount)
+		particles.resize(writeIdx);
 	instancePS->m_positionSum = positionSum;
-	return (particles.size() > 0);
+	return (!particles.empty());
 }
 
 ParticleList* ParticleSystem::GetCurrentInstance(SceneState* pSceneState, bool bForceCreate)
