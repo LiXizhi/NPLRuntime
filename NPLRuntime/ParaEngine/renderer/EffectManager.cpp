@@ -214,44 +214,21 @@ namespace ParaEngine
 		D3DDECL_END()
 	};
 
-	HRESULT EffectManager::SetSamplerState( int nStage, ESamplerStateType dwType, DWORD dwValue, bool bForceSet /*= false*/ )
+	HRESULT EffectManager::SetSamplerState(int nStage, ESamplerStateType dwType, DWORD dwValue, bool /*bForceSet*/)
 	{
-		if(bForceSet)
-		{
-			auto pRenderDevice =CGlobals::GetRenderDevice();
-			pRenderDevice->SetSamplerState(nStage, (ESamplerStateType)dwType, dwValue);
-			m_lastSamplerStates[nStage][(int)dwType] = dwValue;
-		}
-		else
-		{
-			DWORD dwLastValue = m_lastSamplerStates[nStage][(int)dwType];
-			if(dwLastValue != dwValue)
-			{
-				auto pRenderDevice =CGlobals::GetRenderDevice();
-				pRenderDevice->SetSamplerState(nStage, (ESamplerStateType)dwType, dwValue);
-				m_lastSamplerStates[nStage][(int)dwType] = dwValue;
-			}
-		}
-		return S_OK;
+		// Effects and immediate draws share the sampler state tracked by the device.
+		auto* device = CGlobals::GetRenderDevice();
+		return device && device->SetSamplerState(nStage, dwType, dwValue) ? S_OK : E_FAIL;
 	}
 
-	HRESULT EffectManager::GetSamplerState( int nStage, ESamplerStateType dwType, DWORD* pValue, bool bForceGet /*= false*/ )
+	HRESULT EffectManager::GetSamplerState(int nStage, ESamplerStateType dwType, DWORD* pValue, bool /*bForceGet*/)
 	{
-		DWORD dwValue = 0;
-		if (bForceGet && CGlobals::GetRenderDevice())
-		{
-			uint32_t val = 0;
-			if (CGlobals::GetRenderDevice()->GetSamplerState(nStage, dwType, &val))
-				dwValue = val;
-			else
-				dwValue = m_lastSamplerStates[nStage][(int)dwType];
-		}
-		else
-		{
-			dwValue = m_lastSamplerStates[nStage][(int)dwType];
-		}
-		if(pValue)
-			*pValue = dwValue;
+		auto* device = CGlobals::GetRenderDevice();
+		uint32_t value = 0;
+		if (!device || !device->GetSamplerState(nStage, dwType, &value))
+			return E_FAIL;
+		if (pValue)
+			*pValue = value;
 		return S_OK;
 	}
 
@@ -280,7 +257,6 @@ m_enableScreenWaveEffect(false)
 {
 	memset(m_pVertexDeclarations, 0, sizeof(m_pVertexDeclarations));
 	memset(m_pVertexDeclarations_status, 0, sizeof(m_pVertexDeclarations_status));
-	memset(m_lastSamplerStates, 0, sizeof(m_lastSamplerStates));
 	memset(m_defaultSamplerStates, 0, sizeof(m_defaultSamplerStates));
 	
 	SetDefaultSamplerState(0, ESamplerStateType::MINFILTER, D3DTEXF_LINEAR);

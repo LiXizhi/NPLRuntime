@@ -3,6 +3,7 @@
 #include "Core/TextureEntity.h"
 #include "Core/ImageEntity.h"
 #include "OpenGLWrapper/GLTexture2D.h"
+#include "renderer/EffectManager.h"
 #include "RenderDeviceNull.h"
 #include "RHISoftwareS3TC.h"
 #include <cstdio>
@@ -64,6 +65,19 @@ int main()
 	RecordingDevice device;
 	auto* previous = CGlobals::GetRenderDevice();
 	CGlobals::SetRenderDevice(&device);
+	{
+		EffectManager effects;
+		const auto address = ESamplerStateType::ADDRESSU;
+		effects.SetSamplerState(0, address, D3DTADDRESS_CLAMP);
+		device.SetSamplerState(0, address, D3DTADDRESS_WRAP); // End of a terrain pass.
+		DWORD saved = 0;
+		effects.GetSamplerState(0, address, &saved);
+		Check(saved == D3DTADDRESS_WRAP, "effects observe direct sampler changes");
+		effects.SetSamplerState(0, address, D3DTADDRESS_CLAMP);
+		uint32_t current = 0;
+		device.GetSamplerState(0, address, &current);
+		Check(current == D3DTADDRESS_CLAMP, "next terrain pass clamps its mask again");
+	}
 	{
 		std::vector<uint8_t> rgba(8 * 8 * 4, 255);
 		ParaImage opaque;

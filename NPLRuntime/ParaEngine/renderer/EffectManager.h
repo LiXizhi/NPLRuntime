@@ -169,9 +169,8 @@ namespace ParaEngine
 		HRESULT LightEnable(DWORD Index, BOOL Enable);
 		HRESULT SetRenderState(D3DRENDERSTATETYPE State, DWORD Value);
 		HRESULT SetTexture(DWORD Stage, DeviceTexturePtr_type pTexture);
-		/** internally it will cache texture stage to prevent direct d3d calls */
+		/** The render device tracks current sampler state, including direct device writes. */
 		HRESULT SetSamplerState(int nStage, ESamplerStateType dwType, DWORD dwValue, bool bForceSet = false);
-		/** internally it will cache texture stage to prevent direct d3d calls */
 		HRESULT GetSamplerState(int nStage, ESamplerStateType dwType, DWORD* pValue, bool bForceGet = false);
 		/** default sampler state. in most cases, this will define whether the point filtering or linear filtering is used by default for all meshes and characters. */
 		void SetDefaultSamplerState(int nStage, ESamplerStateType dwType, DWORD dwValue);
@@ -439,7 +438,6 @@ namespace ParaEngine
 
 		int m_nEffectLevel;
 
-		DWORD m_lastSamplerStates[16][16];
 		DWORD m_defaultSamplerStates[16][16];
 		
 		/** all vertex declarations*/
