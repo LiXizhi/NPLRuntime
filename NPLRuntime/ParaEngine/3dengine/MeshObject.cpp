@@ -779,7 +779,7 @@ HRESULT CMeshObject::Draw( SceneState * sceneState)
 		sceneState->GetCurrentLightStrength() = Vector3(1.0f, 0.0f, 0.0f);
 	}
 	
-	CDynamicAttributeField* pField = GetDynamicField("colorDiffuse");
+	CDynamicAttributeField* pField = (GetDynamicFieldCount() > 0) ? GetDynamicField("colorDiffuse") : nullptr;
 	if (pField)
 	{
 		if (sceneState->IsDeferredShading())

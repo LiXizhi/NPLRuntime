@@ -145,13 +145,16 @@ namespace ParaEngine
 						const int lod = sceneState.IsLODEnabled() ? mesh->GetLodIndex((*itCurCP).m_fObjectToCameraDistance) : 0;
 						int nInstanceCount = 0;
 						typename T::const_iterator itRunEnd = itCurCP;
+						const bool bPerObjectBlockLight = (*itCurCP).m_pRenderObject->CheckAttribute(MESH_USE_LIGHT);
+						const int instancingThreshold = bPerObjectBlockLight ? AUTO_INSTANCING_THRESHOLD_NUM : 2;
 						for(; itRunEnd != itEnd; ++itRunEnd)
 						{
 							if(nCurTechHandle == (*itRunEnd).m_pRenderObject->GetPrimaryTechniqueHandle() 
 								&& pEntity == (*itRunEnd).m_pRenderObject->GetPrimaryAsset()
 								&& !(*itRunEnd).m_pRenderObject->GetEffectParamBlock()
-								&& !(*itRunEnd).m_pRenderObject->GetDynamicField("colorDiffuse")
+								&& ((*itRunEnd).m_pRenderObject->GetDynamicFieldCount() == 0 || !(*itRunEnd).m_pRenderObject->GetDynamicField("colorDiffuse"))
 								&& !(*itRunEnd).m_pRenderObject->CheckAttribute(OBJ_CUSTOM_RENDERER)
+								&& (*itRunEnd).m_pRenderObject->CheckAttribute(MESH_USE_LIGHT) == bPerObjectBlockLight
 								&& (!sceneState.IsLODEnabled() || mesh->GetLodIndex((*itRunEnd).m_fObjectToCameraDistance) == lod))
 							{
 								if (!(*itRunEnd).IsOccluded())
@@ -160,7 +163,7 @@ namespace ParaEngine
 							else
 								break;
 						}
-						if(nInstanceCount>AUTO_INSTANCING_THRESHOLD_NUM)
+						if(nInstanceCount>instancingThreshold)
 						{
 							// use instancing.
 							// Update the instance streams with the per instance data.
@@ -275,7 +278,7 @@ namespace ParaEngine
 							else
 								break;
 						}
-						if(nInstanceCount>AUTO_INSTANCING_THRESHOLD_NUM)
+						if(nInstanceCount>2)
 						{
 							// use instancing.
 							// Update the instance streams with the per instance data.
