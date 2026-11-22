@@ -409,6 +409,52 @@
         await Promise.all(runners);
     }
 
+    function shouldBatchPrestageScript(relPath, size) {
+        if (size <= 0 || size > 128 * 1024) return false;
+        const lower = relPath.toLowerCase();
+        if (!lower.startsWith("script/") && !lower.startsWith("mod/")) return false;
+        return lower.endsWith(".lua") || lower.endsWith(".npl") || lower.endsWith(".xml");
+    }
+
+    async function fetchBatchPack(relPaths, preloadedMap, onChunkBytes) {
+        if (!relPaths.length) return true;
+        const res = await fetch(state.fsOrigin + "/fs/batch", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ root: state.resolvedRoot, paths: relPaths }),
+            cache: "no-store",
+        });
+        if (!res.ok) return false;
+        const buf = await res.arrayBuffer();
+        if (buf.byteLength < 8) return false;
+        const view = new DataView(buf);
+        // "NPB1" = 0x3142504e little-endian
+        if (view.getUint32(0, true) !== 0x3142504e) return false;
+        const count = view.getUint32(4, true);
+        const decoder = new TextDecoder("utf-8");
+        let offset = 8;
+        let unpackedBytes = 0;
+        for (let i = 0; i < count; i++) {
+            if (offset + 2 > buf.byteLength) break;
+            const pathLen = view.getUint16(offset, true);
+            offset += 2;
+            if (offset + pathLen + 4 > buf.byteLength) break;
+            const relPath = decoder.decode(new Uint8Array(buf, offset, pathLen));
+            offset += pathLen;
+            const dataLen = view.getUint32(offset, true);
+            offset += 4;
+            if (offset + dataLen > buf.byteLength) break;
+            const fileBytes = new Uint8Array(buf, offset, dataLen);
+            offset += dataLen;
+            preloadedMap.set(relPath, fileBytes);
+            state.stats.prestagedFiles += 1;
+            state.stats.prestagedBytes += dataLen;
+            unpackedBytes += dataLen;
+        }
+        if (onChunkBytes && unpackedBytes > 0) onChunkBytes(unpackedBytes);
+        return true;
+    }
+
     async function ensureBundledWebFonts() {
         const baseOrigin = (typeof window !== "undefined" && window.WEBPARACRAFT_ORIGIN)
             ? window.WEBPARACRAFT_ORIGIN
@@ -470,44 +516,114 @@
         const entries = Array.isArray(manifest.entries) ? manifest.entries : [];
         state.stats.manifestEntries = entries.length;
 
-        const bootFetchItems = [];
+        const bootLargeItems = [];
+        const bootBatchEntries = [];
         const preloadedMap = new Map();
+        let scriptBatchBytes = 0;
+        const maxScriptBatchBytes = 24 * 1024 * 1024;
+        const maxScriptBatchFiles = 2000;
+        let scriptBatchCount = 0;
 
         for (let i = 0; i < entries.length; i++) {
             const entry = entries[i];
             const relPath = entry[0];
             const size = Number(entry[1]) || 0;
             if (shouldPrestageAtBoot(relPath, size)) {
-                bootFetchItems.push(entry);
+                if (size > 0 && size <= 512 * 1024) {
+                    bootBatchEntries.push(entry);
+                } else {
+                    bootLargeItems.push(entry);
+                }
+            } else if (
+                scriptBatchCount < maxScriptBatchFiles &&
+                scriptBatchBytes + size <= maxScriptBatchBytes &&
+                shouldBatchPrestageScript(relPath, size)
+            ) {
+                bootBatchEntries.push(entry);
+                scriptBatchBytes += size;
+                scriptBatchCount += 1;
             }
         }
 
         let completedBytes = 0;
         let totalBootBytes = 0;
-        for (let i = 0; i < bootFetchItems.length; i++) {
-            totalBootBytes += Number(bootFetchItems[i][1]) || 0;
+        for (let i = 0; i < bootLargeItems.length; i++) {
+            totalBootBytes += Number(bootLargeItems[i][1]) || 0;
+        }
+        for (let i = 0; i < bootBatchEntries.length; i++) {
+            totalBootBytes += Number(bootBatchEntries[i][1]) || 0;
         }
 
-        await fetchConcurrencyPool(bootFetchItems, 6, async function (entry) {
-            const relPath = entry[0];
-            try {
-                const res = await fetch(buildFileUrl(relPath), { cache: "no-store" });
-                if (!res.ok) throw new Error("HTTP " + res.status);
-                const buf = await res.arrayBuffer();
-                const bytes = new Uint8Array(buf);
-                preloadedMap.set(relPath, bytes);
-                completedBytes += bytes.byteLength;
-                state.stats.prestagedFiles += 1;
-                state.stats.prestagedBytes += bytes.byteLength;
-                if (Module && typeof Module.setStatus === "function" && totalBootBytes > 0) {
-                    const mbDone = (completedBytes / (1024 * 1024)).toFixed(1);
-                    const mbTotal = (totalBootBytes / (1024 * 1024)).toFixed(1);
-                    Module.setStatus(`Loading local disk (${mbDone}/${mbTotal})`);
-                }
-            } catch (err) {
-                console.warn("[local_disk_fs] Prestage skipped for", relPath, err);
+        const updateBootStatus = function () {
+            if (Module && typeof Module.setStatus === "function" && totalBootBytes > 0) {
+                const mbDone = (completedBytes / (1024 * 1024)).toFixed(1);
+                const mbTotal = (totalBootBytes / (1024 * 1024)).toFixed(1);
+                Module.setStatus(`Loading local disk (${mbDone}/${mbTotal})`);
             }
-        });
+        };
+
+        const batchChunks = [];
+        const batchChunkSize = 500;
+        for (let i = 0; i < bootBatchEntries.length; i += batchChunkSize) {
+            batchChunks.push(bootBatchEntries.slice(i, i + batchChunkSize));
+        }
+
+        let batchFallbackEntries = [];
+        await Promise.all([
+            fetchConcurrencyPool(bootLargeItems, 6, async function (entry) {
+                const relPath = entry[0];
+                try {
+                    const res = await fetch(buildFileUrl(relPath), { cache: "no-store" });
+                    if (!res.ok) throw new Error("HTTP " + res.status);
+                    const buf = await res.arrayBuffer();
+                    const bytes = new Uint8Array(buf);
+                    preloadedMap.set(relPath, bytes);
+                    completedBytes += bytes.byteLength;
+                    state.stats.prestagedFiles += 1;
+                    state.stats.prestagedBytes += bytes.byteLength;
+                    updateBootStatus();
+                } catch (err) {
+                    console.warn("[local_disk_fs] Prestage skipped for", relPath, err);
+                }
+            }),
+            fetchConcurrencyPool(batchChunks, 2, async function (chunk) {
+                const paths = chunk.map(function (e) { return e[0]; });
+                try {
+                    const ok = await fetchBatchPack(paths, preloadedMap, function (added) {
+                        completedBytes += added;
+                        updateBootStatus();
+                    });
+                    if (!ok) {
+                        batchFallbackEntries = batchFallbackEntries.concat(chunk.filter(function (e) {
+                            return shouldPrestageAtBoot(e[0], Number(e[1]) || 0);
+                        }));
+                    }
+                } catch (err) {
+                    batchFallbackEntries = batchFallbackEntries.concat(chunk.filter(function (e) {
+                        return shouldPrestageAtBoot(e[0], Number(e[1]) || 0);
+                    }));
+                }
+            }),
+        ]);
+
+        if (batchFallbackEntries.length > 0) {
+            await fetchConcurrencyPool(batchFallbackEntries, 6, async function (entry) {
+                const relPath = entry[0];
+                if (preloadedMap.has(relPath)) return;
+                try {
+                    const res = await fetch(buildFileUrl(relPath), { cache: "no-store" });
+                    if (!res.ok) throw new Error("HTTP " + res.status);
+                    const bytes = new Uint8Array(await res.arrayBuffer());
+                    preloadedMap.set(relPath, bytes);
+                    completedBytes += bytes.byteLength;
+                    state.stats.prestagedFiles += 1;
+                    state.stats.prestagedBytes += bytes.byteLength;
+                    updateBootStatus();
+                } catch (err) {
+                    console.warn("[local_disk_fs] Fallback prestage skipped for", relPath, err);
+                }
+            });
+        }
 
         for (let i = 0; i < entries.length; i++) {
             const entry = entries[i];

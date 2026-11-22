@@ -24,7 +24,9 @@ import re
 import socket
 import socketserver
 import ssl
+import struct
 import threading
+import time
 import urllib.parse
 import webbrowser
 
@@ -309,6 +311,37 @@ def normalize_rel_path(raw_rel: str) -> str:
     return norm
 
 
+_DIR_CI_CACHE = {}
+_DIR_CI_CACHE_LOCK = threading.Lock()
+_DIR_CI_CACHE_MAX = 4096
+
+
+def _lookup_child_case_insensitive(dir_path: str, part_lower: str) -> str:
+    try:
+        dir_mtime = os.stat(dir_path).st_mtime_ns
+    except OSError:
+        return ""
+    now = time.monotonic()
+    with _DIR_CI_CACHE_LOCK:
+        cached = _DIR_CI_CACHE.get(dir_path)
+        if cached and cached[0] == dir_mtime and (now - cached[1]) < 5.0:
+            return cached[2].get(part_lower, "")
+
+    mapping = {}
+    try:
+        with os.scandir(dir_path) as it:
+            for entry in it:
+                mapping[entry.name.lower()] = entry.path
+    except OSError:
+        return ""
+
+    with _DIR_CI_CACHE_LOCK:
+        if len(_DIR_CI_CACHE) >= _DIR_CI_CACHE_MAX:
+            _DIR_CI_CACHE.clear()
+        _DIR_CI_CACHE[dir_path] = (dir_mtime, now, mapping)
+    return mapping.get(part_lower, "")
+
+
 def resolve_path_case_insensitive(root_real: str, rel_norm: str) -> str:
     exact = os.path.join(root_real, *rel_norm.split("/"))
     if os.path.isfile(exact):
@@ -318,16 +351,7 @@ def resolve_path_case_insensitive(root_real: str, rel_norm: str) -> str:
 
     cur = root_real
     for part in rel_norm.split("/"):
-        part_lower = part.lower()
-        matched = None
-        try:
-            with os.scandir(cur) as it:
-                for entry in it:
-                    if entry.name.lower() == part_lower:
-                        matched = entry.path
-                        break
-        except OSError:
-            return ""
+        matched = _lookup_child_case_insensitive(cur, part.lower())
         if not matched:
             return ""
         cur = matched
@@ -586,6 +610,96 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             "entries": entries,
         }, compress_gzip=True)
 
+    def _resolve_target_file(self, root_real: str, rel_norm: str) -> str:
+        target_file = resolve_path_case_insensitive(root_real, rel_norm)
+        if not target_file:
+            rel_lower = rel_norm.lower()
+            if (
+                rel_lower == VIRTUAL_CJK_FONT_REL.lower()
+                and self.server_config.font_file
+                and os.path.isfile(self.server_config.font_file)
+            ):
+                target_file = self.server_config.font_file
+            elif rel_lower in self.server_config.latin_fonts:
+                cand_font = self.server_config.latin_fonts[rel_lower]
+                if cand_font and os.path.isfile(cand_font):
+                    target_file = cand_font
+        return target_file if (target_file and os.path.isfile(target_file)) else ""
+
+    def _handle_fs_batch(self, query_params):
+        if not self._check_fs_access():
+            return
+        try:
+            length = int(self.headers.get("Content-Length", "0") or "0")
+        except ValueError:
+            length = 0
+        if length <= 0 or length > 4 * 1024 * 1024:
+            self._send_json(400, {"ok": False, "error": "Invalid /fs/batch request body size"})
+            return
+        raw_body = self.rfile.read(length)
+        try:
+            payload = json.loads(raw_body.decode("utf-8"))
+        except Exception:
+            self._send_json(400, {"ok": False, "error": "Invalid JSON in /fs/batch"})
+            return
+        if not isinstance(payload, dict):
+            self._send_json(400, {"ok": False, "error": "Expected JSON object in /fs/batch"})
+            return
+
+        merged_query = dict(query_params)
+        if payload.get("root") and not merged_query.get("root"):
+            merged_query["root"] = [str(payload["root"])]
+        root_real = self._resolve_request_root(merged_query)
+        if not root_real:
+            self._send_json(404, {"ok": False, "error": "Invalid or missing root parameter"})
+            return
+
+        req_paths = payload.get("paths")
+        if not isinstance(req_paths, list) or len(req_paths) > 4096:
+            self._send_json(400, {"ok": False, "error": "Expected paths list (<= 4096 items)"})
+            return
+
+        max_total_bytes = 64 * 1024 * 1024
+        packed_items = []
+        total_data_bytes = 0
+        for raw_rel in req_paths:
+            if not isinstance(raw_rel, str):
+                continue
+            rel_norm = normalize_rel_path(raw_rel)
+            if not rel_norm:
+                continue
+            target_file = self._resolve_target_file(root_real, rel_norm)
+            if not target_file:
+                continue
+            try:
+                fsize = os.path.getsize(target_file)
+                if fsize < 0 or total_data_bytes + fsize > max_total_bytes:
+                    break
+                with open(target_file, "rb") as f:
+                    data = f.read()
+            except OSError:
+                continue
+            path_utf8 = raw_rel.encode("utf-8")
+            if len(path_utf8) > 0xFFFF:
+                continue
+            packed_items.append((path_utf8, data))
+            total_data_bytes += len(data)
+
+        body_len = 8 + sum(6 + len(p) + len(d) for p, d in packed_items)
+        self.send_response(200)
+        self.send_header("Content-Type", "application/octet-stream")
+        self.send_header("Cache-Control", "no-store")
+        self.send_header("Content-Length", str(body_len))
+        self.end_headers()
+        if self.command != "HEAD":
+            self.wfile.write(b"NPB1" + struct.pack("<I", len(packed_items)))
+            for path_utf8, data in packed_items:
+                self.wfile.write(struct.pack("<H", len(path_utf8)))
+                self.wfile.write(path_utf8)
+                self.wfile.write(struct.pack("<I", len(data)))
+                if data:
+                    self.wfile.write(data)
+
     def _handle_fs_file(self, query_params):
         if not self._check_fs_access():
             return
@@ -600,21 +714,9 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self._send_json(403, {"ok": False, "error": "Invalid relative path"})
             return
 
-        target_file = resolve_path_case_insensitive(root_real, rel_norm)
-        if not target_file:
-            rel_lower = rel_norm.lower()
-            if (
-                rel_lower == VIRTUAL_CJK_FONT_REL.lower()
-                and self.server_config.font_file
-                and os.path.isfile(self.server_config.font_file)
-            ):
-                target_file = self.server_config.font_file
-            elif rel_lower in self.server_config.latin_fonts:
-                cand_font = self.server_config.latin_fonts[rel_lower]
-                if cand_font and os.path.isfile(cand_font):
-                    target_file = cand_font
+        target_file = self._resolve_target_file(root_real, rel_norm)
 
-        if not target_file or not os.path.isfile(target_file):
+        if not target_file:
             self._send_json(404, {"ok": False, "error": f"File not found: {rel_norm}"})
             return
 
@@ -761,6 +863,9 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return True
         if stripped == "/fs/file" and self.command in ("GET", "HEAD"):
             self._handle_fs_file(urllib.parse.parse_qs(parsed.query, keep_blank_values=True))
+            return True
+        if stripped == "/fs/batch" and self.command == "POST":
+            self._handle_fs_batch(urllib.parse.parse_qs(parsed.query, keep_blank_values=True))
             return True
         if stripped == "/fs/log" and self.command == "POST":
             self._handle_fs_log()
