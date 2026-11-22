@@ -190,6 +190,65 @@ namespace ParaScripting
 			sNPLFileName, sCode.c_str(), (int)sCode.size(), channel, priority, reliability);
 	}
 
+	namespace
+	{
+		bool ClonePureLuaValueToStack(lua_State* L, int srcIdx, int depth)
+		{
+			if (depth > 12 || !lua_checkstack(L, 6))
+				return false;
+			const int absIdx = (srcIdx > 0 || srcIdx <= LUA_REGISTRYINDEX) ? srcIdx : (lua_gettop(L) + srcIdx + 1);
+			const int valType = lua_type(L, absIdx);
+			switch (valType)
+			{
+			case LUA_TNIL:
+			case LUA_TNONE:
+				lua_pushnil(L);
+				return true;
+			case LUA_TBOOLEAN:
+			case LUA_TNUMBER:
+			case LUA_TSTRING:
+				lua_pushvalue(L, absIdx);
+				return true;
+			case LUA_TTABLE:
+			{
+				lua_newtable(L);
+				const int dstIdx = lua_gettop(L);
+				lua_pushnil(L);
+				while (lua_next(L, absIdx) != 0)
+				{
+					const int keyType = lua_type(L, -2);
+					const int itemType = lua_type(L, -1);
+					if (keyType == LUA_TSTRING || keyType == LUA_TNUMBER)
+					{
+						if (itemType == LUA_TBOOLEAN || itemType == LUA_TNUMBER || itemType == LUA_TSTRING)
+						{
+							lua_pushvalue(L, -2);
+							lua_pushvalue(L, -2);
+							lua_rawset(L, dstIdx);
+						}
+						else if (itemType == LUA_TTABLE)
+						{
+							if (!ClonePureLuaValueToStack(L, lua_gettop(L), depth + 1))
+							{
+								lua_pop(L, 3); // value, key, dst table
+								return false;
+							}
+							lua_pushvalue(L, -3); // key
+							lua_insert(L, -2);    // key before cloned table
+							lua_rawset(L, dstIdx);
+						}
+					}
+					lua_pop(L, 1); // pop value, keep key for lua_next
+				}
+				return true;
+			}
+			default:
+				lua_pushnil(L);
+				return true;
+			}
+		}
+	}
+
 	void CNPL::call(const object& strNPLFileName, const object& input)
 	{
 		string sCode;
@@ -202,7 +261,42 @@ namespace ParaScripting
 			sNPLFileName = object_cast<const char*>(strNPLFileName);
 		}
 
+		NPL::NPLRuntimeState_ptr runtime_state = NPL::CNPLRuntimeState::GetRuntimeStateFromLuaObject(strNPLFileName);
+		if (runtime_state.get() == 0)
+			return;
+
+		NPL::NPLFileName filename(sNPLFileName);
 		nType = type(input);
+
+		lua_State* L = strNPLFileName.interpreter();
+		const size_t relLen = filename.sRelativePath.size();
+		const bool isLuaTarget = relLen > 4 && filename.sRelativePath[relLen - 4] == '.' &&
+			((filename.sRelativePath[relLen - 3] == 'l' && filename.sRelativePath[relLen - 2] == 'u' && filename.sRelativePath[relLen - 1] == 'a') ||
+			 (filename.sRelativePath[relLen - 3] == 'n' && filename.sRelativePath[relLen - 2] == 'p' && filename.sRelativePath[relLen - 1] == 'l'));
+
+		if (nType != LUA_TSTRING && isLuaTarget && L != NULL && runtime_state->GetLuaState() == L)
+		{
+			runtime_state->LoadFile_any(filename.sRelativePath, false, L, true);
+			const int savedTop = lua_gettop(L);
+			if (nType == LUA_TNIL || nType == LUA_TNONE)
+			{
+				lua_pushnil(L);
+				lua_setglobal(L, "msg");
+				lua_settop(L, savedTop);
+				runtime_state->ActivateFile_any(filename.sRelativePath, nullptr, 0);
+				return;
+			}
+			input.push(L);
+			if (ClonePureLuaValueToStack(L, savedTop + 1, 0))
+			{
+				lua_setglobal(L, "msg");
+				lua_settop(L, savedTop);
+				runtime_state->ActivateFile_any(filename.sRelativePath, nullptr, 0);
+				return;
+			}
+			lua_settop(L, savedTop);
+		}
+
 		if (nType == LUA_TSTRING)
 		{
 			// arbitrary code is allowed in sCode
@@ -217,14 +311,8 @@ namespace ParaScripting
 			NPL::NPLHelper::SerializeToSCode("msg", input, sCode);
 		}
 
-		NPL::NPLRuntimeState_ptr runtime_state = NPL::CNPLRuntimeState::GetRuntimeStateFromLuaObject(strNPLFileName);
-		if (runtime_state.get() != 0)
-		{
-			NPL::NPLFileName filename(sNPLFileName);
-
-			runtime_state->LoadFile_any(filename.sRelativePath, false, strNPLFileName.interpreter(), true);
-			runtime_state->ActivateFile_any(filename.sRelativePath, sCode.c_str(), (int)sCode.size());
-		}
+		runtime_state->LoadFile_any(filename.sRelativePath, false, L, true);
+		runtime_state->ActivateFile_any(filename.sRelativePath, sCode.c_str(), (int)sCode.size());
 	}
 
 	void CNPL::call_(const char* strNPLFileName, const char* sCode)

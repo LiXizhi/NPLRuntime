@@ -834,34 +834,43 @@ bool CZipArchive::ReadEntries_pkg2()
 		}
 	}
 
-	for (DWORD i = 0; i < nEntryNum; i++)
+	constexpr size_t kPkg2EntryBytes = sizeof(WORD) + sizeof(DWORD) + sizeof(uint32) + sizeof(WORD) + sizeof(DWORD) * 3;
+	if (nEntryNum > 0)
 	{
-		m_FileList[i].m_pEntry = &m_pEntries[i];
-		SZipFileEntry &entry = *(m_FileList[i].m_pEntry);
-
-		// read filename
-		m_pFile->read(&entry.fileNameLen, sizeof(WORD));
-
-		DWORD nameOffset;
-		m_pFile->read(&nameOffset, sizeof(DWORD));
-		entry.zipFileName = &m_nameBlock[nameOffset];
-
-		// read hash
-		m_pFile->read(&entry.hashValue, sizeof(uint32));
-
-		m_pFile->read(&entry.CompressionMethod, sizeof(WORD));
-		m_pFile->read(&entry.CompressedSize, sizeof(DWORD));
-		m_pFile->read(&entry.UncompressedSize, sizeof(DWORD));
-		int nEncodedDataPos = 0;
-		m_pFile->read(&nEncodedDataPos, sizeof(DWORD));
-		// decode the data pos
-		int nDataPos = nEncodedDataPos;
-		if (entry.fileNameLen >= 4)
+		const size_t totalTableBytes = static_cast<size_t>(nEntryNum) * kPkg2EntryBytes;
+		std::vector<uint8> rawEntries(totalTableBytes);
+		if (m_pFile->read(rawEntries.data(), static_cast<DWORD>(totalTableBytes)) != static_cast<int>(totalTableBytes))
 		{
-			// take the file name into consideration.
-			nDataPos -= entry.zipFileName[0] * PKG_KEY1 + entry.zipFileName[1] * PKG_KEY2 + entry.zipFileName[2] * PKG_KEY3 + entry.zipFileName[3] * PKG_KEY4;
+			OUTPUT_LOG("warning: truncated pkg2 entry table\n");
+			return false;
 		}
-		entry.fileDataPosition = nDataPos;
+		const uint8* ptr = rawEntries.data();
+		for (DWORD i = 0; i < nEntryNum; ++i, ptr += kPkg2EntryBytes)
+		{
+			m_FileList[i].m_pEntry = &m_pEntries[i];
+			SZipFileEntry &entry = *(m_FileList[i].m_pEntry);
+
+			memcpy(&entry.fileNameLen, ptr + 0, sizeof(WORD));
+
+			DWORD nameOffset = 0;
+			memcpy(&nameOffset, ptr + 2, sizeof(DWORD));
+			entry.zipFileName = (nameOffset < nameBuffSize) ? &m_nameBlock[nameOffset] : "";
+
+			memcpy(&entry.hashValue, ptr + 6, sizeof(uint32));
+			memcpy(&entry.CompressionMethod, ptr + 10, sizeof(WORD));
+			memcpy(&entry.CompressedSize, ptr + 12, sizeof(DWORD));
+			memcpy(&entry.UncompressedSize, ptr + 16, sizeof(DWORD));
+			int nEncodedDataPos = 0;
+			memcpy(&nEncodedDataPos, ptr + 20, sizeof(DWORD));
+			// decode the data pos
+			int nDataPos = nEncodedDataPos;
+			if (entry.fileNameLen >= 4)
+			{
+				// take the file name into consideration.
+				nDataPos -= entry.zipFileName[0] * PKG_KEY1 + entry.zipFileName[1] * PKG_KEY2 + entry.zipFileName[2] * PKG_KEY3 + entry.zipFileName[3] * PKG_KEY4;
+			}
+			entry.fileDataPosition = nDataPos;
+		}
 	}
 
 	// pkg already sorted

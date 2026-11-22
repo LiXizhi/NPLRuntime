@@ -282,6 +282,21 @@ string DBEntity::PrepareDatabaseFile(const string& filename)
 		return "";
 	}
 
+	if (ParaEngine::CParaFile::DoesFileExist(sTempDiskFilename.c_str(), false))
+	{
+		ParaEngine::CParaFile existingTemp;
+		if (existingTemp.OpenFile(sTempDiskFilename.c_str(), true) &&
+			existingTemp.getSize() == file.getSize())
+		{
+			const size_t headerBytes = (file.getSize() < 100) ? static_cast<size_t>(file.getSize()) : 100u;
+			if (headerBytes == 0 || memcmp(existingTemp.getBuffer(), file.getBuffer(), headerBytes) == 0)
+			{
+				m_nSQLite_OpenFlags = SQLITE_OPEN_READONLY;
+				return sTempDiskFilename;
+			}
+		}
+	}
+
 	if (!ParaEngine::CParaFile::CreateDirectory(sTempDiskFilename.c_str()))
 	{
 		OUTPUT_LOG("error: failed creating directory for database file %s in archive to %s \r\n", filename.c_str(), sTempDiskFilename.c_str());
@@ -352,9 +367,21 @@ string DBEntity::PrepareDatabaseFile(const string& filename)
 			OUTPUT_LOG("error: failed creating directory for database file %s in archive to %s \r\n", filename.c_str(), sTempDiskFilename.c_str());
 		}
 
-		// delete the source file if exists
+		// reuse unchanged read-only extracted database if size and SQLite header match
 		if(ParaEngine::CParaFile::DoesFileExist(sTempDiskFilename.c_str(), false))
 		{
+			ParaEngine::CParaFile existingTemp;
+			if (existingTemp.OpenFile(sTempDiskFilename.c_str(), true) &&
+				existingTemp.getSize() == file.getSize())
+			{
+				const size_t headerBytes = (file.getSize() < 100) ? static_cast<size_t>(file.getSize()) : 100u;
+				if (headerBytes == 0 || memcmp(existingTemp.getBuffer(), file.getBuffer(), headerBytes) == 0)
+				{
+					m_nSQLite_OpenFlags = SQLITE_OPEN_READONLY;
+					return sTempDiskFilename;
+				}
+			}
+			existingTemp.close();
 #ifdef WIN32
 			// remove read only file attribute. This is actually not necessary, but just leaves here for debugging purposes. 
 			DWORD dwAttrs = ::GetFileAttributes(sTempDiskFilename.c_str()); 
