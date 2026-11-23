@@ -63,6 +63,8 @@ http://127.0.0.1:8088/npl/webparacraft/index.html?searchroot=C:/Paracraft/&world
   4. IDBFS 挂载（/worlds、/Database、/apps）完成后自动合并本地目录且不覆盖浏览器存档
 ```
 
+游戏通过 `ParaIO` 写入 `/temp` 的普通文件会自动保存到当前站点的 IndexedDB，刷新后恢复。资源清单按需下载的美术文件由 `CAssetManifest` 标记，其响应按浏览器的 HTTP 缓存规则复用，解包内容只在本次运行中使用。`/temp/cache` 内的其他业务文件也会正常保存。构建 Web 引擎后，可用 `python3 tests/web/test_temp_storage.py` 运行 Chrome 回归测试。
+
 - **CJK 中文字体自动回退**：桌面版目录通常不含 `fonts/DroidSansFallback.ttf`，`serve_webparacraft.py` 会自动映射宿主机中文字体（如 Windows 的 `simhei.ttf` / `msyh.ttc`），也可通过 `--font-file` 手动指定。
 - **无缓存污染**：`web/ServiceWorker.js` 仅转发内嵌 NPL WebServer（`/__npl_webserver__` 等路由），不对 `.js` / `.wasm` 做 CacheStorage 缓存，重编 C++ 或修改 Lua 后刷新即最新代码。
 

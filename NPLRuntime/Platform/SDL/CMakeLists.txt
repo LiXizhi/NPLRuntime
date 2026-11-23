@@ -30,7 +30,9 @@ add_executable(${TARGET_NAME} ${app_src} ${app_main_src})
 
 if (EMSCRIPTEN)
 	set_property(TARGET ${TARGET_NAME} APPEND_STRING PROPERTY LINK_FLAGS
-		"--js-library ${CMAKE_CURRENT_SOURCE_DIR}/emscripten/library_webxr.js")
+		"--js-library ${CMAKE_CURRENT_SOURCE_DIR}/emscripten/library_webxr.js --js-library ${CMAKE_CURRENT_SOURCE_DIR}/emscripten/library_temp_fs.js")
+	set_property(TARGET ${TARGET_NAME} APPEND PROPERTY LINK_DEPENDS
+		"${CMAKE_CURRENT_SOURCE_DIR}/emscripten/library_temp_fs.js")
 endif()
 
 set(SDL_RHI_LIBS RenderSystemRHICore RenderSystemNull RenderSystemOpenGL)

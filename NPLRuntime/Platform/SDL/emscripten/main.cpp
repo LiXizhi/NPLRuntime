@@ -287,14 +287,13 @@ int main(int argc, char* argv[])
         FS.mount(IDBFS, { root: '/worlds' }, '/worlds');
         FS.mkdir('/Database');
         FS.mount(IDBFS, { root: '/Database' }, '/Database');
-        // the temp folder can not be persistent for some reason. 
-        //FS.mkdir('/temp');
-        //FS.mount(IDBFS, { root: '/temp' }, '/temp');
+        // /temp is already mounted by library_temp_fs.js before packages are unpacked.
         FS.syncfs(true, function(err) {
-            console.log("加载IDBFS!!!");
+            if (err) console.error("Could not restore Web filesystem", err);
             Module._emscripten_filesystem_inited();
             Module.ParaCraftFileSystemInited();
         });
+
         setTimeout(function(){ FS.syncfs(false, function(err) { if (err) { console.log("FS.syncfs",err); } });}, 180000);  // 3分钟后同步到idbfs
         setInterval(function(){ FS.syncfs(false, function(err) { if (err) { console.log("FS.syncfs",err); } });}, 600000);  // 10分钟后同步到idbfs
     });

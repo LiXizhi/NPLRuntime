@@ -26,6 +26,10 @@
 
 using namespace ParaEngine;
 
+#ifdef __EMSCRIPTEN__
+extern "C" void npl_exclude_manifest_file(const char* relativePath);
+#endif
+
 /** how many times we will try to download a given asset file. */
 #define MAX_DOWNLOAD_RETRY_COUNT	1
 
@@ -64,6 +68,9 @@ bool AssetFileEntry::DoesFileExist()
 	{
 		if (CParaFile::DoesFileExist2(m_localFileName.c_str(), FILE_ON_DISK))
 		{
+#ifdef __EMSCRIPTEN__
+			npl_exclude_manifest_file(m_localFileName.c_str());
+#endif
 			m_nStatus = AssetFileStatus_Downloaded;
 			return true;
 		}
@@ -94,6 +101,10 @@ bool AssetFileEntry::DoesFileExist()
 				filename[nSize - 2] = '\0';
 				if (CParaFile::DoesFileExist(filename, false))
 				{
+#ifdef __EMSCRIPTEN__
+					npl_exclude_manifest_file(filename);
+					npl_exclude_manifest_file(m_localFileName.c_str());
+#endif
 					if (!CParaFile::MoveFile(filename, m_localFileName.c_str()))
 					{
 						if (!CParaFile::CopyFile(filename, m_localFileName.c_str(), true))
@@ -541,6 +552,7 @@ bool AssetFileEntry::SaveToDisk(const char* buffer, int nSize, bool bCheckMD5)
 	ParaEngine::Lock lock_(s_save_file_mutex);
 
 #ifdef __EMSCRIPTEN__
+	npl_exclude_manifest_file(GetLocalFileName().c_str());
 	string tmpName = GetLocalFileName();
 #else
 	string tmpName = GetLocalFileName() + ".tmp";

@@ -370,7 +370,9 @@
             }
         }
 
-        const node = MEMFS.createNode(parent, fileName, 33206 /* S_IFREG | 0666 */, 0);
+        // Keep the writable node operations installed by the Web /temp mount.
+        const create = parent.mount.mountpoint === "/temp" ? parent.node_ops.mknod : MEMFS.createNode;
+        const node = create.call(MEMFS, parent, fileName, 33206 /* S_IFREG | 0666 */, 0);
         registerCiChild(parent, fileName);
         if (mtimeMs) {
             node.mtime = mtimeMs;

@@ -10,6 +10,7 @@ The following one is chosen with some modifications so that they work well with 
 #include "ParaVector3.h"
 #include "ParaMatrix3.h"
 #include "PaintEngine/qmatrix.h"
+#include <cmath>
 
 namespace ParaEngine
 {
