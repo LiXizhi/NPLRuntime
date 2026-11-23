@@ -109,6 +109,7 @@ CParaXModel::CParaXModel(const ParaXHeaderDef& xheader)
 	m_normals = NULL;
 	texcoords1 = NULL;
 	m_indices = NULL;
+	textures = nullptr;
 	anims = NULL;
 	bones = NULL;
 	texanims = NULL;

@@ -322,8 +322,8 @@ namespace
 		for (size_t i = 0; i < anim.ranges.size(); ++i)
 		{
 			Json::Value r(Json::arrayValue);
-			r[0u] = anim.ranges[i].first;
-			r[1u] = anim.ranges[i].second;
+			r[0u] = static_cast<Json::Value::UInt>(anim.ranges[i].first);
+			r[1u] = static_cast<Json::Value::UInt>(anim.ranges[i].second);
 			ranges[(Json::Value::UInt)i] = r;
 		}
 		jv["times"] = times;
@@ -732,10 +732,10 @@ bool ParaXGltfExtras::ExportExtrasFromModel(CParaXModel* pMesh, Json::Value& out
 	{
 		const ModelAnimation& ma = pMesh->anims[i];
 		Json::Value ja;
-		ja["id"] = ma.animID;
-		ja["timeStart"] = ma.timeStart;
-		ja["timeEnd"] = ma.timeEnd;
-		ja["loopType"] = ma.loopType;
+		ja["id"] = static_cast<Json::Value::UInt>(ma.animID);
+		ja["timeStart"] = static_cast<Json::Value::UInt>(ma.timeStart);
+		ja["timeEnd"] = static_cast<Json::Value::UInt>(ma.timeEnd);
+		ja["loopType"] = static_cast<Json::Value::UInt>(ma.loopType);
 		ja["moveSpeed"] = ma.moveSpeed;
 		ja["boxA"] = Vec3ToJson(ma.boxA);
 		ja["boxB"] = Vec3ToJson(ma.boxB);
