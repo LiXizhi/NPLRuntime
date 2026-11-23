@@ -236,6 +236,10 @@ namespace ParaEngine
 
 		const Uint8 *keyboardState = SDL_GetKeyboardState(NULL);
 		(void)keyboardState;
+#ifndef __EMSCRIPTEN__
+		// Disable OS IME text composition by default until an IME-enabled edit control gains focus.
+		SDL_StopTextInput();
+#endif
 
 #ifndef PARA_RHI_HAS_WEBGPU
 		EnsureGLContext();
@@ -427,6 +431,35 @@ namespace ParaEngine
 		static bool is_wps_office_app = JS::IsWpsOfficeApp() == 1;
 #else 
 		static bool is_wps_office_app = false;
+		bool bShouldAcceptText = false;
+		bool bShouldEnableIME = false;
+		if (CGlobals::GetApp() && CGlobals::GetApp()->GetAppState() == PEAppState_Ready && CGUIRoot::GetInstance())
+		{
+			if (auto* pFocus = CGUIRoot::GetInstance()->GetUIKeyFocus())
+			{
+				if (pFocus->GetVisibleRecursive())
+				{
+					bShouldAcceptText = true;
+					bShouldEnableIME = pFocus->IsInputMethodEnabled();
+					if (bShouldEnableIME)
+					{
+						QPoint pt = pFocus->GetCompositionPoint();
+						SDL_Rect imeRect = { pt.x(), pt.y(), 1, 20 };
+						SDL_SetTextInputRect(&imeRect);
+					}
+				}
+			}
+		}
+		if (bShouldEnableIME)
+		{
+			if (!SDL_IsTextInputActive())
+				SDL_StartTextInput();
+		}
+		else
+		{
+			if (SDL_IsTextInputActive())
+				SDL_StopTextInput();
+		}
 #endif
 		while (SDL_PollEvent(&sdl_event))
 		{
@@ -552,6 +585,54 @@ namespace ParaEngine
 				{
 					if (c >= 0) OnChar(c);
 				}
+#else
+				if (bShouldAcceptText && !bShouldEnableIME && (sdl_event.key.keysym.mod & (KMOD_CTRL | KMOD_GUI | KMOD_ALT)) == 0)
+				{
+					if (c >= 0)
+					{
+						OnChar(c);
+					}
+					else if (msgKey >= 32 && msgKey <= 126)
+					{
+						char ascii = (char)msgKey;
+						const bool bShift = (sdl_event.key.keysym.mod & KMOD_SHIFT) != 0;
+						const bool bCaps = (sdl_event.key.keysym.mod & KMOD_CAPS) != 0;
+						if (ascii >= 'a' && ascii <= 'z')
+						{
+							if (bShift != bCaps)
+								ascii = (char)(ascii - 'a' + 'A');
+						}
+						else if (bShift)
+						{
+							switch (ascii)
+							{
+							case '1': ascii = '!'; break;
+							case '2': ascii = '@'; break;
+							case '3': ascii = '#'; break;
+							case '4': ascii = '$'; break;
+							case '5': ascii = '%'; break;
+							case '6': ascii = '^'; break;
+							case '7': ascii = '&'; break;
+							case '8': ascii = '*'; break;
+							case '9': ascii = '('; break;
+							case '0': ascii = ')'; break;
+							case '-': ascii = '_'; break;
+							case '=': ascii = '+'; break;
+							case '[': ascii = '{'; break;
+							case ']': ascii = '}'; break;
+							case '\\': ascii = '|'; break;
+							case ';': ascii = ':'; break;
+							case '\'': ascii = '"'; break;
+							case ',': ascii = '<'; break;
+							case '.': ascii = '>'; break;
+							case '/': ascii = '?'; break;
+							case '`': ascii = '~'; break;
+							default: break;
+							}
+						}
+						OnChar((unsigned int)(unsigned char)ascii);
+					}
+				}
 #endif
 			}
 			else if (sdl_event.type == SDL_KEYUP && !is_wps_office_app)
@@ -574,7 +655,12 @@ namespace ParaEngine
 			}
 			else if (sdl_event.type == SDL_TEXTINPUT)
 			{
-				OnChar(sdl_event.text.text);
+#ifndef __EMSCRIPTEN__
+				if (bShouldAcceptText)
+#endif
+				{
+					OnChar(sdl_event.text.text);
+				}
 			}
 			else if (sdl_event.type == SDL_DROPFILE)
 			{

@@ -8,6 +8,18 @@ if(NOT EMSCRIPTEN)
         "${PROJECT_SOURCE_DIR}/ParaEngine"
         "${PROJECT_SOURCE_DIR}/RenderSystem/rhi_core")
     add_test(NAME texture_compression_unit COMMAND test_texture_compression)
+
+    if(TARGET luabind)
+        get_property(LUABIND_TEST_LUA_LIBS GLOBAL PROPERTY "LUA_LIB_LIST")
+        add_executable(LuabindOptimizationTest
+            "${PROJECT_SOURCE_DIR}/tests/LuabindOptimizationTest.cpp")
+        target_link_libraries(LuabindOptimizationTest PRIVATE
+            luabind ${LUABIND_TEST_LUA_LIBS})
+        if(UNIX AND NOT APPLE)
+            target_link_libraries(LuabindOptimizationTest PRIVATE dl pthread)
+        endif()
+        add_test(NAME luabind_optimization_unit COMMAND LuabindOptimizationTest)
+    endif()
 endif()
 
 if(WIN32)

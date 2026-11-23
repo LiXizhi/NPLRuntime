@@ -27,25 +27,52 @@
 #include <luabind/config.hpp>
 #include <luabind/lua_include.hpp>
 #include <luabind/memory.hpp>
+#include <new>
 
-namespace luabind { 
-    
-    struct scope; 
+namespace luabind {
+
+    struct scope;
 
 } // namespace luabind
 
 namespace luabind { namespace detail {
 
+    // Non-virtual registration node: eliminates vtables, RTTI typeinfo, and
+    // per-template virtual destructors across thousands of def()/.def() sites.
     struct LUABIND_API registration
     {
-        registration();
-        virtual ~registration();
+        typedef void (*register_fn_t)(lua_State*, registration const*);
+        typedef void (*destroy_fn_t)(registration*);
 
-    protected:
-        virtual void register_(lua_State*) const = 0;
+        explicit registration(
+            register_fn_t reg_fn
+          , destroy_fn_t destroy_fn = &registration::default_destroy
+        ) noexcept
+          : m_register_fn(reg_fn)
+          , m_destroy_fn(destroy_fn)
+          , m_next(0)
+        {}
+
+        void register_(lua_State* L) const
+        {
+            m_register_fn(L, this);
+        }
+
+        static void default_destroy(registration* self) noexcept
+        {
+            ::operator delete(self);
+        }
+
+        template <class Derived>
+        static void typed_destroy(registration* self) noexcept
+        {
+            delete static_cast<Derived*>(self);
+        }
 
     private:
         friend struct ::luabind::scope;
+        register_fn_t m_register_fn;
+        destroy_fn_t m_destroy_fn;
         registration* m_next;
     };
 
@@ -55,17 +82,74 @@ namespace luabind {
 
     struct LUABIND_API scope
     {
-        scope();
-        explicit scope(std::movable_auto_ptr<detail::registration> reg):  m_chain(reg.release()) {}
-        scope(scope const& other_);
-        ~scope();
+        scope() noexcept
+          : m_chain(0)
+          , m_tail(0)
+        {}
 
-        scope& operator,(scope s);
+        explicit scope(detail::registration* reg) noexcept
+          : m_chain(reg)
+          , m_tail(reg)
+        {}
+
+        explicit scope(std::movable_auto_ptr<detail::registration> reg) noexcept
+          : m_chain(reg.release())
+          , m_tail(m_chain)
+        {}
+
+        scope(scope const& other_) noexcept
+          : m_chain(other_.m_chain)
+          , m_tail(other_.m_tail)
+        {
+            const_cast<scope&>(other_).m_chain = 0;
+            const_cast<scope&>(other_).m_tail = 0;
+        }
+
+        scope(scope&& other_) noexcept
+          : m_chain(other_.m_chain)
+          , m_tail(other_.m_tail)
+        {
+            other_.m_chain = 0;
+            other_.m_tail = 0;
+        }
+
+        ~scope() noexcept
+        {
+            if (LUABIND_UNLIKELY(m_chain != 0))
+                destroy_chain();
+        }
+
+        scope& operator,(scope s) noexcept
+        {
+            if (!s.m_chain)
+                return *this;
+
+            if (!m_chain)
+            {
+                m_chain = s.m_chain;
+                m_tail = s.m_tail ? s.m_tail : s.m_chain;
+            }
+            else
+            {
+                detail::registration* tail = m_tail ? m_tail : m_chain;
+                while (tail->m_next)
+                    tail = tail->m_next;
+                tail->m_next = s.m_chain;
+                m_tail = s.m_tail ? s.m_tail : s.m_chain;
+            }
+
+            s.m_chain = 0;
+            s.m_tail = 0;
+            return *this;
+        }
 
         void register_(lua_State* L) const;
 
     private:
+        void destroy_chain() noexcept;
+
         detail::registration* m_chain;
+        detail::registration* m_tail;
     };
 
     class LUABIND_API namespace_ : public scope
@@ -98,4 +182,3 @@ namespace luabind {
 } // namespace luabind
 
 #endif // NEW_SCOPE_040211_HPP
-

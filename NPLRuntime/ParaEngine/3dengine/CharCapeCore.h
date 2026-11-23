@@ -112,7 +112,14 @@ namespace ParaEngine
 		float frontRadius[NUM_SLICES] = {};
 		float sideRadius[NUM_SLICES] = {};
 
-		void InitCanonical(float inBaseY, float inNeckY, float shoulderHalfSpan, float modelScale = 1.0f, float inCenterX = 0.0f, float inCenterZ = 0.0f)
+		void InitCanonical(
+			float inBaseY,
+			float inNeckY,
+			float shoulderHalfSpan,
+			float modelScale = 1.0f,
+			float inCenterX = 0.0f,
+			float inCenterZ = 0.0f,
+			float inBackSurfaceDepth = 0.0f)
 		{
 			enabled = true;
 			const float sc = (modelScale > 0.05f) ? modelScale : 1.0f;
@@ -122,14 +129,16 @@ namespace ParaEngine
 			centerZ = inCenterZ;
 
 			const float bodyH = neckY - baseY;
-			const float shHalf = (std::max)(0.15f * sc, (std::max)(shoulderHalfSpan, bodyH * 0.24f));
-			const float torsoDepth = (std::max)(0.13f * sc, bodyH * 0.21f);
-			headBackRadius = (std::max)(0.16f * sc, torsoDepth * 1.15f);
+			const float shHalf = (std::max)(0.125f * sc, (std::min)(0.24f * sc, (std::max)(shoulderHalfSpan, bodyH * 0.215f)));
+			const float torsoDepth = (inBackSurfaceDepth > 0.03f)
+				? (std::max)(0.075f * sc, (std::min)(bodyH * 0.26f, inBackSurfaceDepth))
+				: (std::max)(0.085f * sc, (std::min)(0.165f * sc, bodyH * 0.185f));
+			headBackRadius = (std::max)(0.14f * sc, torsoDepth * 1.12f);
 
-			// 8 slices from s=0 (collar/neck) down to s=1 (ankles/boots)
-			static constexpr float kBackMul[NUM_SLICES]  = { 0.82f, 1.04f, 1.12f, 1.10f, 1.22f, 1.16f, 1.04f, 0.96f };
-			static constexpr float kFrontMul[NUM_SLICES] = { 0.78f, 1.00f, 1.08f, 1.02f, 1.06f, 0.98f, 0.90f, 0.92f };
-			static constexpr float kSideMul[NUM_SLICES]  = { 0.76f, 1.14f, 1.16f, 1.06f, 1.10f, 0.98f, 0.84f, 0.78f };
+			// 8 canonical standing-body slices from s=0 (collar/neck) down to s=1 (ankles/boots)
+			static constexpr float kBackMul[NUM_SLICES]  = { 0.92f, 1.03f, 1.10f, 1.18f, 1.30f, 1.16f, 1.02f, 0.92f };
+			static constexpr float kFrontMul[NUM_SLICES] = { 0.84f, 0.96f, 1.04f, 1.04f, 1.06f, 0.96f, 0.88f, 0.90f };
+			static constexpr float kSideMul[NUM_SLICES]  = { 0.80f, 1.06f, 1.06f, 1.04f, 1.08f, 0.94f, 0.84f, 0.78f };
 
 			for (int i = 0; i < NUM_SLICES; ++i)
 			{
@@ -488,9 +497,13 @@ namespace ParaEngine
 				+ rightDir * bodyCollider.centerZ
 				+ userOffset;
 
-			const float collarMinBackR = bodyCollider.enabled ? (bodyCollider.backRadius[0] * 1.04f) : 0.0f;
-			const float collarMinFrontR = bodyCollider.enabled ? (bodyCollider.frontRadius[0] * 1.05f) : 0.0f;
-			const float collarMinSideR = bodyCollider.enabled ? (bodyCollider.sideRadius[0] * 0.98f) : 0.0f;
+			const float collarMinBackR = bodyCollider.enabled ? (bodyCollider.backRadius[0] * 1.03f) : (0.10f * scale);
+			const float collarMinFrontR = bodyCollider.enabled ? (bodyCollider.frontRadius[0] * 1.04f) : (0.09f * scale);
+			const float collarMinSideR = bodyCollider.enabled ? (bodyCollider.sideRadius[0] * 1.02f) : (0.13f * scale);
+
+			// ClassicBack / Scarf clasp slightly lower on the upper shoulder blades (aligned with ATT_ID_BACK_ADDON)
+			const float classicDropY = (rawStyle.collarStyle == CapeCollarStyle::WrapPoncho) ? 0.0f : (0.024f * scale);
+			const CapeVec3 effectiveCollarOrigin = spineCollarOrigin - upDir * classicDropY;
 
 			particles.clear();
 			particles.resize(static_cast<size_t>(cols * rows));
@@ -510,40 +523,50 @@ namespace ParaEngine
 					CapeVec3 pLocal;
 					if (rawStyle.collarStyle == CapeCollarStyle::WrapPoncho)
 					{
-						// Horseshoe collar arc centered around canonical neck/shoulder envelope
+						// Snug oval horseshoe collar hugging the neck/collarbone & upper back (wider side-to-side than front-to-back)
 						const float theta = s * (wrapRad * 0.5f);
-						const float effTheta = theta * (1.0f - 0.30f * v);
+						const float effTheta = theta * (1.0f - 0.32f * v);
 						const float cosT = std::cos(effTheta);
 						const float sinT = std::sin(effTheta);
 
 						const float collarRx = (cosT >= 0.0f)
-							? (std::max)(topW * 0.44f, collarMinBackR)
-							: (std::max)(topW * 0.44f, collarMinFrontR);
-						const float collarRz = (std::max)(topW * 0.54f, collarMinSideR);
+							? (collarMinBackR + 0.006f * scale)
+							: (collarMinFrontR + 0.008f * scale);
+						const float collarRz = (std::max)(topW * 0.48f, collarMinSideR * 1.04f);
 
-						const float radiusX = collarRx * (1.0f - v) + (botW * 0.42f + bell * std::sin(v * kPi * 0.85f)) * v;
-						const float radiusZ = collarRz * (1.0f - v) + (botW * 0.56f) * v;
+						const float radiusX = collarRx * (1.0f - v) + (botW * 0.36f + bell * std::sin(v * kPi * 0.85f)) * v;
+						const float radiusZ = collarRz * (1.0f - v) + (botW * 0.54f) * v;
 
-						const float backComp = cosT * radiusX + backOff * (0.35f + 0.65f * v);
+						const float backComp = cosT * radiusX + backOff * (0.85f * v);
 						const float sideComp = sinT * radiusZ;
 						const float shoulderCurve = drop * (s * s) * (1.0f - 0.6f * v);
 
-						pLocal = spineCollarOrigin
+						pLocal = effectiveCollarOrigin
 							+ backDir * backComp
 							+ rightDir * sideComp
 							- upDir * (rowLen + shoulderCurve);
 					}
 					else
 					{
-						// ClassicBack or Scarf: curved shoulder line flaring cleanly outside back
-						const float halfW = 0.5f * (topW + (botW - topW) * v);
-						const float sideComp = s * halfW;
-						const float baseBack = (std::max)(backOff, collarMinBackR);
-						const float archBack = baseBack + bell * std::sin(v * kPi * 0.8f) + (1.0f - s * s) * 0.03f * scale * (0.3f + v);
-						const float shoulderCurve = drop * (s * s) * (1.0f - 0.5f * v);
+						// ClassicBack or Scarf: curved shoulder-hugging arc anchored to the upper-back cape attachment surface
+						// so left/right clasps curve forward onto the shoulders instead of sticking out into empty air
+						const float arcDeg = (rawStyle.collarStyle == CapeCollarStyle::Scarf) ? 132.0f : 110.0f;
+						const float halfArcRad = (arcDeg * 0.5f) * (kPi / 180.0f);
+						const float theta = s * halfArcRad;
+						const float effTheta = theta * (1.0f - 0.45f * v);
+						const float cosT = std::cos(effTheta);
+						const float sinT = std::sin(effTheta);
+						const float sinEdge = (std::max)(0.35f, std::sin(halfArcRad * (1.0f - 0.45f * v)));
 
-						pLocal = spineCollarOrigin
-							+ backDir * archBack
+						const float halfW = 0.5f * (topW + (botW - topW) * v);
+						const float collarBackDepth = collarMinBackR + 0.008f * scale;
+						const float radiusX = collarBackDepth + (bell * std::sin(v * kPi * 0.82f) + backOff * 0.75f) * v;
+						const float sideComp = (sinT / sinEdge) * halfW;
+						const float backComp = cosT * radiusX;
+						const float shoulderCurve = (drop * 0.35f) * (s * s) * (1.0f - 0.5f * v);
+
+						pLocal = effectiveCollarOrigin
+							+ backDir * backComp
 							+ rightDir * sideComp
 							- upDir * (rowLen + shoulderCurve);
 					}
@@ -833,10 +856,10 @@ namespace ParaEngine
 					}
 
 					// Sky signature traveling wave flutter (gentle idle breeze -> energetic flight ripple)
-					const float waveFreq = motion.isFlying ? 9.5f : (4.2f + 3.5f * runFactor);
+					const float waveFreq = motion.isFlying ? 9.5f : (3.6f + 3.8f * runFactor);
 					const float waveAmp = motion.isFlying
 						? (4.8f * tuning.windResponse)
-						: ((0.45f + 1.8f * runFactor) * tuning.windResponse);
+						: ((0.95f + 1.85f * runFactor) * tuning.windResponse);
 					const float phase = pt.vNorm * 4.2f - motion.timeSeconds * waveFreq + pt.uNorm * 2.1f;
 					const float secondary = std::cos(pt.uNorm * 6.2831853f - motion.timeSeconds * (waveFreq * 0.63f));
 					const float envelope = pt.vNorm * pt.vNorm;

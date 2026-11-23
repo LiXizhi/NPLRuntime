@@ -38,7 +38,7 @@ namespace detail
 
 	struct lua_reference
 	{
-		lua_reference(lua_State* L_ = 0)
+		lua_reference(lua_State* L_ = 0) noexcept
 			: L(L_)
 			, m_ref(LUA_NOREF)
 		{}
@@ -50,20 +50,37 @@ namespace detail
 			r.get(L);
 			set(L);
 		}
+		lua_reference(lua_reference&& r) noexcept
+			: L(r.L)
+			, m_ref(r.m_ref)
+		{
+			r.L = 0;
+			r.m_ref = LUA_NOREF;
+		}
 		~lua_reference() { reset(); }
 
-		lua_State* state() const { return L; }
+		lua_State* state() const noexcept { return L; }
 
 		void operator=(lua_reference const& r)
 		{
-			// TODO: self assignment problems
+			if (this == &r) return;
 			reset();
 			if (!r.is_valid()) return;
 			r.get(r.state());
 			set(r.state());
 		}
 
-		bool is_valid() const
+		void operator=(lua_reference&& r) noexcept
+		{
+			if (this == &r) return;
+			reset();
+			L = r.L;
+			m_ref = r.m_ref;
+			r.L = 0;
+			r.m_ref = LUA_NOREF;
+		}
+
+		bool is_valid() const noexcept
 		{ return m_ref != LUA_NOREF; }
 
 		void set(lua_State* L_)
@@ -78,10 +95,6 @@ namespace detail
 			lua_rawseti(L_, LUA_REGISTRYINDEX, m_ref);
 		}
 
-		// L may not be the same pointer as
-		// was used when creating this reference
-		// since it may be a thread that shares
-		// the same globals table.
 		void get(lua_State* L_) const
 		{
 			assert(m_ref != LUA_NOREF);
@@ -95,7 +108,7 @@ namespace detail
 			m_ref = LUA_NOREF;
 		}
 
-		void swap(lua_reference& r)
+		void swap(lua_reference& r) noexcept
 		{
 			assert(r.L == L);
 			std::swap(r.m_ref, m_ref);
@@ -109,4 +122,3 @@ namespace detail
 }}
 
 #endif // LUABIND_REF_HPP_INCLUDED
-

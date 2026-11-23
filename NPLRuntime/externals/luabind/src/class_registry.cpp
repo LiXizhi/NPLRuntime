@@ -39,9 +39,6 @@ namespace luabind { namespace detail {
         {
             lua_newtable(L);
 
-            // mark the table with our (hopefully) unique tag
-            // that says that the user data that has this
-            // metatable is a class_rep
             lua_pushstring(L, "__luabind_classrep");
             lua_pushboolean(L, 1);
             lua_rawset(L, -3);
@@ -111,6 +108,7 @@ namespace luabind { namespace detail {
     class_registry::class_registry(lua_State* L)
         : m_cpp_class_metatable(create_cpp_class_metatable(L))
         , m_lua_class_metatable(create_lua_class_metatable(L))
+        , m_lua_function_metatable(LUA_NOREF)
     {
         push_instance_metatable(L);
         m_instance_metatable = luaL_ref(L, LUA_REGISTRYINDEX);
@@ -118,37 +116,20 @@ namespace luabind { namespace detail {
 
     class_registry* class_registry::get_registry(lua_State* L)
     {
-
-#ifdef LUABIND_NOT_THREADSAFE
-
-        // if we don't have to be thread safe, we can keep a
-        // chache of the class_registry pointer without the
-        // need of a mutex
-        static lua_State* cache_key = 0;
-        static class_registry* registry_cache = 0;
-        if (cache_key == L) return registry_cache;
-
-#endif
+        if (state_context* ctx = get_state_context(L))
+            return ctx->registry;
 
         lua_pushstring(L, "__luabind_classes");
-        lua_gettable(L, LUA_REGISTRYINDEX);
+        lua_rawget(L, LUA_REGISTRYINDEX);
         class_registry* p = static_cast<class_registry*>(lua_touserdata(L, -1));
         lua_pop(L, 1);
-
-#ifdef LUABIND_NOT_THREADSAFE
-
-        cache_key = L;
-        registry_cache = p;
-
-#endif
 
         return p;
     }
 
     void class_registry::add_class(type_id const& info, class_rep* crep)
     {
-        // class is already registered
-        assert((m_classes.find(info) == m_classes.end()) 
+        assert((m_classes.find(info) == m_classes.end())
             && "you are trying to register a class twice");
         m_classes[info] = crep;
     }
@@ -158,9 +139,8 @@ namespace luabind { namespace detail {
         std::map<type_id, class_rep*>::const_iterator i(
             m_classes.find(info));
 
-        if (i == m_classes.end()) return 0; // the type is not registered
+        if (i == m_classes.end()) return 0;
         return i->second;
     }
 
 }} // namespace luabind::detail
-

@@ -15,6 +15,7 @@ static const NSRange kEmptyRange = { NSNotFound, 0 };
         trackingArea = nil;
         markedText = [[NSMutableAttributedString alloc] init];
         pressedKeys = [[NSMutableArray alloc] init];
+        imeEnabled = NO;
         
         [self updateTrackingAreas];
     }
@@ -198,6 +199,49 @@ static const NSRange kEmptyRange = { NSNotFound, 0 };
     
 }
 
+- (NSTextInputContext *)inputContext
+{
+    return imeEnabled ? [super inputContext] : nil;
+}
+
+- (void)setIMEEnabled:(BOOL)enabled
+{
+    if (imeEnabled == enabled)
+    {
+        if (!enabled && [markedText length] > 0)
+        {
+            [[markedText mutableString] setString:@""];
+        }
+        return;
+    }
+
+    if (enabled)
+    {
+        imeEnabled = YES;
+        NSTextInputContext *ctx = [super inputContext];
+        if (ctx)
+        {
+            [ctx activate];
+        }
+    }
+    else
+    {
+        NSTextInputContext *ctx = [super inputContext];
+        if (ctx)
+        {
+            [ctx discardMarkedText];
+            [ctx deactivate];
+        }
+        [[markedText mutableString] setString:@""];
+        imeEnabled = NO;
+    }
+}
+
+- (BOOL)isIMEEnabled
+{
+    return imeEnabled;
+}
+
 - (void)keyDown:(NSEvent *)event
 {
     if (![self.window.firstResponder isEqual:self]) {
@@ -207,10 +251,35 @@ static const NSRange kEmptyRange = { NSNotFound, 0 };
     auto pRenderWindow = [RenderView getRenderWindow];
     if (pRenderWindow)
     {
-        pRenderWindow->OnKey(ParaEngine::EKeyState::PRESS, event);
+        pRenderWindow->SyncIMEState();
     }
 
-    [self interpretKeyEvents: @[event]];
+    if (imeEnabled)
+    {
+        BOOL hadMarkedText = [self hasMarkedText];
+        if (!hadMarkedText && pRenderWindow)
+        {
+            pRenderWindow->OnKey(ParaEngine::EKeyState::PRESS, event);
+        }
+        [self interpretKeyEvents: @[event]];
+    }
+    else if (pRenderWindow)
+    {
+        pRenderWindow->OnKey(ParaEngine::EKeyState::PRESS, event);
+
+        if (pRenderWindow->ShouldAcceptTextInput())
+        {
+            NSEventModifierFlags flags = [event modifierFlags];
+            if ((flags & (NSEventModifierFlagCommand | NSEventModifierFlagControl)) == 0)
+            {
+                NSString *chars = [event characters];
+                if (chars != nil && [chars length] > 0)
+                {
+                    pRenderWindow->OnInsertText(chars);
+                }
+            }
+        }
+    }
 }
 
 - (void)keyUp:(NSEvent *)event
@@ -251,13 +320,13 @@ static const NSRange kEmptyRange = { NSNotFound, 0 };
 
 - (BOOL)hasMarkedText
 {
-    return [markedText length] > 0;
+    return imeEnabled && [markedText length] > 0;
 }
 
 - (NSRange)markedRange
 {
-    if ([markedText length] > 0)
-        return NSMakeRange(0, [markedText length] - 1);
+    if (imeEnabled && [markedText length] > 0)
+        return NSMakeRange(0, [markedText length]);
     else
         return kEmptyRange;
 }
@@ -269,6 +338,11 @@ static const NSRange kEmptyRange = { NSNotFound, 0 };
 
 - (void)setMarkedText:(id)string selectedRange:(NSRange)selectedRange replacementRange:(NSRange)replacementRange
 {
+    if (!imeEnabled)
+    {
+        [[markedText mutableString] setString:@""];
+        return;
+    }
     [markedText release];
     if ([string isKindOfClass:[NSAttributedString class]])
         markedText = [[NSMutableAttributedString alloc] initWithAttributedString:string];
@@ -311,19 +385,21 @@ static const NSRange kEmptyRange = { NSNotFound, 0 };
 
 - (void)insertText:(id)string replacementRange:(NSRange)replacementRange
 {
+    [self unmarkText];
+
+    auto pRenderWindow = [RenderView getRenderWindow];
+    if (!pRenderWindow || !pRenderWindow->ShouldAcceptTextInput())
+    {
+        return;
+    }
+
     NSString* characters;
-//    NSEvent* event = [NSApp currentEvent];
-    
     if ([string isKindOfClass:[NSAttributedString class]])
         characters = [string string];
     else
         characters = (NSString*)string;
-    
-    auto pRenderWindow = [RenderView getRenderWindow];
-    if (pRenderWindow)
-    {
-        pRenderWindow->OnInsertText(characters);
-    }
+
+    pRenderWindow->OnInsertText(characters);
 }
 
 @end

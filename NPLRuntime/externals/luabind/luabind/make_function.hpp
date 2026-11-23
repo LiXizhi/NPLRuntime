@@ -5,6 +5,7 @@
 #ifndef LUABIND_MAKE_FUNCTION_081014_HPP
 # define LUABIND_MAKE_FUNCTION_081014_HPP
 
+# include <type_traits>
 # include <luabind/config.hpp>
 # include <luabind/object.hpp>
 # include <luabind/detail/call.hpp>
@@ -28,55 +29,37 @@ namespace detail
 # endif
 
   template <class F, class Signature, class Policies>
-  struct function_object_impl : function_object
+  struct LUABIND_DETAIL_HIDDEN function_object_impl : function_object
   {
-      function_object_impl(F f, Policies const& policies)
-        : function_object(&entry_point)
-        , f(f)
-        , policies(policies)
+      static constexpr bool kTrivialFields =
+          std::is_trivially_destructible<F>::value
+          && std::is_trivially_destructible<Policies>::value;
+
+      function_object_impl(F f_, Policies const& policies_)
+        : function_object(
+              &luabind_function_entry
+            , &function_object_impl::call_thunk
+            , &function_object_impl::format_thunk
+            , kTrivialFields
+                ? &function_object::default_destroy
+                : &function_object::typed_destroy<function_object_impl>
+            , compute_signature_arity(Signature(), policies_)
+          )
+        , f(f_)
+        , policies(policies_)
       {}
 
-      int call(lua_State* L, invoke_context& ctx) const
+      static int call_thunk(
+          lua_State* L, function_object const* base, int nargs, int* score_out)
       {
-          return invoke(L, *this, ctx, f, Signature(), policies);
+          function_object_impl const* self =
+              static_cast<function_object_impl const*>(base);
+          return invoke_fast(L, nargs, score_out, self->f, Signature(), self->policies);
       }
 
-      void format_signature(lua_State* L, char const* function) const
+      static void format_thunk(lua_State* L, char const* function)
       {
           detail::format_signature(L, function, Signature());
-      }
-
-      static int entry_point(lua_State* L)
-      {
-          function_object_impl const* impl =
-              *(function_object_impl const**)lua_touserdata(L, lua_upvalueindex(1));
-
-          invoke_context ctx;
-
-          int results = 0;
-
-# ifndef LUABIND_NO_EXCEPTIONS
-          try
-          {
-              results = invoke(
-                  L, *impl, ctx, impl->f, Signature(), impl->policies);
-          }
-          catch (...)
-          {
-              handle_exception_aux(L);
-              lua_error(L);
-          }
-# else
-          results = invoke(L, *impl, ctx, impl->f, Signature(), impl->policies);
-# endif
-
-          if (!ctx)
-          {
-              ctx.format_error(L, impl);
-              lua_error(L);
-          }
-
-          return results;
       }
 
       F f;
@@ -92,6 +75,12 @@ namespace detail
   );
 
   LUABIND_API void add_overload(object const&, char const*, object const&);
+
+  // Directly registers make_function + add_overload onto the table at stack top (-1)
+  // without creating intermediate luabind::object registry references.
+  LUABIND_API void register_function_on_stack_top(
+      lua_State* L, char const* name, function_object* impl
+  );
 
 } // namespace detail
 
@@ -109,10 +98,9 @@ object make_function(lua_State* L, F f, Signature, Policies)
 template <class F>
 object make_function(lua_State* L, F f)
 {
-    return make_function(L, detail::deduce_signature(f), detail::null_type());
+    return make_function(L, f, detail::deduce_signature(f), detail::null_type());
 }
 
 } // namespace luabind
 
 #endif // LUABIND_MAKE_FUNCTION_081014_HPP
-

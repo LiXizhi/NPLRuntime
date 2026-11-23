@@ -5,6 +5,9 @@
 #ifndef LUABIND_FUNCTION2_081014_HPP
 # define LUABIND_FUNCTION2_081014_HPP
 
+# include <new>
+# include <type_traits>
+# include <utility>
 # include <luabind/make_function.hpp>
 # include <luabind/scope.hpp>
 # include <luabind/detail/call_function.hpp>
@@ -14,23 +17,50 @@ namespace luabind {
 namespace detail
 {
 
-  template <class F, class Policies>
-  struct function_registration : registration
+  template <class F>
+  struct deduce_signature_t
   {
-      function_registration(char const* name, F f, Policies const& policies)
-        : name(name)
-        , f(f)
-        , policies(policies)
+      typedef decltype(deduce_signature(std::declval<F>())) type;
+  };
+
+  template <class Reg, class... Args>
+  inline registration* alloc_reg_nothrow(Args const&... args) noexcept
+  {
+      void* mem = ::operator new(sizeof(Reg), std::nothrow);
+      if (LUABIND_UNLIKELY(!mem))
+          std::abort();
+      return new (mem) Reg(args...);
+  }
+
+  template <class F, class Policies>
+  struct LUABIND_DETAIL_HIDDEN function_registration : registration
+  {
+      static constexpr bool kTrivial =
+          std::is_trivially_destructible<F>::value
+          && std::is_trivially_destructible<Policies>::value;
+
+      function_registration(char const* name_, F f_, Policies const& policies_) noexcept
+        : registration(
+              &function_registration::do_register
+            , kTrivial ? &registration::default_destroy
+                       : &registration::typed_destroy<function_registration>
+          )
+        , name(name_)
+        , f(f_)
+        , policies(policies_)
       {}
 
-      void register_(lua_State* L) const
+      static void do_register(lua_State* L, registration const* base)
       {
-          object fn = make_function(L, f, deduce_signature(f), policies);
-
-          add_overload(
-              object(from_stack(L, -1))
-            , name
-            , fn
+          function_registration const* self =
+              static_cast<function_registration const*>(base);
+          typedef typename deduce_signature_t<F>::type sig_type;
+          register_function_on_stack_top(
+              L
+            , self->name
+            , new function_object_impl<F, sig_type, Policies>(
+                  self->f, self->policies
+              )
           );
       }
 
@@ -44,14 +74,14 @@ namespace detail
 } // namespace detail
 
 template <class F, class Policies>
-scope def(char const* name, F f, Policies const& policies)
+inline scope def(char const* name, F f, Policies const& policies) noexcept
 {
-    return scope(std::movable_auto_ptr<detail::registration>(
-        new detail::function_registration<F, Policies>(name, f, policies)));
+    return scope(detail::alloc_reg_nothrow<detail::function_registration<F, Policies> >(
+        name, f, policies));
 }
 
 template <class F>
-scope def(char const* name, F f)
+inline scope def(char const* name, F f) noexcept
 {
     return def(name, f, detail::null_type());
 }
@@ -59,4 +89,3 @@ scope def(char const* name, F f)
 } // namespace luabind
 
 #endif // LUABIND_FUNCTION2_081014_HPP
-

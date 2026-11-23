@@ -596,18 +596,33 @@ void CharCapeInstance::ExtractRigAnchorsAndCapsules(
 	const bool hasSpine = getBonePos(Bone_Spine1, spinePos) || getBonePos(Bone_Spine, spinePos);
 	const bool hasPelvis = getBonePos(Bone_Pelvis, pelvisPos);
 
+	CapeVec3 backAtt = { 0.0f, 0.0f, 0.0f };
+	const bool hasBackAtt = getAttachPos(ATT_ID_BACK_ADDON, backAtt) && (backAtt.y > baseY + 0.12f) && (backAtt.LengthSq() > 1e-4f);
+	CapeVec3 headAtt = { 0.0f, 0.0f, 0.0f };
+	const bool hasHeadAtt = getAttachPos(ATT_ID_HEAD, headAtt) && (headAtt.y > baseY + 0.25f);
+
 	if (!getBonePos(Bone_Neck, outNeck))
 	{
 		if (!getAttachPos(ATT_ID_NECK, outNeck))
 		{
-			CapeVec3 backAtt;
-			if (getAttachPos(ATT_ID_BACK_ADDON, backAtt))
-				outNeck = backAtt + m_upDir * (0.12f * m_modelScale);
+			if (hasBackAtt)
+			{
+				// Center laterally at Z=0 (att_back often has a slight weapon/quiver Z offset) and lift from mid-scapula to collar base
+				outNeck = m_forwardDir * (backAtt.Dot(m_forwardDir) * 0.25f) + m_upDir * (backAtt.y + 0.13f * m_modelScale);
+			}
 			else if (hasSpine)
+			{
 				outNeck = spinePos + m_upDir * (0.20f * m_modelScale);
+			}
 			else
-				outNeck = { 0.0f, baseY + boxHeight * 0.76f, 0.0f };
+			{
+				outNeck = { 0.0f, baseY + boxHeight * 0.62f, 0.0f };
+			}
 		}
+	}
+	if (hasHeadAtt && outNeck.y > headAtt.y - 0.08f * m_modelScale)
+	{
+		outNeck.y = headAtt.y - 0.08f * m_modelScale;
 	}
 
 	if (!getBonePos(Bone_L_Clavicle, outLeftShoulder) && !getBonePos(Bone_L_UpperArm, outLeftShoulder))
@@ -682,137 +697,39 @@ void CharCapeInstance::BuildCanonicalBodyCollider(
 	if (pModel)
 	{
 		const Vector3& minE = pModel->GetHeader().minExtent;
-		if (std::fabs(minE.y) < 0.35f)
+		if (std::fabs(minE.y) < 0.18f)
 			baseY = minE.y;
-	}
-
-	const uint32_t nVerts = pModel ? pModel->GetObjectNum().nVertices : 0;
-	const uint32_t nIndices = pModel ? pModel->GetObjectNum().nIndices : 0;
-	if (pModel && pModel->m_origVertices && nVerts > 0)
-	{
-		float minVertY = 1e9f;
-		const uint32_t step = (nVerts > 2000) ? (nVerts / 1000) : 1;
-		for (uint32_t i = 0; i < nVerts; i += step)
-		{
-			const float vy = pModel->m_origVertices[i].pos.y;
-			if (std::isfinite(vy) && vy < minVertY)
-				minVertY = vy;
-		}
-		if (minVertY > -0.35f && minVertY < 0.35f)
-			baseY = minVertY;
 	}
 
 	const float neckY = (std::max)(baseY + 0.32f * m_modelScale, neckAnchor.y);
 	const float shHalf = 0.5f * std::fabs((rightShoulder - leftShoulder).Dot(m_rightDir));
-	// Center canonical body at (0, 0) in horizontal character space, gently blended toward neck X
-	const float centerX = (std::max)(-0.05f * m_modelScale, (std::min)(0.05f * m_modelScale, neckAnchor.Dot(m_forwardDir) * 0.30f));
-	outBody.InitCanonical(baseY, neckY, shHalf, m_modelScale, centerX, 0.0f);
+	// Center canonical standing body at (0, 0) in horizontal character space, gently blended toward neck X
+	const float centerX = (std::max)(-0.04f * m_modelScale, (std::min)(0.04f * m_modelScale, neckAnchor.Dot(m_forwardDir) * 0.25f));
 
-	if (!pModel || !pModel->m_origVertices || !pModel->m_indices || nVerts == 0 || nIndices == 0)
-		return;
-
-	const float bodyH = (std::max)(0.25f, neckY - baseY);
-	const float maxArmCapZ = (std::max)(shHalf * 1.48f + 0.05f, 0.28f * m_modelScale);
-	float meshBack[CapeBodyCollider::NUM_SLICES] = {};
-	float meshFront[CapeBodyCollider::NUM_SLICES] = {};
-	float meshSide[CapeBodyCollider::NUM_SLICES] = {};
-	float headBackMax = outBody.headBackRadius;
-
-	auto considerVertex = [&](const Vector3& pos)
+	// Anchor upper-back surface directly to the character's ATT_ID_BACK_ADDON (cape/back attachment point) when present!
+	// Never scan raw m_origVertices because ponytails/hair (boy01.x) and hidden costume geosets (actor.x) inflate backRadius.
+	float backSurfaceDepth = 0.0f;
+	if (pModel && ATT_ID_BACK_ADDON >= 0 && ATT_ID_BACK_ADDON < CParaXModel::MAX_MODEL_ATTACHMENTS)
 	{
-		const float y = pos.y;
-		const float dx = (pos.x - centerX) * m_forwardDir.x + pos.z * m_forwardDir.z;
-		const float dz = std::fabs(pos.x * m_rightDir.x + pos.z * m_rightDir.z);
-		if (!std::isfinite(dx) || !std::isfinite(dz) || !std::isfinite(y))
-			return;
-
-		if (y > neckY + 0.03f && y < neckY + bodyH * 0.85f)
+		const int attIdx = pModel->m_attLookup[ATT_ID_BACK_ADDON];
+		if (attIdx >= 0 && static_cast<size_t>(attIdx) < pModel->m_atts.size())
 		{
-			// Back-of-head / helmet / hair envelope (ignore wide elf ears / horns far out on ±Z)
-			if (dx < 0.0f && dz < (std::max)(0.16f * m_modelScale, shHalf * 0.95f))
+			const ModelAttachment& att = pModel->m_atts[static_cast<size_t>(attIdx)];
+			const uint32_t nBones = pModel->GetObjectNum().nBones;
+			Vector3 attPos = att.pos;
+			if (att.bone >= 0 && static_cast<uint32_t>(att.bone) < nBones && pModel->bones)
 			{
-				headBackMax = (std::max)(headBackMax, -dx);
+				attPos = pModel->bones[att.bone].mat * att.pos;
 			}
-			return;
-		}
-
-		if (y < baseY + 0.02f || y > neckY + 0.03f)
-			return;
-		// Exclude outstretched T-pose / A-pose forearms & hands so waist/hip slices fit standing arms
-		if (dz > maxArmCapZ)
-			return;
-
-		const float sNorm = (std::max)(0.0f, (std::min)(0.999f, (neckY - y) / bodyH));
-		const int si = static_cast<int>(sNorm * CapeBodyCollider::NUM_SLICES);
-		if (dx < 0.0f)
-			meshBack[si] = (std::max)(meshBack[si], -dx);
-		else
-			meshFront[si] = (std::max)(meshFront[si], dx);
-		meshSide[si] = (std::max)(meshSide[si], dz);
-	};
-
-	bool scannedAnyPass = false;
-	for (size_t pi = 0; pi < pModel->passes.size(); ++pi)
-	{
-		ModelRenderPass& pass = pModel->passes[pi];
-		if (pass.indexCount == 0 || pass.geoset < 0 || static_cast<size_t>(pass.geoset) >= pModel->geosets.size())
-			continue;
-		const int gid = pModel->geosets[static_cast<size_t>(pass.geoset)].id;
-		const int cat = gid / 100;
-		// Exclude cape & wing geosets from inflating the body collider
-		if (cat == CharModelInstance::CSET_CAPE || cat == CharModelInstance::CSET_WINGS)
-			continue;
-
-		scannedAnyPass = true;
-		const int vOffset = pass.GetVertexStart(pModel);
-		const uint32_t iStart = pass.GetStartIndex();
-		for (uint32_t k = 0; k < pass.indexCount && (iStart + k) < nIndices; k += 3)
-		{
-			const int vIdx = static_cast<int>(pModel->m_indices[iStart + k]) + vOffset;
-			if (vIdx >= 0 && static_cast<uint32_t>(vIdx) < nVerts)
+			const float rawBack = -((attPos.x - centerX) * m_forwardDir.x + attPos.z * m_forwardDir.z);
+			if (std::isfinite(rawBack) && rawBack > 0.03f && attPos.y > baseY + 0.12f)
 			{
-				considerVertex(pModel->m_origVertices[vIdx].pos);
+				backSurfaceDepth = rawBack + 0.012f * m_modelScale;
 			}
 		}
 	}
 
-	if (!scannedAnyPass)
-	{
-		for (uint32_t i = 0; i < nVerts; ++i)
-			considerVertex(pModel->m_origVertices[i].pos);
-	}
-
-	// Cloth skin thickness + triangle chord clearance margin (~3cm scaled)
-	const float margin = 0.028f * m_modelScale + 0.012f;
-	const float maxBodyBackCap = (std::max)(0.34f * m_modelScale + 0.08f, bodyH * 0.48f);
-	const float maxBodySideCap = maxArmCapZ + margin;
-
-	for (int i = 0; i < CapeBodyCollider::NUM_SLICES; ++i)
-	{
-		if (meshBack[i] > 1e-3f)
-			outBody.backRadius[i] = (std::max)(outBody.backRadius[i], (std::min)(meshBack[i] + margin, maxBodyBackCap));
-		if (meshFront[i] > 1e-3f)
-			outBody.frontRadius[i] = (std::max)(outBody.frontRadius[i], (std::min)(meshFront[i] + margin, maxBodyBackCap));
-		if (meshSide[i] > 1e-3f)
-			outBody.sideRadius[i] = (std::max)(outBody.sideRadius[i], (std::min)(meshSide[i] + margin, maxBodySideCap));
-	}
-
-	// Smooth vertical transitions across the 8 slices so cloth slides down back/tunic without snagging
-	float smoothBack[CapeBodyCollider::NUM_SLICES];
-	float smoothSide[CapeBodyCollider::NUM_SLICES];
-	for (int i = 0; i < CapeBodyCollider::NUM_SLICES; ++i)
-	{
-		const int im = (std::max)(0, i - 1);
-		const int ip = (std::min)(CapeBodyCollider::NUM_SLICES - 1, i + 1);
-		smoothBack[i] = (std::max)(outBody.backRadius[i] * 0.96f, 0.25f * outBody.backRadius[im] + 0.50f * outBody.backRadius[i] + 0.25f * outBody.backRadius[ip]);
-		smoothSide[i] = (std::max)(outBody.sideRadius[i] * 0.96f, 0.25f * outBody.sideRadius[im] + 0.50f * outBody.sideRadius[i] + 0.25f * outBody.sideRadius[ip]);
-	}
-	for (int i = 0; i < CapeBodyCollider::NUM_SLICES; ++i)
-	{
-		outBody.backRadius[i] = smoothBack[i];
-		outBody.sideRadius[i] = smoothSide[i];
-	}
-	outBody.headBackRadius = (std::min)(0.28f * m_modelScale + 0.04f, headBackMax + margin * 0.5f);
+	outBody.InitCanonical(baseY, neckY, shHalf, m_modelScale, centerX, 0.0f, backSurfaceDepth);
 }
 
 bool CharCapeInstance::BuildProceduralCape(CParaXModel* pBaseModel)
@@ -1122,8 +1039,8 @@ bool CharCapeInstance::BuildGeosetTakeover(CParaXModel* pBaseModel, ParaXModelCa
 		size_t capCount = 0;
 		ExtractRigAnchorsAndCapsules(pTargetModel, neck, leftSh, rightSh, nullptr, capCount);
 
-		// Align cloth top row directly to the geoset's own collar top so u,v=(*,0) matches the cape seam
-		const CapeVec3 geosetTopCenter = m_rightDir * centerSide + m_upDir * maxY + (m_forwardDir * -1.0f) * (std::max)(0.02f, avgBack * 0.65f);
+		// Align cloth top row height & lateral center directly to the geoset's own collar top (ClassicBack places depth on back surface)
+		const CapeVec3 geosetTopCenter = m_rightDir * centerSide + m_upDir * maxY;
 		CapeStyleParams proxyStyle;
 		proxyStyle.collarStyle = CapeCollarStyle::ClassicBack;
 		proxyStyle.hemStyle = CapeHemStyle::Rounded;
@@ -1135,7 +1052,7 @@ bool CharCapeInstance::BuildGeosetTakeover(CParaXModel* pBaseModel, ParaXModelCa
 		proxyStyle.backOffset = 0.0f;
 		proxyStyle.bellCurvature = 0.03f * m_modelScale;
 		proxyStyle.shoulderDrop = 0.0f;
-		proxyStyle.attachOffset = geosetTopCenter - neck;
+		proxyStyle.attachOffset = m_rightDir * centerSide + m_upDir * (maxY - neck.y);
 
 		m_initialNeckRef = neck;
 		m_currentNeckAnchor = neck;
@@ -1298,7 +1215,17 @@ void CharCapeInstance::UpdateSimulation(
 	if (!EnsureBuilt(pBaseModel, pCanvas, charGeosets))
 		return;
 
-	// Deduplicate shadow/reflection/selection passes within the same render frame
+	// Never evaluate budget or consume m_nLastSimRenderCount in a shadow pass!
+	// RenderShadowMap runs BEFORE the main camera pass with the same m_nRenderCount, dTimeDelta == 0,
+	// and GetCameraToCurObjectDistance() == 100m (which would deactivate nearby characters).
+	if (sceneState->IsShadowPass())
+	{
+		if (m_config.mode == CapeMode::GeosetTakeover && m_bUseBoneChainDrive && m_fSimBlend > 0.001f)
+			ApplyBoneChainOverrides(ResolveTargetModel(pBaseModel, pCanvas));
+		return;
+	}
+
+	// Deduplicate reflection/selection passes within the same render frame
 	const int renderCount = sceneState->m_nRenderCount;
 	if (renderCount > 0)
 	{
@@ -1310,14 +1237,12 @@ void CharCapeInstance::UpdateSimulation(
 		}
 		m_nLastSimRenderCount = renderCount;
 	}
-	else if (sceneState->IsShadowPass())
-	{
-		return;
-	}
 
 	CBaseObject* pSceneObj = sceneState->GetCurrentSceneObject();
 	CBipedObject* pBiped = (pSceneObj && pSceneObj->IsBiped()) ? static_cast<CBipedObject*>(pSceneObj) : nullptr;
-	const bool isMainPlayer = (pSceneObj != nullptr) && (CGlobals::GetScene() != nullptr) && (pSceneObj == CGlobals::GetScene()->GetCurrentPlayer());
+	const bool isMainPlayer = (pSceneObj != nullptr) && (
+		((CGlobals::GetScene() != nullptr) && (pSceneObj == CGlobals::GetScene()->GetCurrentPlayer())) ||
+		(pSceneObj->GetIdentifier() == "mc_player"));
 	const bool isMiniScenePreview = (renderCount == 0);
 	const bool isHighPriority = isMainPlayer || isMiniScenePreview;
 

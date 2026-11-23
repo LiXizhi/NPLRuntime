@@ -26,6 +26,8 @@
 
 #include <boost/config.hpp>
 
+#include <cstddef>
+#include <cstdint>
 #include <cstdlib>
 
 #ifdef BOOST_MSVC
@@ -39,8 +41,6 @@
 #define for if (false) {} else for
 
 #include <cstring>
-
-
 
 namespace std
 {
@@ -77,32 +77,28 @@ namespace std
 	#define LUABIND_MAX_BASES 1
 #endif
 
-// LUABIND_NO_ERROR_CHECKING
-// define this to remove all error checks
-// this will improve performance and memory
-// footprint.
-// if it is defined matchers will only be called on
-// overloaded functions, functions that's
-// not overloaded will be called directly. The
-// parameters on the lua stack are assumed
-// to match those of the function.
-// exceptions will still be catched when there's
-// no error checking.
+// Branch prediction hints
+#if defined(__GNUC__) || defined(__clang__)
+	#define LUABIND_LIKELY(x)   __builtin_expect(!!(x), 1)
+	#define LUABIND_UNLIKELY(x) __builtin_expect(!!(x), 0)
+	#define LUABIND_NOINLINE    __attribute__((noinline))
+#elif defined(_MSC_VER)
+	#define LUABIND_LIKELY(x)   (x)
+	#define LUABIND_UNLIKELY(x) (x)
+	#define LUABIND_NOINLINE    __declspec(noinline)
+#else
+	#define LUABIND_LIKELY(x)   (x)
+	#define LUABIND_UNLIKELY(x) (x)
+	#define LUABIND_NOINLINE
+#endif
 
-// LUABIND_NOT_THREADSAFE
-// this define will make luabind non-thread safe. That is,
-// it will rely on a static variable. You can still have
-// multiple lua states and use coroutines, but only
-// one of your real threads may run lua code.
-
-// LUABIND_NO_EXCEPTIONS
-// this define will disable all usage of try, catch and throw in
-// luabind. This will in many cases disable runtime-errors, such
-// as invalid casts, when calling lua-functions that fails or
-// returns values that cannot be converted by the given policy.
-// Luabind requires that no function called directly or indirectly
-// by luabind throws an exception (throwing exceptions through
-// C code has undefined behavior, lua is written in C).
+// Internal template symbol visibility (hides pure-code registration/thunk templates
+// that carry no static ODR state, shrinking symbol & string tables dramatically).
+#if !defined(LUABIND_DYNAMIC_LINK) && (defined(__GNUC__) || defined(__clang__))
+	#define LUABIND_DETAIL_HIDDEN __attribute__((visibility("hidden")))
+#else
+	#define LUABIND_DETAIL_HIDDEN
+#endif
 
 #ifdef LUABIND_DYNAMIC_LINK
 # ifdef BOOST_WINDOWS
@@ -112,7 +108,7 @@ namespace std
 #   define LUABIND_API __declspec(dllimport)
 #  endif
 # else
-#  if defined(_GNUC_) && _GNUC_ >=4
+#  if defined(__GNUC__) && __GNUC__ >= 4
 #   define LUABIND_API __attribute__ ((visibility("default")))
 #  endif
 # endif

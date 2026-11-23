@@ -58,6 +58,14 @@ static WindowDelegate* sInstance = nil;
     }
 }
 
+- (void) windowDidBecomeKey:(NSNotification *)notification
+{
+    if (_renderWindow)
+    {
+        _renderWindow->SyncIMEState();
+    }
+}
+
 - (BOOL) applicationShouldTerminateAfterLastWindowClosed:(NSApplication *)sender
 {
     return YES;

@@ -9,9 +9,13 @@
 # include <luabind/lua_include.hpp>
 # include <luabind/typeid.hpp>
 
+# include <boost/mpl/at.hpp>
 # include <boost/mpl/begin_end.hpp>
 # include <boost/mpl/next.hpp>
 # include <boost/mpl/size.hpp>
+# include <boost/preprocessor/repetition/enum.hpp>
+# include <boost/preprocessor/iteration/local.hpp>
+# include <string>
 
 namespace luabind {
     namespace adl
@@ -32,13 +36,20 @@ namespace luabind {
 namespace luabind { namespace detail {
 
 LUABIND_API std::string get_class_name(lua_State* L, type_id const& i);
+LUABIND_API void push_class_name_str(lua_State* L, type_id const& i);
+LUABIND_API void format_signature_steps(
+    lua_State* L
+  , char const* function
+  , void (* const* push_fns)(lua_State*)
+  , std::size_t count
+);
 
 template <class T>
 struct type_to_string
 {
     static void get(lua_State* L)
     {
-        lua_pushstring(L, get_class_name(L, typeid(T)).c_str());
+        push_class_name_str(L, typeid(T));
     }
 };
 
@@ -48,7 +59,7 @@ struct type_to_string<T*>
     static void get(lua_State* L)
     {
         type_to_string<T>::get(L);
-        lua_pushstring(L, "*");
+        lua_pushliteral(L, "*");
         lua_concat(L, 2);
     }
 };
@@ -59,7 +70,7 @@ struct type_to_string<T&>
     static void get(lua_State* L)
     {
         type_to_string<T>::get(L);
-        lua_pushstring(L, "&");
+        lua_pushliteral(L, "&");
         lua_concat(L, 2);
     }
 };
@@ -70,7 +81,7 @@ struct type_to_string<T const>
     static void get(lua_State* L)
     {
         type_to_string<T>::get(L);
-        lua_pushstring(L, " const");
+        lua_pushliteral(L, " const");
         lua_concat(L, 2);
     }
 };
@@ -81,7 +92,7 @@ struct type_to_string<T const>
     { \
         static void get(lua_State* L) \
         { \
-            lua_pushstring(L, #x); \
+            lua_pushliteral(L, #x); \
         } \
     };
 
@@ -94,6 +105,8 @@ LUABIND_INTEGRAL_TYPE_TO_STRING(short)
 LUABIND_INTEGRAL_TYPE_TO_STRING(int)
 LUABIND_INTEGRAL_TYPE_TO_STRING(long)
 
+LUABIND_TYPE_TO_STRING(float)
+LUABIND_TYPE_TO_STRING(double)
 LUABIND_TYPE_TO_STRING(void)
 LUABIND_TYPE_TO_STRING(bool)
 LUABIND_TYPE_TO_STRING(std::string)
@@ -110,43 +123,37 @@ struct type_to_string<table<Base> >
 {
     static void get(lua_State* L)
     {
-        lua_pushstring(L, "table");
+        lua_pushliteral(L, "table");
     }
 };
 
-template <class End>
-void format_signature_aux(lua_State*, bool, End, End)
-{}
+template <class Signature, std::size_t Size>
+struct signature_formatter;
 
-template <class Iter, class End>
-void format_signature_aux(lua_State* L, bool first, Iter, End end)
-{
-    if (!first)
-        lua_pushstring(L, ",");
-    type_to_string<typename Iter::type>::get(L);
-    format_signature_aux(L, false, typename mpl::next<Iter>::type(), end);
-}
+# define LUABIND_SIG_ELEM(z, i, _) \
+    &type_to_string<typename mpl::at_c<Signature, i>::type>::get
+
+# define BOOST_PP_LOCAL_MACRO(k) \
+template <class Signature> \
+struct LUABIND_DETAIL_HIDDEN signature_formatter<Signature, k> \
+{ \
+    static void format(lua_State* L, char const* function) \
+    { \
+        static void (* const fns[k])(lua_State*) = { \
+            BOOST_PP_ENUM(k, LUABIND_SIG_ELEM, _) \
+        }; \
+        format_signature_steps(L, function, fns, k); \
+    } \
+};
+
+# define BOOST_PP_LOCAL_LIMITS (1, LUABIND_MAX_ARITY + 2)
+# include BOOST_PP_LOCAL_ITERATE()
+# undef LUABIND_SIG_ELEM
 
 template <class Signature>
-void format_signature(lua_State* L, char const* function, Signature)
+inline void format_signature(lua_State* L, char const* function, Signature)
 {
-    typedef typename mpl::begin<Signature>::type first;
-
-    type_to_string<typename first::type>::get(L);
-
-    lua_pushstring(L, " ");
-    lua_pushstring(L, function);
-
-    lua_pushstring(L, "(");
-    format_signature_aux(
-        L
-      , true
-      , typename mpl::next<first>::type()
-      , typename mpl::end<Signature>::type()
-    );
-    lua_pushstring(L, ")");
-
-    lua_concat(L, mpl::size<Signature>() * 2 + 2);
+    signature_formatter<Signature, mpl::size<Signature>::value>::format(L, function);
 }
 
 }} // namespace luabind::detail

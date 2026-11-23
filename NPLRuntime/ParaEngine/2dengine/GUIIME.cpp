@@ -838,31 +838,37 @@ bool CGUIIME::OnFocusIn()
 		return OnFocusIn_imp();
 	return CGlobals::GetApp()->PostWinThreadMessage(PE_IME_SETFOCUS, 0, 1);
 }
-bool CGUIIME::OnFocusIn_imp()
+bool CGUIIME::OnFocusIn_imp(HWND hWndExplicit)
 {
-	StaticOnCreateDevice();
+	HWND hWnd = hWndExplicit ? hWndExplicit : CGlobals::GetAppHWND();
+	if (!hWnd)
+		return false;
+	StaticOnCreateDevice(hWnd);
 	CIMELock lock;
+	if (!_ImmAssociateContext)
+		return false;
 	if( s_bEnableImeSystem )
 	{
-		HIMC hImcLast = _ImmAssociateContext(  CGlobals::GetAppHWND(), s_hImcDef );
+		HIMC hImcLast = _ImmAssociateContext( hWnd, s_hImcDef );
 		CheckToggleState();
 	} 
 	else
 	{
 		// because we want to use the default windows ime. 
-		_ImmAssociateContext(  CGlobals::GetAppHWND(), s_hImcDef );
+		_ImmAssociateContext( hWnd, s_hImcDef );
 	}
 
 	//
 	// Set up the IME global state according to the current instance state
 	//
 	HIMC hImc;
-	if( NULL != ( hImc = _ImmGetContext(  CGlobals::GetAppHWND() ) ) ) 
+	if( _ImmGetContext && NULL != ( hImc = _ImmGetContext( hWnd ) ) ) 
 	{
 		if( !s_bEnableImeSystem )
 			s_ImeState = IMEUI_STATE_OFF;
 
-		_ImmReleaseContext(  CGlobals::GetAppHWND(), hImc );
+		if (_ImmReleaseContext)
+			_ImmReleaseContext( hWnd, hImc );
 		CheckToggleState();
 	}
 	return true;
@@ -875,14 +881,19 @@ bool CGUIIME::OnFocusOut()
 	if (!hWnd)
 		return false;
 	if (::GetWindowThreadProcessId(hWnd, NULL) == ::GetCurrentThreadId())
-		return OnFocusOut_imp();
+		return OnFocusOut_imp(hWnd);
 	return CGlobals::GetApp()->PostWinThreadMessage(PE_IME_SETFOCUS, 0, 0);
 }
 
-bool CGUIIME::OnFocusOut_imp()
+bool CGUIIME::OnFocusOut_imp(HWND hWndExplicit)
 {
-	StaticOnCreateDevice();
-	_ImmAssociateContext(  CGlobals::GetAppHWND(), NULL );
+	s_bIMEHasFocus = false;
+	HWND hWnd = hWndExplicit ? hWndExplicit : CGlobals::GetAppHWND();
+	if (!hWnd)
+		return false;
+	StaticOnCreateDevice(hWnd);
+	if (_ImmAssociateContext)
+		_ImmAssociateContext( hWnd, NULL );
 	s_ImeState = IMEUI_STATE_OFF;
 	return true;
 }
@@ -1579,20 +1590,20 @@ void CGUIIME::ResetCaretBlink()
 }
 
 // This function should be called in the window thread, since IME context is a shared per thread resource. 
-HRESULT CGUIIME::StaticOnCreateDevice()
+HRESULT CGUIIME::StaticOnCreateDevice(HWND hWndExplicit)
 {
+	CIMELock lock;
+
+	Initialize();
+
+	HWND hWnd = hWndExplicit ? hWndExplicit : CGlobals::GetAppHWND();
+	if (hWnd == NULL || !_ImmAssociateContext)
+	{
+		return S_OK;
+	}
+
 	if(!s_is_ime_created)
 	{
-		CIMELock lock;
-
-		Initialize();
-
-		HWND hWnd = CGlobals::GetAppHWND();
-		if (hWnd == NULL)
-		{
-			return S_OK;
-		}
-
 		if(s_hImcDef == 0)
 		{
 			// Save the default input context
@@ -1623,6 +1634,11 @@ HRESULT CGUIIME::StaticOnCreateDevice()
 		{
 			s_is_ime_created = true;
 		}
+	}
+	else if (hWndExplicit != NULL && !s_bIMEHasFocus)
+	{
+		// Ensure newly created or attached windows also start with IME disassociated.
+		_ImmAssociateContext( hWnd, NULL );
 	}
 	return S_OK;
 }

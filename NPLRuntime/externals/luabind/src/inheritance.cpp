@@ -4,16 +4,16 @@
 
 #define LUABIND_BUILDING
 
+#include <algorithm>
 #include <limits>
 #include <map>
 #include <vector>
-#include <queue>
-#include <boost/dynamic_bitset.hpp>
-#include <boost/foreach.hpp>
-#include <boost/tuple/tuple.hpp>
-#include <boost/tuple/tuple_comparison.hpp>
 #include <luabind/typeid.hpp>
 #include <luabind/detail/inheritance.hpp>
+
+#ifndef EMSCRIPTEN_SINGLE_THREAD
+#include <mutex>
+#endif
 
 namespace luabind { namespace detail {
 
@@ -25,7 +25,7 @@ namespace
 
   struct edge
   {
-      edge(class_id target, cast_function cast)
+      edge(class_id target, cast_function cast) noexcept
         : target(target)
         , cast(cast)
       {}
@@ -34,14 +34,14 @@ namespace
       cast_function cast;
   };
 
-  bool operator<(edge const& x, edge const& y)
+  inline bool operator<(edge const& x, edge const& y) noexcept
   {
       return x.target < y.target;
   }
 
   struct vertex
   {
-      vertex(class_id id)
+      explicit vertex(class_id id) noexcept
         : id(id)
       {}
 
@@ -49,59 +49,79 @@ namespace
       std::vector<edge> edges;
   };
 
-  typedef std::pair<std::ptrdiff_t, int> cache_entry;
+  struct cache_record
+  {
+      class_id src;
+      class_id target;
+      class_id dynamic_id;
+      std::ptrdiff_t object_offset;
+      std::ptrdiff_t result_offset;
+      int distance;
+  };
 
+  // Flat contiguous cache (replaces boost::tuple + std::map red-black tree)
   class cache
   {
   public:
       static std::ptrdiff_t const unknown;
       static std::ptrdiff_t const invalid;
 
-      cache_entry get(
+      std::pair<std::ptrdiff_t, int> get(
           class_id src, class_id target, class_id dynamic_id
-        , std::ptrdiff_t object_offset) const;
+        , std::ptrdiff_t object_offset) const noexcept
+      {
+          for (std::size_t i = 0, n = m_records.size(); i < n; ++i)
+          {
+              cache_record const& r = m_records[i];
+              if (r.src == src && r.target == target
+                  && r.dynamic_id == dynamic_id && r.object_offset == object_offset)
+              {
+                  return std::pair<std::ptrdiff_t, int>(r.result_offset, r.distance);
+              }
+          }
+          return std::pair<std::ptrdiff_t, int>(unknown, -1);
+      }
 
       void put(
           class_id src, class_id target, class_id dynamic_id
         , std::ptrdiff_t object_offset
-        , std::size_t distance, std::ptrdiff_t offset);
+        , int distance, std::ptrdiff_t result_offset)
+      {
+          cache_record rec;
+          rec.src = src;
+          rec.target = target;
+          rec.dynamic_id = dynamic_id;
+          rec.object_offset = object_offset;
+          rec.result_offset = result_offset;
+          rec.distance = distance;
+          m_records.push_back(rec);
+      }
 
-      void invalidate();
+      void invalidate() noexcept
+      {
+          m_records.clear();
+      }
 
   private:
-      typedef boost::tuple<
-          class_id, class_id, class_id, std::ptrdiff_t> key_type;
-      typedef std::map<key_type, cache_entry> map_type;
-      map_type m_cache;
+      std::vector<cache_record> m_records;
   };
 
   std::ptrdiff_t const cache::unknown =
       std::numeric_limits<std::ptrdiff_t>::max();
   std::ptrdiff_t const cache::invalid = cache::unknown - 1;
 
-  cache_entry cache::get(
-      class_id src, class_id target, class_id dynamic_id
-    , std::ptrdiff_t object_offset) const
+  struct queue_entry
   {
-      map_type::const_iterator i = m_cache.find(
-          key_type(src, target, dynamic_id, object_offset));
-      return i != m_cache.end() ? i->second : cache_entry(unknown, -1);
-  }
+      queue_entry(void* p, class_id vertex_id, int distance) noexcept
+        : p(p)
+        , vertex_id(vertex_id)
+        , distance(distance)
+      {}
 
-  void cache::put(
-      class_id src, class_id target, class_id dynamic_id
-    , std::ptrdiff_t object_offset, std::size_t distance, std::ptrdiff_t offset)
-  {
-      m_cache.insert(std::make_pair(
-          key_type(src, target, dynamic_id, offset)
-        , cache_entry(offset, distance)
-      ));
-  }
-
-  void cache::invalidate()
-  {
-      m_cache.clear();
-  }
+      void* p;
+      class_id vertex_id;
+      int distance;
+  };
 
 } // namespace unnamed
 
@@ -116,32 +136,16 @@ public:
 private:
     std::vector<vertex> m_vertices;
     mutable cache m_cache;
+    mutable std::vector<queue_entry> m_bfs_queue;
+    mutable std::vector<unsigned char> m_visited;
 };
-
-namespace
-{
-
-  struct queue_entry
-  {
-      queue_entry(void* p, class_id vertex_id, int distance)
-        : p(p)
-        , vertex_id(vertex_id)
-        , distance(distance)
-      {}
-
-      void* p;
-      class_id vertex_id;
-      int distance;
-  };
-
-} // namespace unnamed
 
 std::pair<void*, int> cast_graph::impl::cast(
     void* const p, class_id src, class_id target
   , class_id dynamic_id, void const* dynamic_ptr) const
 {
-    if (src == target)
-        return std::make_pair(p, 0);
+    if (LUABIND_LIKELY(src == target))
+        return std::pair<void*, int>(p, 0);
 
     if (src >= m_vertices.size() || target >= m_vertices.size())
         return std::pair<void*, int>((void*)0, -1);
@@ -149,48 +153,53 @@ std::pair<void*, int> cast_graph::impl::cast(
     std::ptrdiff_t const object_offset =
         (char const*)dynamic_ptr - (char const*)p;
 
-    cache_entry cached = m_cache.get(src, target, dynamic_id, object_offset);
+    std::pair<std::ptrdiff_t, int> cached = m_cache.get(src, target, dynamic_id, object_offset);
 
     if (cached.first != cache::unknown)
     {
         if (cached.first == cache::invalid)
             return std::pair<void*, int>((void*)0, -1);
-        return std::make_pair((char*)p + cached.first, cached.second);
+        return std::pair<void*, int>((char*)p + cached.first, cached.second);
     }
 
-    std::queue<queue_entry> q;
-    q.push(queue_entry(p, src, 0));
+    // Contiguous reusable vector BFS (eliminates std::deque + boost::dynamic_bitset allocations)
+    m_bfs_queue.clear();
+    m_bfs_queue.push_back(queue_entry(p, src, 0));
 
-    boost::dynamic_bitset<> visited(m_vertices.size());
+    m_visited.assign(m_vertices.size(), 0);
 
-    while (!q.empty())
+    for (std::size_t head = 0; head < m_bfs_queue.size(); ++head)
     {
-        queue_entry const qe = q.front();
-        q.pop();
+        queue_entry const qe = m_bfs_queue[head];
 
-        visited[qe.vertex_id] = true;
+        if (m_visited[qe.vertex_id])
+            continue;
+        m_visited[qe.vertex_id] = 1;
+
         vertex const& v = m_vertices[qe.vertex_id];
 
         if (v.id == target)
         {
+            std::ptrdiff_t const res_offset = (char*)qe.p - (char*)p;
             m_cache.put(
                 src, target, dynamic_id, object_offset
-              , qe.distance, (char*)qe.p - (char*)p
+              , qe.distance, res_offset
             );
 
-            return std::make_pair(qe.p, qe.distance);
+            return std::pair<void*, int>(qe.p, qe.distance);
         }
 
-        BOOST_FOREACH(edge const& e, v.edges)
+        for (std::size_t ei = 0, en = v.edges.size(); ei < en; ++ei)
         {
-            if (visited[e.target])
+            edge const& e = v.edges[ei];
+            if (m_visited[e.target])
                 continue;
             if (void* casted = e.cast(qe.p))
-                q.push(queue_entry(casted, e.target, qe.distance + 1));
+                m_bfs_queue.push_back(queue_entry(casted, e.target, qe.distance + 1));
         }
     }
 
-    m_cache.put(src, target, dynamic_id, object_offset, cache::invalid, -1);
+    m_cache.put(src, target, dynamic_id, object_offset, -1, cache::invalid);
 
     return std::pair<void*, int>((void*)0, -1);
 }
@@ -243,6 +252,10 @@ LUABIND_API class_id allocate_class_id(type_id const& cls)
 {
     typedef std::map<type_id, class_id> map_type;
 
+#ifndef EMSCRIPTEN_SINGLE_THREAD
+    static std::mutex s_mutex;
+    std::lock_guard<std::mutex> lock(s_mutex);
+#endif
     static map_type registered;
     static class_id id = 0;
 

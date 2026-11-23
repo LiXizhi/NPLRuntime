@@ -105,6 +105,11 @@ CGUIBase::~CGUIBase(void)
 	}
 
 	CGUIRoot* root = CGUIRoot::GetInstance();
+	if (root && root != this && root->GetIMEFocus() == this)
+	{
+		CGUIIME::OnFocusOut();
+		root->SetIMEFocus(NULL);
+	}
 	{
 		// erase from name map
 		std::map<string, CGUIBase*>::iterator iter = root->m_namemap.find(GetName());

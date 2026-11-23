@@ -41,7 +41,9 @@ void ParaEngine::CDirectMouse::Reset() {}
 #endif
 
 ParaEngine::IParaEngineApp* CreateParaEngineApp() { return nullptr; }
+#ifndef NPL_TEST_PLATFORM_RENDER_WINDOW
 ParaEngine::IRenderWindow* CreateParaRenderWindow(const int, const int) { return nullptr; }
+#endif
 
 namespace ParaEngine
 {

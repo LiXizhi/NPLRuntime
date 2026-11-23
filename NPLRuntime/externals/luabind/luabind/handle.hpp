@@ -23,6 +23,7 @@
 #ifndef LUABIND_HANDLE_050420_HPP
 #define LUABIND_HANDLE_050420_HPP
 
+#include <algorithm>
 #include <luabind/lua_include.hpp>
 #include <luabind/value_wrapper.hpp>
 
@@ -30,20 +31,22 @@ namespace luabind {
 
 // A reference to a Lua value. Represents an entry in the
 // registry table.
-class handle 
+class handle
 {
 public:
-    handle();
+    handle() noexcept;
     handle(lua_State* interpreter, int stack_index);
     handle(handle const& other);
+    handle(handle&& other) noexcept;
     ~handle();
 
     handle& operator=(handle const& other);
-    void swap(handle& other);
+    handle& operator=(handle&& other) noexcept;
+    void swap(handle& other) noexcept;
 
     void push(lua_State* interpreter) const;
 
-    lua_State* interpreter() const;
+    lua_State* interpreter() const noexcept;
 
     void replace(lua_State* interpreter, int stack_index);
 
@@ -52,7 +55,7 @@ private:
     int m_index;
 };
 
-inline handle::handle()
+inline handle::handle() noexcept
   : m_interpreter(0)
   , m_index(LUA_NOREF)
 {}
@@ -64,6 +67,14 @@ inline handle::handle(handle const& other)
     if (m_interpreter == 0) return;
     lua_rawgeti(m_interpreter, LUA_REGISTRYINDEX, other.m_index);
     m_index = luaL_ref(m_interpreter, LUA_REGISTRYINDEX);
+}
+
+inline handle::handle(handle&& other) noexcept
+  : m_interpreter(other.m_interpreter)
+  , m_index(other.m_index)
+{
+    other.m_interpreter = 0;
+    other.m_index = LUA_NOREF;
 }
 
 inline handle::handle(lua_State* interpreter, int stack_index)
@@ -82,11 +93,26 @@ inline handle::~handle()
 
 inline handle& handle::operator=(handle const& other)
 {
-    handle(other).swap(*this);
+    if (this != &other)
+        handle(other).swap(*this);
     return *this;
 }
 
-inline void handle::swap(handle& other)
+inline handle& handle::operator=(handle&& other) noexcept
+{
+    if (this != &other)
+    {
+        if (m_interpreter && m_index != LUA_NOREF)
+            luaL_unref(m_interpreter, LUA_REGISTRYINDEX, m_index);
+        m_interpreter = other.m_interpreter;
+        m_index = other.m_index;
+        other.m_interpreter = 0;
+        other.m_index = LUA_NOREF;
+    }
+    return *this;
+}
+
+inline void handle::swap(handle& other) noexcept
 {
     std::swap(m_interpreter, other.m_interpreter);
     std::swap(m_index, other.m_index);
@@ -97,7 +123,7 @@ inline void handle::push(lua_State* interpreter) const
     lua_rawgeti(interpreter, LUA_REGISTRYINDEX, m_index);
 }
 
-inline lua_State* handle::interpreter() const
+inline lua_State* handle::interpreter() const noexcept
 {
     return m_interpreter;
 }
@@ -105,7 +131,15 @@ inline lua_State* handle::interpreter() const
 inline void handle::replace(lua_State* interpreter, int stack_index)
 {
     lua_pushvalue(interpreter, stack_index);
-    lua_rawseti(interpreter, LUA_REGISTRYINDEX, m_index);
+    if (m_interpreter && m_index != LUA_NOREF)
+    {
+        lua_rawseti(interpreter, LUA_REGISTRYINDEX, m_index);
+    }
+    else
+    {
+        m_interpreter = interpreter;
+        m_index = luaL_ref(interpreter, LUA_REGISTRYINDEX);
+    }
 }
 
 template<>
@@ -113,17 +147,17 @@ struct value_wrapper_traits<handle>
 {
     typedef boost::mpl::true_ is_specialized;
 
-    static lua_State* interpreter(handle const& value)
+    static lua_State* interpreter(handle const& value) noexcept
     {
         return value.interpreter();
     }
-    
+
     static void unwrap(lua_State* interpreter, handle const& value)
     {
         value.push(interpreter);
     }
 
-    static bool check(...)
+    static bool check(...) noexcept
     {
         return true;
     }
@@ -132,4 +166,3 @@ struct value_wrapper_traits<handle>
 } // namespace luabind
 
 #endif // LUABIND_HANDLE_050420_HPP
-

@@ -190,7 +190,7 @@ namespace ParaEngine
 
 	public:
 		/** called when IME window is created. */
-		static  HRESULT StaticOnCreateDevice();
+		static  HRESULT StaticOnCreateDevice(HWND hWnd = NULL);
 
 		/** it just calls StaticMsgProc() followed by WinMsgProc */
 		static bool HandleWinThreadMsg(UINT uMsg, WPARAM wParam, LPARAM lParam);
@@ -220,12 +220,12 @@ namespace ParaEngine
 		/** To be called when a GUI virtual window gains focus.*/
 		static bool OnFocusIn();
 		/** [thread safe] To be called when a GUI virtual window gains focus.*/
-		static bool OnFocusIn_imp();
+		static bool OnFocusIn_imp(HWND hWnd = NULL);
 
 		/** To be called when a GUI virtual window loses focus.*/
 		static bool OnFocusOut();
 		/** [thread safe] To be called when a GUI virtual window loses focus.*/
-		static bool OnFocusOut_imp();
+		static bool OnFocusOut_imp(HWND hWnd = NULL);
 
 		/** This function opens or closes the IME programmtically. 
 		* In most cases, we should never programmatically open or closes IME, instead the user usually pressed Ctrl+Space to change it. 

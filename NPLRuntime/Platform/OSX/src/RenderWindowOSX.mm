@@ -230,6 +230,7 @@ RenderWindowOSX::RenderWindowOSX(const int width, const int height)
     [m_window makeKeyWindow];
     [m_window setAcceptsMouseMovedEvents:YES];
     [m_window makeFirstResponder:renderView];
+    [renderView setIMEEnabled:NO];
     //[m_window.contentView setAllowedTouchTypes:NSTouchTypeMaskDirect];
 
     double initScaleX = 1.0, initScaleY = 1.0;
@@ -239,6 +240,19 @@ RenderWindowOSX::RenderWindowOSX(const int width, const int height)
     
     WindowDelegate* winDelegate = [WindowDelegate sharedDelegate];
     [m_window setDelegate:winDelegate];
+}
+
+RenderWindowOSX::RenderWindowOSX(NSWindow* existingWindow)
+:m_shouldClose(false)
+,m_window([existingWindow retain])
+,currentBackingScaleFactor(1)
+,m_scrollMouseX(0)
+,m_scrollMouseY(0)
+{
+    if (m_window && [m_window.contentView isKindOfClass:[RenderView class]])
+    {
+        [(RenderView*)m_window.contentView setIMEEnabled:NO];
+    }
 }
 
 RenderWindowOSX::~RenderWindowOSX()
@@ -665,12 +679,46 @@ void RenderWindowOSX::OnScrollWheel(NSEvent* event)
     }
 }
 
+bool RenderWindowOSX::ShouldAcceptTextInput() const
+{
+    if (!CGlobals::GetApp() || CGlobals::GetApp()->GetAppState() != PEAppState_Ready)
+        return false;
+
+    auto* pRoot = CGUIRoot::GetInstance();
+    if (!pRoot)
+        return false;
+
+    auto* pGUI = pRoot->GetUIKeyFocus();
+    return pGUI != nullptr && pGUI->GetVisibleRecursive();
+}
+
+bool RenderWindowOSX::ShouldEnableIME() const
+{
+    if (!ShouldAcceptTextInput())
+        return false;
+
+    auto* pGUI = CGUIRoot::GetInstance()->GetUIKeyFocus();
+    return pGUI != nullptr && pGUI->IsInputMethodEnabled();
+}
+
+void RenderWindowOSX::SyncIMEState()
+{
+    if (!m_window || !m_window.contentView)
+        return;
+
+    if ([m_window.contentView isKindOfClass:[RenderView class]])
+    {
+        RenderView* renderView = (RenderView*)m_window.contentView;
+        [renderView setIMEEnabled:(ShouldEnableIME() ? YES : NO)];
+    }
+}
+
 NSRect RenderWindowOSX::GetCharacterRect()
 {
     const NSRect frame = [m_window frame];
     auto defRect = NSMakeRect(frame.origin.x, frame.origin.y, 0, 0);
     
-    if (CGlobals::GetApp()->GetAppState() != PEAppState_Ready)
+    if (!CGlobals::GetApp() || CGlobals::GetApp()->GetAppState() != PEAppState_Ready || !CGUIRoot::GetInstance())
     {
         return defRect;
     }
@@ -680,23 +728,13 @@ NSRect RenderWindowOSX::GetCharacterRect()
     
     if (pEdit)
     {
-        /*
-        auto pos = pEdit->GetCaretPosition();
-        int x, y;
-        pEdit->CPtoXY(pos, TRUE, &x, &y, true);
-        
-        CGUIPosition relative(x, y, 0, 0);
-        CGUIPosition absolute;
-        
-        pEdit->GetAbsolutePosition(&absolute, &relative);
-        
-        x = absolute.GetLeft();
-        y = GetHeight() - absolute.GetTop();
-         */
-        
+        float fScaleX = 1.0f;
+        float fScaleY = 1.0f;
+        CGUIRoot::GetInstance()->GetUIScale(&fScaleX, &fScaleY);
+
         auto& rect = pEdit->GetCaretRect();
-        int x = rect.left;
-        int y = GetHeight() - (rect.bottom + 5);
+        int x = (int)(rect.left * fScaleX);
+        int y = (int)GetHeight() - (int)((rect.bottom + 5) * fScaleY);
         
         auto point = NSMakePoint(x, y);
         point = [m_window.contentView convertPointFromBacking:point];
@@ -705,7 +743,19 @@ NSRect RenderWindowOSX::GetCharacterRect()
         
         return NSMakeRect(point.x, point.y, 0, 0);
     }
-    
+    else if (pGUI)
+    {
+        QPoint pt = pGUI->GetCompositionPoint();
+        int x = pt.x();
+        int y = (int)GetHeight() - (pt.y() + 5);
+
+        auto point = NSMakePoint(x, y);
+        point = [m_window.contentView convertPointFromBacking:point];
+        point = [m_window.contentView convertPoint:point toView:nil];
+        point = [m_window convertPointToScreen:point];
+
+        return NSMakeRect(point.x, point.y, 0, 0);
+    }
     
     return defRect;
 }
@@ -713,6 +763,8 @@ NSRect RenderWindowOSX::GetCharacterRect()
 void RenderWindowOSX::PollEvents()
 {
     if (m_window == nullptr || ShouldClose()) return;
+
+    SyncIMEState();
 
     if (m_startupLuaSyncFrames > 0 && CGlobals::GetApp() &&
         CGlobals::GetApp()->GetAppState() == PEAppState_Ready)

@@ -33,6 +33,9 @@
 namespace luabind { namespace detail
 {
 	class class_rep;
+	class class_id_map;
+	class cast_graph;
+	class class_map;
 
 	struct LUABIND_API class_registry
 	{
@@ -40,28 +43,28 @@ namespace luabind { namespace detail
 
 		static class_registry* get_registry(lua_State* L);
 
-		int cpp_instance() const { return m_instance_metatable; }
-		int cpp_class() const { return m_cpp_class_metatable; }
+		int cpp_instance() const noexcept { return m_instance_metatable; }
+		int cpp_class() const noexcept { return m_cpp_class_metatable; }
 
-		int lua_instance() const { return m_instance_metatable; }
-		int lua_class() const { return m_lua_class_metatable; }
-		int lua_function() const { return m_lua_function_metatable; }
+		int lua_instance() const noexcept { return m_instance_metatable; }
+		int lua_class() const noexcept { return m_lua_class_metatable; }
+		int lua_function() const noexcept { return m_lua_function_metatable; }
 
 		void add_class(type_id const& info, class_rep* crep);
 
 		class_rep* find_class(type_id const& info) const;
 
-        std::map<type_id, class_rep*> const& get_classes() const
-        {
-            return m_classes;
-        }
+		std::map<type_id, class_rep*> const& get_classes() const noexcept
+		{
+			return m_classes;
+		}
 
 	private:
 
 		std::map<type_id, class_rep*> m_classes;
 
 		// this is a lua reference that points to the lua table
-		// that is to be used as meta table for all C++ class 
+		// that is to be used as meta table for all C++ class
 		// instances. It is a kind of v-table.
 		int m_instance_metatable;
 
@@ -76,10 +79,22 @@ namespace luabind { namespace detail
 		// this metatable only contains a destructor
 		// for luabind::Detail::free_functions::function_rep
 		int m_lua_function_metatable;
-
 	};
+
+	// Per-main-lua_State cached pointers so hot paths never hash strings in LUA_REGISTRYINDEX.
+	struct LUABIND_API state_context
+	{
+		lua_State* main_thread;
+		class_registry* registry;
+		class_id_map* class_ids;
+		cast_graph* casts;
+		class_map* classes;
+		int function_metatable_ref;
+	};
+
+	LUABIND_API state_context* get_state_context(lua_State* L) noexcept;
+	LUABIND_API void push_property_closure(lua_State* L, bool has_setter);
 
 }}
 
 #endif // LUABIND_CLASS_REGISTRY_HPP_INCLUDED
-

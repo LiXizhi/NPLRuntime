@@ -1111,7 +1111,7 @@ bool ParaEngine::CGUIRoot::DispatchKeyboardMsg(bool bKeyHandled)
 	ProcessIMEText();
 
 #ifdef PARA_ENABLE_WIN32_IME
-	bool bHasImeFocus = GetIMEFocus() && pKeyTarget && GetIMEFocus()->GetVisibleRecursive();
+	bool bHasImeFocus = GetIMEFocus() && pKeyTarget && pKeyTarget->IsInputMethodEnabled() && GetIMEFocus()->GetVisibleRecursive();
 	SetHasIMEFocus(bHasImeFocus);
 	std::wstring sWinMsgChar = CGUIIME::GetWinMsgChar(true);
 	if (!sWinMsgChar.empty() && pKeyTarget)
@@ -1129,7 +1129,7 @@ bool ParaEngine::CGUIRoot::DispatchKeyboardMsg(bool bKeyHandled)
 
 #ifdef PARA_ENABLE_WIN32_IME
 	IMESTATE ime_state = CGUIIME::GetImeStateS();
-	if (ime_state == IMEUI_STATE_ON && !bHasImeFocus)
+	if ((ime_state == IMEUI_STATE_ON || CGUIIME::IMEHasFocus()) && !bHasImeFocus)
 	{
 		CGUIIME::OnFocusOut();
 	}

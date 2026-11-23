@@ -56,8 +56,6 @@
 #include <luabind/detail/has_get_pointer.hpp>
 #include <luabind/detail/make_instance.hpp>
 
-#include <boost/type_traits/add_reference.hpp>
-
 #include <luabind/detail/decorate_type.hpp>
 #include <luabind/weak_ref.hpp>
 #include <luabind/back_reference_fwd.hpp>
@@ -83,9 +81,9 @@ namespace luabind
 	class index_map
 	{
 	public:
-		index_map(const int* m): m_map(m) {}
+		index_map(const int* m) noexcept : m_map(m) {}
 
-		int operator[](int index) const
+		int operator[](int index) const noexcept
 		{
 			return m_map[index];
 		}
@@ -94,8 +92,7 @@ namespace luabind
 		const int* m_map;
 	};
 
-//	 template<class T> class functor;
-	 class weak_ref;
+	class weak_ref;
 }
 
 namespace luabind { namespace detail
@@ -141,11 +138,11 @@ namespace luabind { namespace detail
 	{
 		static const T& t;
 
-		BOOST_STATIC_CONSTANT(bool, value = 
+		BOOST_STATIC_CONSTANT(bool, value =
 			sizeof(is_policy_cons_test(t)) == sizeof(yes_t));
 
 		typedef boost::mpl::bool_<value> type;
-	};	
+	};
 
 	template<bool>
 	struct is_string_literal
@@ -159,64 +156,65 @@ namespace luabind { namespace detail
 	{
 		static no_t helper(indirection_layer);
 	};
-	
 
-    namespace mpl = boost::mpl;
 
-    template <class T, class Clone>
-    void make_pointee_instance(lua_State* L, T& x, mpl::true_, Clone)
-    {
-        if (get_pointer(x))
-        {
-            make_instance(L, x);
-        }
-        else
-        {
-            lua_pushnil(L);
-        }
-    }
+	namespace mpl = boost::mpl;
 
-    template <class T>
-    void make_pointee_instance(lua_State* L, T& x, mpl::false_, mpl::true_)
-    {
-        std::movable_auto_ptr<T> ptr(new T(x));
-        make_instance(L, ptr);
-    }
+	template <class T, class Clone>
+	void make_pointee_instance(lua_State* L, T& x, mpl::true_, Clone)
+	{
+		if (get_pointer(x))
+		{
+			make_instance(L, x);
+		}
+		else
+		{
+			lua_pushnil(L);
+		}
+	}
 
-    template <class T>
-    void make_pointee_instance(lua_State* L, T& x, mpl::false_, mpl::false_)
-    {
-        make_instance(L, &x);
-    }
+	template <class T>
+	void make_pointee_instance(lua_State* L, T const& x, mpl::false_, mpl::true_)
+	{
+		make_value_instance(L, x);
+	}
 
-    template <class T, class Clone>
-    void make_pointee_instance(lua_State* L, T& x, Clone)
-    {
-        make_pointee_instance(L, x, has_get_pointer<T>(), Clone());
-    }
+	template <class T>
+	void make_pointee_instance(lua_State* L, T& x, mpl::false_, mpl::false_)
+	{
+		make_instance(L, &x);
+	}
+
+	template <class T, class Clone>
+	void make_pointee_instance(lua_State* L, T& x, Clone)
+	{
+		make_pointee_instance(L, x, has_get_pointer<T>(), Clone());
+	}
 
 // ********** pointer converter ***********
 
 	struct pointer_converter
 	{
 		typedef pointer_converter type;
-        typedef mpl::false_ is_native;
+		typedef mpl::false_ is_native;
+		BOOST_STATIC_CONSTANT(int, fixed_consumed_args = 1);
+		BOOST_STATIC_CONSTANT(bool, has_postcall = false);
 
-        pointer_converter()
-          : result(0)
-        {}
+		pointer_converter() noexcept
+		  : result(0)
+		{}
 
-        void* result;
+		void* result;
 
-        int const consumed_args(...)
-        {
-            return 1;
-        }
+		int consumed_args(...) const noexcept
+		{
+			return 1;
+		}
 
 		template<class T>
 		void apply(lua_State* L, T* ptr)
 		{
-			if (ptr == 0) 
+			if (ptr == 0)
 			{
 				lua_pushnil(L);
 				return;
@@ -225,32 +223,43 @@ namespace luabind { namespace detail
 			if (luabind::get_back_reference(L, ptr))
 				return;
 
-            make_instance(L, ptr);
+			make_instance(L, ptr);
 		}
 
 		template<class T>
-		T* apply(lua_State*, by_pointer<T>, int)
+		T* apply(lua_State*, by_pointer<T>, int) const noexcept
 		{
-            return static_cast<T*>(result);
+			return static_cast<T*>(result);
 		}
 
 		template<class T>
 		int match(lua_State* L, by_pointer<T>, int index)
 		{
-			if (lua_isnil(L, index)) return 0;
-			object_rep* obj = get_instance(L, index);
-			if (obj == 0) return -1;
+			if (lua_isnil(L, index))
+			{
+				result = 0;
+				return 0;
+			}
+			object_rep* obj = get_instance_fast(L, index);
+			if (LUABIND_UNLIKELY(obj == 0)) return -1;
 
-            if (obj->is_const())
-                return -1;
+			class_id const target = registered_class<T>::id;
+			if (void* fast_p = obj->try_get_raw_fast(target, true))
+			{
+				result = fast_p;
+				return 0;
+			}
 
-            std::pair<void*, int> s = obj->get_instance(registered_class<T>::id);
-            result = s.first;
-            return s.second;
+			if (obj->is_const())
+				return -1;
+
+			std::pair<void*, int> s = obj->get_instance(target);
+			result = s.first;
+			return s.second;
 		}
 
 		template<class T>
-		void converter_postcall(lua_State*, by_pointer<T>, int) 
+		void converter_postcall(lua_State*, by_pointer<T>, int) noexcept
 		{}
 	};
 
@@ -259,75 +268,82 @@ namespace luabind { namespace detail
 	struct value_converter
 	{
 		typedef value_converter type;
-        typedef mpl::false_ is_native;
+		typedef mpl::false_ is_native;
+		BOOST_STATIC_CONSTANT(int, fixed_consumed_args = 1);
+		BOOST_STATIC_CONSTANT(bool, has_postcall = false);
 
-        int const consumed_args(...)
-        {
-            return 1;
-        }
+		int consumed_args(...) const noexcept
+		{
+			return 1;
+		}
 
-        value_converter()
-          : result(0)
-        {}
+		value_converter() noexcept
+		  : result(0)
+		{}
 
-        void* result;
+		void* result;
 
 		template<class T>
-		void apply(lua_State* L, T x)
+		void apply(lua_State* L, T const& x)
 		{
 			if (luabind::get_back_reference(L, x))
 				return;
 
-            make_pointee_instance(L, x, mpl::true_());
+			make_pointee_instance(L, const_cast<T&>(x), mpl::true_());
 		}
 
 		template<class T>
-		T apply(lua_State*, by_value<T>, int)
+		T apply(lua_State*, by_value<T>, int) const
 		{
-            return *static_cast<T*>(result);
+			return *static_cast<T*>(result);
 		}
 
 		template<class T>
 		int match(lua_State* L, by_value<T>, int index)
 		{
-			// special case if we get nil in, try to match the holder type
-			if (lua_isnil(L, index))
-				return -1;
+			object_rep* obj = get_instance_fast(L, index);
+			if (LUABIND_UNLIKELY(obj == 0)) return -1;
 
-			object_rep* obj = get_instance(L, index);
-			if (obj == 0) return -1;
+			class_id const target = registered_class<T>::id;
+			if (void* fast_p = obj->try_get_raw_fast(target, false))
+			{
+				result = fast_p;
+				return 0;
+			}
 
-            std::pair<void*, int> s = obj->get_instance(registered_class<T>::id);
-            result = s.first;
-            return s.second;
+			std::pair<void*, int> s = obj->get_instance(target);
+			result = s.first;
+			return s.second;
 		}
 
 		template<class T>
-		void converter_postcall(lua_State*, T, int) {}
+		void converter_postcall(lua_State*, T, int) noexcept {}
 	};
 
 // ******* const pointer converter *******
 
-    struct const_pointer_converter
+	struct const_pointer_converter
 	{
 		typedef const_pointer_converter type;
-        typedef mpl::false_ is_native;
+		typedef mpl::false_ is_native;
+		BOOST_STATIC_CONSTANT(int, fixed_consumed_args = 1);
+		BOOST_STATIC_CONSTANT(bool, has_postcall = false);
 
-        int const consumed_args(...)
-        {
-            return 1;
-        }
+		int consumed_args(...) const noexcept
+		{
+			return 1;
+		}
 
-        const_pointer_converter()
-          : result(0)
-        {}
+		const_pointer_converter() noexcept
+		  : result(0)
+		{}
 
-        void* result;
+		void* result;
 
 		template<class T>
 		void apply(lua_State* L, const T* ptr)
 		{
-			if (ptr == 0) 
+			if (ptr == 0)
 			{
 				lua_pushnil(L);
 				return;
@@ -336,11 +352,11 @@ namespace luabind { namespace detail
 			if (luabind::get_back_reference(L, ptr))
 				return;
 
-            make_instance(L, ptr);
+			make_instance(L, ptr);
 		}
 
 		template<class T>
-		T const* apply(lua_State*, by_const_pointer<T>, int)
+		T const* apply(lua_State*, by_const_pointer<T>, int) const noexcept
 		{
 			return static_cast<T const*>(result);
 		}
@@ -348,31 +364,45 @@ namespace luabind { namespace detail
 		template<class T>
 		int match(lua_State* L, by_const_pointer<T>, int index)
 		{
-			if (lua_isnil(L, index)) return 0;
-			object_rep* obj = get_instance(L, index);
-			if (obj == 0) return -1; // if the type is not one of our own registered types, classify it as a non-match
-            std::pair<void*, int> s = obj->get_instance(registered_class<T>::id);
-            if (s.second >= 0 && !obj->is_const())
-                s.second += 10;
-            result = s.first;
-            return s.second;
+			if (lua_isnil(L, index))
+			{
+				result = 0;
+				return 0;
+			}
+			object_rep* obj = get_instance_fast(L, index);
+			if (LUABIND_UNLIKELY(obj == 0)) return -1;
+
+			class_id const target = registered_class<T>::id;
+			if (void* fast_p = obj->try_get_raw_fast(target, false))
+			{
+				result = fast_p;
+				return obj->is_const() ? 0 : 10;
+			}
+
+			std::pair<void*, int> s = obj->get_instance(target);
+			if (s.second >= 0 && !obj->is_const())
+				s.second += 10;
+			result = s.first;
+			return s.second;
 		}
 
-        template<class T>
-        void converter_postcall(lua_State*, T, int) {}
+		template<class T>
+		void converter_postcall(lua_State*, T, int) noexcept {}
 	};
 
 // ******* reference converter *******
 
-    struct ref_converter : pointer_converter
+	struct ref_converter : pointer_converter
 	{
 		typedef ref_converter type;
-        typedef mpl::false_ is_native;
+		typedef mpl::false_ is_native;
+		BOOST_STATIC_CONSTANT(int, fixed_consumed_args = 1);
+		BOOST_STATIC_CONSTANT(bool, has_postcall = false);
 
-        int const consumed_args(...)
-        {
-            return 1;
-        }
+		int consumed_args(...) const noexcept
+		{
+			return 1;
+		}
 
 		template<class T>
 		void apply(lua_State* L, T& ref)
@@ -380,32 +410,40 @@ namespace luabind { namespace detail
 			if (luabind::get_back_reference(L, ref))
 				return;
 
-            make_pointee_instance(L, ref, mpl::false_());
+			make_pointee_instance(L, ref, mpl::false_());
 		}
 
 		template<class T>
-		T& apply(lua_State* L, by_reference<T>, int index)
+		T& apply(lua_State* L, by_reference<T>, int index) const noexcept
 		{
-			assert(!lua_isnil(L, index));
-            return *pointer_converter::apply(L, by_pointer<T>(), index);
+			(void)L;
+			(void)index;
+			return *static_cast<T*>(result);
 		}
 
 		template<class T>
 		int match(lua_State* L, by_reference<T>, int index)
 		{
-            object_rep* obj = get_instance(L, index);
-            if (obj == 0) return -1;
+			object_rep* obj = get_instance_fast(L, index);
+			if (LUABIND_UNLIKELY(obj == 0)) return -1;
 
-            if (obj->is_const())
-                return -1;
+			class_id const target = registered_class<T>::id;
+			if (void* fast_p = obj->try_get_raw_fast(target, true))
+			{
+				result = fast_p;
+				return 0;
+			}
 
-            std::pair<void*, int> s = obj->get_instance(registered_class<T>::id);
-            result = s.first;
-            return s.second;
+			if (obj->is_const())
+				return -1;
+
+			std::pair<void*, int> s = obj->get_instance(target);
+			result = s.first;
+			return s.second;
 		}
 
 		template<class T>
-		void converter_postcall(lua_State*, T, int) {}
+		void converter_postcall(lua_State*, T, int) noexcept {}
 	};
 
 // ******** const reference converter *********
@@ -413,18 +451,20 @@ namespace luabind { namespace detail
 	struct const_ref_converter
 	{
 		typedef const_ref_converter type;
-        typedef mpl::false_ is_native;
+		typedef mpl::false_ is_native;
+		BOOST_STATIC_CONSTANT(int, fixed_consumed_args = 1);
+		BOOST_STATIC_CONSTANT(bool, has_postcall = false);
 
-        int const consumed_args(...)
-        {
-            return 1;
-        }
+		int consumed_args(...) const noexcept
+		{
+			return 1;
+		}
 
-        const_ref_converter()
-          : result(0)
-        {}
+		const_ref_converter() noexcept
+		  : result(0)
+		{}
 
-        void* result;
+		void* result;
 
 		template<class T>
 		void apply(lua_State* L, T const& ref)
@@ -432,30 +472,37 @@ namespace luabind { namespace detail
 			if (luabind::get_back_reference(L, ref))
 				return;
 
-            make_pointee_instance(L, ref, mpl::false_());
+			make_pointee_instance(L, ref, mpl::false_());
 		}
 
 		template<class T>
-		T const& apply(lua_State*, by_const_reference<T>, int)
+		T const& apply(lua_State*, by_const_reference<T>, int) const noexcept
 		{
-			return *static_cast<T*>(result);
+			return *static_cast<T const*>(result);
 		}
 
 		template<class T>
 		int match(lua_State* L, by_const_reference<T>, int index)
 		{
-			object_rep* obj = get_instance(L, index);
-			if (obj == 0) return -1; // if the type is not one of our own registered types, classify it as a non-match
+			object_rep* obj = get_instance_fast(L, index);
+			if (LUABIND_UNLIKELY(obj == 0)) return -1;
 
-            std::pair<void*, int> s = obj->get_instance(registered_class<T>::id);
-            if (s.second >= 0 && !obj->is_const())
-                s.second += 10;
-            result = s.first;
-            return s.second;
+			class_id const target = registered_class<T>::id;
+			if (void* fast_p = obj->try_get_raw_fast(target, false))
+			{
+				result = fast_p;
+				return obj->is_const() ? 0 : 10;
+			}
+
+			std::pair<void*, int> s = obj->get_instance(target);
+			if (s.second >= 0 && !obj->is_const())
+				s.second += 10;
+			result = s.first;
+			return s.second;
 		}
 
 		template<class T>
-		void converter_postcall(lua_State*, by_const_reference<T>, int)
+		void converter_postcall(lua_State*, by_const_reference<T>, int) noexcept
 		{
 		}
 	};
@@ -465,13 +512,15 @@ namespace luabind { namespace detail
 	struct enum_converter
 	{
 		typedef enum_converter type;
-        typedef mpl::true_ is_native;
+		typedef mpl::true_ is_native;
+		BOOST_STATIC_CONSTANT(int, fixed_consumed_args = 1);
+		BOOST_STATIC_CONSTANT(bool, has_postcall = false);
 
-        int const consumed_args(...)
-        {
-            return 1;
-        }
-		
+		int consumed_args(...) const noexcept
+		{
+			return 1;
+		}
+
 		void apply(lua_State* L, int val)
 		{
 			lua_pushnumber(L, val);
@@ -482,11 +531,11 @@ namespace luabind { namespace detail
 		{
 			return static_cast<T>(static_cast<int>(lua_tonumber(L, index)));
 		}
-		
+
 		template<class T>
 		static int match(lua_State* L, by_value<T>, int index)
 		{
-			if (lua_isnumber(L, index)) return 0; else return -1;
+			return lua_type(L, index) == LUA_TNUMBER ? 0 : -1;
 		}
 
 		template<class T>
@@ -498,11 +547,11 @@ namespace luabind { namespace detail
 		template<class T>
 		static int match(lua_State* L, by_const_reference<T>, int index)
 		{
-			if (lua_isnumber(L, index)) return 0; else return -1;
+			return lua_type(L, index) == LUA_TNUMBER ? 0 : -1;
 		}
 
 		template<class T>
-		void converter_postcall(lua_State*, T, int) {}
+		void converter_postcall(lua_State*, T, int) noexcept {}
 	};
 
 	template <class U>
@@ -510,11 +559,13 @@ namespace luabind { namespace detail
 	{
 		typedef value_wrapper_converter<U> type;
 		typedef mpl::true_ is_native;
+		BOOST_STATIC_CONSTANT(int, fixed_consumed_args = 1);
+		BOOST_STATIC_CONSTANT(bool, has_postcall = false);
 
-        int const consumed_args(...)
-        {
-            return 1;
-        }
+		int consumed_args(...) const noexcept
+		{
+			return 1;
+		}
 
 		template<class T>
 		T apply(lua_State* L, by_const_reference<T>, int index)
@@ -531,9 +582,9 @@ namespace luabind { namespace detail
 		template<class T>
 		static int match(lua_State* L, by_const_reference<T>, int index)
 		{
-			return value_wrapper_traits<T>::check(L, index) 
-                ? (std::numeric_limits<int>::max)() / LUABIND_MAX_ARITY
-                : -1;
+			return value_wrapper_traits<T>::check(L, index)
+				? (std::numeric_limits<int>::max)() / LUABIND_MAX_ARITY
+				: -1;
 		}
 
 		template<class T>
@@ -542,43 +593,43 @@ namespace luabind { namespace detail
 			return match(L, by_const_reference<T>(), index);
 		}
 
-		void converter_postcall(...) {}
+		void converter_postcall(...) noexcept {}
 
 		template<class T>
 		void apply(lua_State* interpreter, T const& value_wrapper)
 		{
 			value_wrapper_traits<T>::unwrap(interpreter, value_wrapper);
 		}
-    };
+	};
 
-    template <class T>
-    struct default_converter_generator
-      : mpl::eval_if<
-            is_value_wrapper_arg<T>
-          , value_wrapper_converter<T>
-          , mpl::eval_if<
-                boost::is_enum<typename boost::remove_reference<T>::type>
-              , enum_converter
-              , mpl::eval_if<
-                    is_nonconst_pointer<T>
-                  , pointer_converter
-                  , mpl::eval_if<
-                        is_const_pointer<T>
-                      , const_pointer_converter
-                      , mpl::eval_if<
-                            is_nonconst_reference<T>
-                          , ref_converter
-                          , mpl::eval_if<
-                                is_const_reference<T>
-                              , const_ref_converter
-                              , value_converter
-                            >
-                        >
-                    >
-                >
-            >
-        >
-    {};
+	template <class T>
+	struct default_converter_generator
+	  : mpl::eval_if<
+			is_value_wrapper_arg<T>
+		  , value_wrapper_converter<T>
+		  , mpl::eval_if<
+				boost::is_enum<typename boost::remove_reference<T>::type>
+			  , enum_converter
+			  , mpl::eval_if<
+					is_nonconst_pointer<T>
+				  , pointer_converter
+				  , mpl::eval_if<
+						is_const_pointer<T>
+					  , const_pointer_converter
+					  , mpl::eval_if<
+							is_nonconst_reference<T>
+						  , ref_converter
+						  , mpl::eval_if<
+								is_const_reference<T>
+							  , const_ref_converter
+							  , value_converter
+							>
+						>
+					>
+				>
+			>
+		>
+	{};
 
 } // namespace detail
 
@@ -592,89 +643,91 @@ struct default_converter
 template <class T, class Derived = default_converter<T> >
 struct native_converter_base
 {
-    typedef boost::mpl::true_ is_native;
+	typedef boost::mpl::true_ is_native;
+	BOOST_STATIC_CONSTANT(int, fixed_consumed_args = 1);
+	BOOST_STATIC_CONSTANT(bool, has_postcall = false);
 
-    int const consumed_args(...)
-    {
-        return 1;
-    }
+	int consumed_args(...) const noexcept
+	{
+		return 1;
+	}
 
-    template <class U>
-    void converter_postcall(lua_State*, U const&, int)
-    {}
+	template <class U>
+	void converter_postcall(lua_State*, U const&, int) noexcept
+	{}
 
-    int match(lua_State* L, detail::by_value<T>, int index)
-    {
-        return derived().compute_score(L, index);
-    }
+	int match(lua_State* L, detail::by_value<T>, int index)
+	{
+		return derived().compute_score(L, index);
+	}
 
-    int match(lua_State* L, detail::by_value<T const>, int index)
-    {
-        return derived().compute_score(L, index);
-    }
+	int match(lua_State* L, detail::by_value<T const>, int index)
+	{
+		return derived().compute_score(L, index);
+	}
 
-    int match(lua_State* L, detail::by_const_reference<T>, int index)
-    {
-        return derived().compute_score(L, index);
-    }
+	int match(lua_State* L, detail::by_const_reference<T>, int index)
+	{
+		return derived().compute_score(L, index);
+	}
 
-    T apply(lua_State* L, detail::by_value<T>, int index)
-    {
-        return derived().from(L, index);
-    }
+	T apply(lua_State* L, detail::by_value<T>, int index)
+	{
+		return derived().from(L, index);
+	}
 
-    T apply(lua_State* L, detail::by_value<T const>, int index)
-    {
-        return derived().from(L, index);
-    }
+	T apply(lua_State* L, detail::by_value<T const>, int index)
+	{
+		return derived().from(L, index);
+	}
 
-    T apply(lua_State* L, detail::by_const_reference<T>, int index)
-    {
-        return derived().from(L, index);
-    }
+	T apply(lua_State* L, detail::by_const_reference<T>, int index)
+	{
+		return derived().from(L, index);
+	}
 
-    void apply(lua_State* L, T const& value)
-    {
-        derived().to(L, value);
-    }
+	void apply(lua_State* L, T const& value)
+	{
+		derived().to(L, value);
+	}
 
-    Derived& derived()
-    {
-        return static_cast<Derived&>(*this);
-    }
+	Derived& derived() noexcept
+	{
+		return static_cast<Derived&>(*this);
+	}
 };
 
 template <class T>
-lua_Integer as_lua_integer(T v)
+inline lua_Integer as_lua_integer(T v) noexcept
 {
-    return static_cast<lua_Integer>(v);
+	return static_cast<lua_Integer>(v);
 }
 
 template <class T>
-lua_Number as_lua_number(T v)
+inline lua_Number as_lua_number(T v) noexcept
 {
-    return static_cast<lua_Number>(v);
+	return static_cast<lua_Number>(v);
 }
 
 # define LUABIND_NUMBER_CONVERTER(type, kind) \
-    template <> \
+	template <> \
 struct default_converter<type> \
   : native_converter_base<type> \
 { \
-    int compute_score(lua_State* L, int index) \
-    { \
-        return lua_type(L, index) == LUA_TNUMBER ? 0 : -1; \
-    }; \
-    \
-    type from(lua_State* L, int index) \
-    { \
-        return static_cast<type>(BOOST_PP_CAT(lua_to, kind)(L, index)); \
-    } \
-    \
-    void to(lua_State* L, type const& value) \
-    { \
-        BOOST_PP_CAT(lua_push, kind)(L, BOOST_PP_CAT(as_lua_, kind)(value)); \
-    } \
+	int compute_score(lua_State* L, int index) \
+	{ \
+		return lua_type(L, index) == LUA_TNUMBER ? 0 : -1; \
+	}; \
+	\
+	type from(lua_State* L, int index) \
+	{ \
+		return static_cast<type>(BOOST_PP_CAT(lua_to, kind)(L, index)); \
+	} \
+	\
+	void to(lua_State* L, type const& value) \
+	{ \
+		BOOST_PP_CAT(lua_push, kind)(L, BOOST_PP_CAT(as_lua_, kind)(value)); \
+	} \
 }; \
 \
 template <> \
@@ -708,20 +761,20 @@ template <>
 struct default_converter<bool>
   : native_converter_base<bool>
 {
-    static int compute_score(lua_State* L, int index)
-    {
-        return lua_type(L, index) == LUA_TBOOLEAN ? 0 : -1;
-    }
+	static int compute_score(lua_State* L, int index)
+	{
+		return lua_type(L, index) == LUA_TBOOLEAN ? 0 : -1;
+	}
 
-    bool from(lua_State* L, int index)
-    {
-        return lua_toboolean(L, index) == 1;
-    }
+	bool from(lua_State* L, int index)
+	{
+		return lua_toboolean(L, index) == 1;
+	}
 
-    void to(lua_State* L, bool value)
-    {
-        lua_pushboolean(L, value);
-    }
+	void to(lua_State* L, bool value)
+	{
+		lua_pushboolean(L, value);
+	}
 };
 
 template <>
@@ -738,20 +791,22 @@ template <>
 struct default_converter<std::string>
   : native_converter_base<std::string>
 {
-    static int compute_score(lua_State* L, int index)
-    {
-        return lua_type(L, index) == LUA_TSTRING ? 0 : -1;
-    }
+	static int compute_score(lua_State* L, int index)
+	{
+		return lua_type(L, index) == LUA_TSTRING ? 0 : -1;
+	}
 
-    std::string from(lua_State* L, int index)
-    {
-        return std::string(lua_tostring(L, index), lua_strlen(L, index));
-    }
+	std::string from(lua_State* L, int index)
+	{
+		std::size_t len = 0;
+		char const* s = lua_tolstring(L, index, &len);
+		return std::string(s ? s : "", len);
+	}
 
-    void to(lua_State* L, std::string const& value)
-    {
-        lua_pushlstring(L, value.data(), value.size());
-    }
+	void to(lua_State* L, std::string const& value)
+	{
+		lua_pushlstring(L, value.data(), value.size());
+	}
 };
 
 template <>
@@ -767,34 +822,36 @@ struct default_converter<std::string const&>
 template <>
 struct default_converter<char const*>
 {
-    typedef boost::mpl::true_ is_native;
+	typedef boost::mpl::true_ is_native;
+	BOOST_STATIC_CONSTANT(int, fixed_consumed_args = 1);
+	BOOST_STATIC_CONSTANT(bool, has_postcall = false);
 
-    int const consumed_args(...)
-    {
-        return 1;
-    }
+	int consumed_args(...) const noexcept
+	{
+		return 1;
+	}
 
-    template <class U>
-    static int match(lua_State* L, U, int index)
-    {
-        int type = lua_type(L, index);
-        return (type == LUA_TSTRING || type == LUA_TNIL) ? 0 : -1;
-    }
+	template <class U>
+	static int match(lua_State* L, U, int index)
+	{
+		int type = lua_type(L, index);
+		return (type == LUA_TSTRING || type == LUA_TNIL) ? 0 : -1;
+	}
 
-    template <class U>
-    char const* apply(lua_State* L, U, int index)
-    {
-        return lua_tostring(L, index);
-    }
+	template <class U>
+	char const* apply(lua_State* L, U, int index)
+	{
+		return lua_tostring(L, index);
+	}
 
-    void apply(lua_State* L, char const* str)
-    {
-        lua_pushstring(L, str);
-    }
+	void apply(lua_State* L, char const* str)
+	{
+		lua_pushstring(L, str);
+	}
 
-    template <class U>
-    void converter_postcall(lua_State*, U, int)
-    {}
+	template <class U>
+	void converter_postcall(lua_State*, U, int) noexcept
+	{}
 };
 
 template <>
@@ -820,25 +877,28 @@ struct default_converter<char[N]>
 template <>
 struct default_converter<lua_State*>
 {
-    int const consumed_args(...)
-    {
-        return 0;
-    }
+	BOOST_STATIC_CONSTANT(int, fixed_consumed_args = 0);
+	BOOST_STATIC_CONSTANT(bool, has_postcall = false);
 
-    template <class U>
-    lua_State* apply(lua_State* L, U, int)
-    {
-        return L;
-    }
+	int consumed_args(...) const noexcept
+	{
+		return 0;
+	}
 
-    template <class U>
-    static int match(lua_State*, U, int)
-    {
-        return 0;
-    }
+	template <class U>
+	lua_State* apply(lua_State* L, U, int) const noexcept
+	{
+		return L;
+	}
 
-    template <class U>
-    void converter_postcall(lua_State*, U, int) {}
+	template <class U>
+	static int match(lua_State*, U, int) noexcept
+	{
+		return 0;
+	}
+
+	template <class U>
+	void converter_postcall(lua_State*, U, int) noexcept {}
 };
 
 namespace detail
@@ -849,19 +909,19 @@ namespace detail
 		BOOST_STATIC_CONSTANT(bool, has_arg = true);
 
 		template<class T>
-		static void precall(lua_State*, T, int) {}
+		static void precall(lua_State*, T, int) noexcept {}
 
 		template<class T, class Direction>
 		struct apply
 		{
-            typedef default_converter<T> type;
-        };
+			typedef default_converter<T> type;
+		};
 	};
 
-    template<class T>
-    struct is_primitive
-      : default_converter<T>::is_native
-    {};
+	template<class T>
+	struct is_primitive
+	  : default_converter<T>::is_native
+	{};
 
 // ============== new policy system =================
 
@@ -939,13 +999,8 @@ namespace detail
 	template<>
 	struct policy_list_postcall<detail::null_type>
 	{
-		static void apply(lua_State*, const index_map&) {}
+		static void apply(lua_State*, const index_map&) noexcept {}
 	};
-
-// ==================================================
-
-// ************** precall and postcall on policy_cons *********************
-
 
 	template<class List>
 	struct policy_precall
@@ -963,7 +1018,7 @@ namespace detail
 	template<>
 	struct policy_precall<detail::null_type>
 	{
-		static void apply(lua_State*, int) {}
+		static void apply(lua_State*, int) noexcept {}
 	};
 
 	template<class List>
@@ -982,7 +1037,7 @@ namespace detail
 	template<>
 	struct policy_postcall<detail::null_type>
 	{
-		static void apply(lua_State*, int) {}
+		static void apply(lua_State*, int) noexcept {}
 	};
 
 }} // namespace luabind::detail
@@ -1018,4 +1073,3 @@ namespace luabind { namespace
 }}
 
 #endif // LUABIND_POLICY_HPP_INCLUDED
-

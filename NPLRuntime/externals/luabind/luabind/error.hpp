@@ -35,20 +35,12 @@ namespace luabind
 
 #ifndef LUABIND_NO_EXCEPTIONS
 
-	// this exception usually means that the lua function you called
-	// from C++ failed with an error code. You will have to
-	// read the error code from the top of the lua stack
-	// the reason why this exception class doesn't contain
-	// the message itself is that std::string's copy constructor
-	// may throw, if the copy constructor of an exception that is
-	// being thrown throws another exception, terminate will be called
-	// and the entire application is killed.
 	class LUABIND_API error : public std::exception
 	{
 	public:
-		explicit error(lua_State* L): m_L(L) {}
-		lua_State* state() const throw() { return m_L; }
-		virtual const char* what() const throw()
+		explicit error(lua_State* L) noexcept : m_L(L) {}
+		lua_State* state() const noexcept { return m_L; }
+		virtual const char* what() const noexcept
 		{
 			return "lua runtime error";
 		}
@@ -56,16 +48,13 @@ namespace luabind
 		lua_State* m_L;
 	};
 
-	// if an object_cast<>() fails, this is thrown
-	// it is also thrown if the return value of
-	// a lua function cannot be converted
 	class LUABIND_API cast_failed : public std::exception
 	{
 	public:
-		cast_failed(lua_State* L, type_id const& i): m_L(L), m_info(i) {}
-		lua_State* state() const throw() { return m_L; }
-		type_id info() const throw() { return m_info; }
-		virtual const char* what() const throw() { return "unable to make cast"; }
+		cast_failed(lua_State* L, type_id const& i) noexcept : m_L(L), m_info(i) {}
+		lua_State* state() const noexcept { return m_L; }
+		type_id info() const noexcept { return m_info; }
+		virtual const char* what() const noexcept { return "unable to make cast"; }
 	private:
 		lua_State* m_L;
 		type_id m_info;
@@ -83,6 +72,11 @@ namespace luabind
 
 #endif
 
+	namespace detail
+	{
+		[[noreturn]] LUABIND_API void throw_cast_failed_aux(lua_State* L, type_id const& info);
+	}
+
 	typedef int(*pcall_callback_fun)(lua_State*);
 	LUABIND_API void set_pcall_callback(pcall_callback_fun e);
 	LUABIND_API pcall_callback_fun get_pcall_callback();
@@ -90,4 +84,3 @@ namespace luabind
 }
 
 #endif // LUABIND_ERROR_HPP_INCLUDED
-

@@ -24,6 +24,7 @@
 #ifndef LUABIND_OUT_VALUE_POLICY_HPP_INCLUDED
 #define LUABIND_OUT_VALUE_POLICY_HPP_INCLUDED
 
+#include <cstddef>
 #include <luabind/config.hpp>
 #include <luabind/detail/policy.hpp>
 #include <boost/mpl/apply_wrap.hpp>
@@ -140,7 +141,7 @@ namespace luabind { namespace detail
 			reinterpret_cast<T*>(m_storage)->~T();
 		}
 
-		char m_storage[Size];
+		alignas(std::max_align_t) char m_storage[Size];
 	};
 
 	template<int N, class Policies = detail::null_type>
@@ -218,7 +219,7 @@ namespace luabind { namespace detail
 		}
 
 
-		char m_storage[Size];
+		alignas(std::max_align_t) char m_storage[Size];
 	};
 
 	template<int N, class Policies = detail::null_type>

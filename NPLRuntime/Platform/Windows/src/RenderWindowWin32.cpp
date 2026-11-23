@@ -202,6 +202,22 @@ namespace ParaEngine {
 		return (::GetMessageExtraInfo() & 0xFFFFFF80) == 0xFF515780;
 	}
 
+#ifdef PARA_ENABLE_WIN32_IME
+	static bool HasActiveWin32IMEFocus()
+	{
+		auto* pRoot = CGUIRoot::GetInstance();
+		if (!pRoot)
+			return false;
+		auto* pKeyTarget = pRoot->GetUIKeyFocus();
+		if (!pKeyTarget || !pKeyTarget->IsInputMethodEnabled() || !pKeyTarget->GetVisibleRecursive())
+			return false;
+		if (pRoot->HasIMEFocus())
+			return true;
+		auto* pImeFocus = pRoot->GetIMEFocus();
+		return pImeFocus != nullptr && pImeFocus->GetVisibleRecursive();
+	}
+#endif
+
 	LRESULT RenderWindowWin32::WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	{
 		auto itWnd = g_WindowMap.find(hWnd);
@@ -250,9 +266,9 @@ namespace ParaEngine {
 #ifdef PARA_ENABLE_WIN32_IME
 			case PE_IME_SETFOCUS:
 				if (lParam == 1)
-					CGUIIME::OnFocusIn_imp();
+					CGUIIME::OnFocusIn_imp(hWnd);
 				else
-					CGUIIME::OnFocusOut_imp();
+					CGUIIME::OnFocusOut_imp(hWnd);
 				return 0;
 			case PE_IME_SETOPENSTATUS:
 				CGUIIME::SetIMEOpenStatus_imp(lParam != 0);
@@ -266,7 +282,11 @@ namespace ParaEngine {
 #ifdef PARA_ENABLE_WIN32_IME
 		if (message == WM_IME_SETCONTEXT)
 		{
-			if (CGUIIME::IsEnableImeSystem())
+			if (!HasActiveWin32IMEFocus())
+			{
+				lParam = 0;
+			}
+			else if (CGUIIME::IsEnableImeSystem())
 			{
 				lParam = 0;
 				CGUIIME::HandleWinThreadMsg(message, wParam, lParam);
@@ -284,9 +304,13 @@ namespace ParaEngine {
 			|| message == WM_IME_ENDCOMPOSITION
 			|| message == WM_IME_NOTIFY)
 		{
-			if (CGUIRoot::GetInstance() && (CGUIRoot::GetInstance()->HasIMEFocus() || CGUIRoot::GetInstance()->GetIMEFocus() != nullptr))
+			if (HasActiveWin32IMEFocus())
 			{
 				CGUIIME::HandleWinThreadMsg(message, wParam, lParam);
+			}
+			else if (message == WM_INPUTLANGCHANGE)
+			{
+				CGUIIME::OnFocusOut_imp(hWnd);
 			}
 			if (message != WM_KEYUP && CGUIIME::IsEnableImeSystem())
 			{
@@ -407,7 +431,7 @@ namespace ParaEngine {
 				return TRUE;
 			}
 #ifdef PARA_ENABLE_WIN32_IME
-			if (CGUIRoot::GetInstance() && (CGUIRoot::GetInstance()->HasIMEFocus() || CGUIRoot::GetInstance()->GetIMEFocus() != nullptr))
+			if (HasActiveWin32IMEFocus())
 			{
 				CGUIIME::SendWinMsgChar((WCHAR)code);
 				return 0;
@@ -458,6 +482,12 @@ namespace ParaEngine {
 
 		case WM_SETFOCUS:
 			window->m_bLostFocus = false;
+#ifdef PARA_ENABLE_WIN32_IME
+			if (!HasActiveWin32IMEFocus())
+			{
+				CGUIIME::OnFocusOut_imp(hWnd);
+			}
+#endif
 			break;
 
 		case WM_SETCURSOR:
@@ -773,7 +803,7 @@ namespace ParaEngine {
 		AllowUipiWindowMessages(m_hWnd);
 		::DragAcceptFiles(m_hWnd, TRUE);
 #ifdef PARA_ENABLE_WIN32_IME
-		CGUIIME::StaticOnCreateDevice();
+		CGUIIME::StaticOnCreateDevice(m_hWnd);
 #else
 		::ImmAssociateContext(m_hWnd, NULL);
 #endif
@@ -859,7 +889,7 @@ namespace ParaEngine {
 
 #ifdef PARA_ENABLE_WIN32_IME
 		// Captures default HIMC (s_hImcDef) first, then disassociates IME until a CGUIIMEEditBox focuses
-		CGUIIME::StaticOnCreateDevice();
+		CGUIIME::StaticOnCreateDevice(m_hWnd);
 #else
 		ImmAssociateContext(m_hWnd, NULL);
 #endif

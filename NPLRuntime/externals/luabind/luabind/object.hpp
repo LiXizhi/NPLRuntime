@@ -23,9 +23,10 @@
 #ifndef LUABIND_OBJECT_050419_HPP
 #define LUABIND_OBJECT_050419_HPP
 
-#include <boost/implicit_cast.hpp> // detail::push()
-#include <boost/ref.hpp> // detail::push()
-#include <boost/mpl/bool.hpp> // value_wrapper_traits specializations
+#include <ostream>
+#include <boost/implicit_cast.hpp>
+#include <boost/ref.hpp>
+#include <boost/mpl/bool.hpp>
 #include <boost/mpl/apply_wrap.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <boost/optional.hpp>
@@ -35,22 +36,22 @@
 #include <luabind/detail/pcall.hpp>
 #include <luabind/handle.hpp>
 #include <luabind/from_stack.hpp>
+#include <luabind/error.hpp>
 #include <luabind/detail/policy.hpp>
 #include <luabind/detail/stack_utils.hpp>
-#include <luabind/detail/convert_to_lua.hpp> // REFACTOR
+#include <luabind/detail/convert_to_lua.hpp>
 #include <luabind/typeid.hpp>
 
-#include <boost/iterator/iterator_facade.hpp> // iterator
-
+#include <boost/iterator/iterator_facade.hpp>
 #include <boost/preprocessor/iteration/iterate.hpp>
 #include <boost/utility/enable_if.hpp>
 
 namespace luabind {
 
-namespace detail 
+namespace detail
 {
   namespace mpl = boost::mpl;
-  
+
   template<class T, class ConverterGenerator>
   void push_aux(lua_State* interpreter, T& value, ConverterGenerator*)
   {
@@ -83,6 +84,37 @@ namespace detail
       push_aux(interpreter, value, (converter_policy*)0);
   }
 
+  // Collapse all C-string literal lengths char[N] to a single lua_pushstring call.
+  inline void push(lua_State* interpreter, char const* str)
+  {
+      lua_pushstring(interpreter, str);
+  }
+
+  inline void push(lua_State* interpreter, int v)
+  {
+      lua_pushinteger(interpreter, static_cast<lua_Integer>(v));
+  }
+
+  inline void push(lua_State* interpreter, unsigned int v)
+  {
+      lua_pushnumber(interpreter, static_cast<lua_Number>(v));
+  }
+
+  inline void push(lua_State* interpreter, double v)
+  {
+      lua_pushnumber(interpreter, static_cast<lua_Number>(v));
+  }
+
+  inline void push(lua_State* interpreter, float v)
+  {
+      lua_pushnumber(interpreter, static_cast<lua_Number>(v));
+  }
+
+  inline void push(lua_State* interpreter, bool v)
+  {
+      lua_pushboolean(interpreter, v ? 1 : 0);
+  }
+
   template<class T>
   void push(lua_State* interpreter, T& value)
   {
@@ -94,21 +126,21 @@ namespace detail
 namespace adl
 {
   namespace mpl = boost::mpl;
-  
+
   template <class T>
   class object_interface;
-  
+
   namespace is_object_interface_aux
   {
     typedef char (&yes)[1];
     typedef char (&no)[2];
-    
+
     template <class T>
     yes check(object_interface<T>*);
     no check(void*);
 
     template <class T>
-    struct impl 
+    struct impl
     {
         BOOST_STATIC_CONSTANT(bool, value =
             sizeof(is_object_interface_aux::check((T*)0)) == sizeof(yes)
@@ -117,7 +149,7 @@ namespace adl
         typedef mpl::bool_<value> type;
     };
 
-  } // namespace detail
+  } // namespace is_object_interface_aux
 
   template <class T>
   struct is_object_interface
@@ -146,20 +178,15 @@ namespace adl
     , boost::mpl::true_, boost::mpl::true_)
   {
        L = value_wrapper_traits<T>::interpreter(lhs);
-		 lua_State* L2 = value_wrapper_traits<U>::interpreter(rhs);
+       lua_State* L2 = value_wrapper_traits<U>::interpreter(rhs);
 
-       // you are comparing objects with different interpreters
-       // that's not allowed.
-		 assert(L == L2 || L == 0 || L2 == 0);
-
-       // if the two objects we compare have different interpreters
-       // then they
+       assert(L == L2 || L == 0 || L2 == 0);
 
        if (L != L2) return -1;
        if (L == 0) return 1;
        return 0;
   }
-	
+
   template<class T, class U>
   int binary_interpreter(lua_State*& L, T const& x, U const&
     , boost::mpl::true_, boost::mpl::false_)
@@ -224,11 +251,12 @@ LUABIND_BINARY_OP_DEF(<, lua_lessthan)
       detail::stack_pop pop(interpreter, 1);
       value_wrapper_traits<ValueWrapper>::unwrap(interpreter
         , static_cast<ValueWrapper const&>(v));
-		char const* p = lua_tostring(interpreter, -1);
-        std::size_t len = lua_strlen(interpreter, -1);
-		std::copy(p, p + len, std::ostream_iterator<char>(os));
-		return os;
-	}
+      std::size_t len = 0;
+      char const* p = lua_tolstring(interpreter, -1, &len);
+      if (p && len)
+          os.write(p, static_cast<std::streamsize>(len));
+      return os;
+  }
 
 #undef LUABIND_BINARY_OP_DEF
 
@@ -240,21 +268,21 @@ LUABIND_BINARY_OP_DEF(<, lua_lessthan)
   }
 
   template<class LHS, class RHS>
-  typename enable_binary<bool,LHS,RHS>::type 
+  typename enable_binary<bool,LHS,RHS>::type
   operator<=(LHS const& lhs, RHS const& rhs)
   {
       return lhs < rhs || lhs == rhs;
   }
 
   template<class LHS, class RHS>
-  typename enable_binary<bool,LHS,RHS>::type 
+  typename enable_binary<bool,LHS,RHS>::type
   operator>=(LHS const& lhs, RHS const& rhs)
   {
       return !(lhs < rhs);
   }
 
   template<class LHS, class RHS>
-  typename enable_binary<bool,LHS,RHS>::type 
+  typename enable_binary<bool,LHS,RHS>::type
   operator!=(LHS const& lhs, RHS const& rhs)
   {
       return !(lhs == rhs);
@@ -267,7 +295,7 @@ LUABIND_BINARY_OP_DEF(<, lua_lessthan)
   class index_proxy;
 
   class object;
-  
+
   template<class Derived>
   class object_interface
   {
@@ -324,99 +352,15 @@ LUABIND_BINARY_OP_DEF(<, lua_lessthan)
       }
 
   private:
-      Derived& derived()
+      Derived& derived() noexcept
       {
           return *static_cast<Derived*>(this);
       }
 
-      Derived const& derived() const
+      Derived const& derived() const noexcept
       {
           return *static_cast<Derived const*>(this);
       }
-  };
-
-#ifdef LUABIND_USE_VALUE_WRAPPER_TAG
-  struct iterator_proxy_tag;
-#endif
-  
-  template<class AccessPolicy>
-  class iterator_proxy
-    : public object_interface<iterator_proxy<AccessPolicy> >
-  {
-  public:
-#ifdef LUABIND_USE_VALUE_WRAPPER_TAG
-      typedef iterator_proxy_tag value_wrapper_tag;
-#endif
-
-      iterator_proxy(lua_State* interpreter, handle const& table, handle const& key)
-        : m_interpreter(interpreter)
-        , m_table_index(lua_gettop(interpreter) + 1)
-        , m_key_index(m_table_index + 1)
-      {
-          table.push(m_interpreter);
-          key.push(m_interpreter);
-      }
-
-      iterator_proxy(iterator_proxy const& other)
-        : m_interpreter(other.m_interpreter)
-        , m_table_index(other.m_table_index)
-        , m_key_index(other.m_key_index)
-      {
-          other.m_interpreter = 0;
-      }
-
-      ~iterator_proxy()
-      {
-          if (m_interpreter)
-              lua_pop(m_interpreter, 2);
-      }
-
-		// this will set the value to nil
-		iterator_proxy & operator=(luabind::detail::nil_type)
-		{
-          lua_pushvalue(m_interpreter, m_key_index);
-			 lua_pushnil(m_interpreter);
-          AccessPolicy::set(m_interpreter, m_table_index);
-          return *this;
-		}
-
-      template<class T>
-      iterator_proxy& operator=(T const& value)
-      {
-          lua_pushvalue(m_interpreter, m_key_index);
-          detail::push(m_interpreter, value);
-          AccessPolicy::set(m_interpreter, m_table_index);
-          return *this;
-      }
-
-      template<class Key>
-      index_proxy<iterator_proxy<AccessPolicy> > operator[](Key const& key)
-      {
-          return index_proxy<iterator_proxy<AccessPolicy> >(
-              *this, m_interpreter, key
-          );
-      }
-
-      // This is non-const to prevent conversion on lvalues.
-      operator object();
-
-      lua_State* interpreter() const
-      {
-          return m_interpreter;
-      }
-
-      // TODO: Why is it non-const?
-      void push(lua_State* interpreter)
-      {
-          assert(interpreter == m_interpreter);
-          lua_pushvalue(m_interpreter, m_key_index);
-          AccessPolicy::get(m_interpreter, m_table_index);
-      }
-
-  private:
-      mutable lua_State* m_interpreter;
-      int m_table_index;
-      int m_key_index;
   };
 
 } // namespace adl
@@ -448,290 +392,28 @@ namespace detail
           lua_rawget(interpreter, table);
       }
   };
-
-  template<class AccessPolicy>
-  class basic_iterator 
-    : public boost::iterator_facade<
-        basic_iterator<AccessPolicy>
-      , adl::iterator_proxy<AccessPolicy>
-      , boost::single_pass_traversal_tag
-      , adl::iterator_proxy<AccessPolicy>
-    >
-  {
-  public:
-      basic_iterator()
-        : m_interpreter(0)
-      {}
-
-      template<class ValueWrapper>
-      explicit basic_iterator(ValueWrapper const& value_wrapper)
-        : m_interpreter(
-              value_wrapper_traits<ValueWrapper>::interpreter(value_wrapper)
-          )
-      {
-          detail::stack_pop pop(m_interpreter, 1);
-          value_wrapper_traits<ValueWrapper>::unwrap(m_interpreter, value_wrapper);
-
-          lua_pushnil(m_interpreter);
-          if (lua_next(m_interpreter, -2) != 0)
-          {
-              detail::stack_pop pop(m_interpreter, 2);
-              handle(m_interpreter, -2).swap(m_key);
-          }
-          else
-          {
-              m_interpreter = 0;
-              return;
-          }
-
-          handle(m_interpreter, -1).swap(m_table);
-      }
-
-      adl::object key() const;
-
-  private:
-      friend class boost::iterator_core_access;
-
-      void increment()
-      {
-          m_table.push(m_interpreter);
-          m_key.push(m_interpreter);
-
-          detail::stack_pop pop(m_interpreter, 1);
-
-          if (lua_next(m_interpreter, -2) != 0)
-          {
-              m_key.replace(m_interpreter, -2);
-              lua_pop(m_interpreter, 2);
-          }
-          else
-          {
-              m_interpreter = 0;
-              handle().swap(m_table);
-              handle().swap(m_key);
-          }
-      }
-
-      bool equal(basic_iterator const& other) const
-      {
-          if (m_interpreter == 0 && other.m_interpreter == 0)
-              return true;
-
-          if (m_interpreter != other.m_interpreter)
-              return false;
-
-          detail::stack_pop pop(m_interpreter, 2);
-          m_key.push(m_interpreter);
-          other.m_key.push(m_interpreter);
-          return lua_equal(m_interpreter, -2, -1) != 0;
-      }
-
-      adl::iterator_proxy<AccessPolicy> dereference() const 
-      {
-          return adl::iterator_proxy<AccessPolicy>(m_interpreter, m_table, m_key);
-      }
-
-      lua_State* m_interpreter;
-      handle m_table;
-      handle m_key;
-  };
-
-// Needed because of some strange ADL issues.
-// fixed by LiXizhi 2016.3.8: for higher boost version, this is not needed
-// another way is to change boost::operator to boost::iterators::operator
-
-#if BOOST_VERSION < 105700
-#define LUABIND_OPERATOR_ADL_WKND(op) \
-  inline bool operator op( \
-      basic_iterator<basic_access> const& x \
-    , basic_iterator<basic_access> const& y) \
-  { \
-      return boost::operator op(x, y); \
-  } \
- \
-  inline bool operator op( \
-      basic_iterator<raw_access> const& x \
-    , basic_iterator<raw_access> const& y) \
-  { \
-      return boost::operator op(x, y); \
-  }
-
-  LUABIND_OPERATOR_ADL_WKND(==)
-  LUABIND_OPERATOR_ADL_WKND(!=)
-
-#undef LUABIND_OPERATOR_ADL_WKND
-#endif
- 
 } // namespace detail
 
 namespace adl
 {
- 
-#ifdef LUABIND_USE_VALUE_WRAPPER_TAG
-  struct index_proxy_tag;    
-#endif
-
-  template<class Next>
-  class index_proxy
-    : public object_interface<index_proxy<Next> >
-  {
-  public:
-#ifdef LUABIND_USE_VALUE_WRAPPER_TAG
-      typedef index_proxy_tag value_wrapper_tag;
-#endif
-
-      typedef index_proxy<Next> this_type;
-
-      template<class Key>
-      index_proxy(Next const& next, lua_State* interpreter, Key const& key)
-        : m_interpreter(interpreter)
-        , m_key_index(lua_gettop(interpreter) + 1)
-        , m_next(next)
-      {
-          detail::push(m_interpreter, key);
-      }
-
-      index_proxy(index_proxy const& other)
-        : m_interpreter(other.m_interpreter)
-        , m_key_index(other.m_key_index)
-        , m_next(other.m_next)
-      {
-          other.m_interpreter = 0;
-      }
-
-      ~index_proxy()
-      {
-          if (m_interpreter)
-              lua_pop(m_interpreter, 1);
-      }
-
-      // This is non-const to prevent conversion on lvalues.
-      operator object();
-
-		// this will set the value to nil
-		this_type& operator=(luabind::detail::nil_type)
-		{
-	       value_wrapper_traits<Next>::unwrap(m_interpreter, m_next);
-          detail::stack_pop pop(m_interpreter, 1);
-
-          lua_pushvalue(m_interpreter, m_key_index);
-			 lua_pushnil(m_interpreter);
-          lua_settable(m_interpreter, -3);
-          return *this;
-		}
-		
-      template<class T>
-      this_type& operator=(T const& value)
-      {
-          value_wrapper_traits<Next>::unwrap(m_interpreter, m_next);
-          detail::stack_pop pop(m_interpreter, 1);
-
-          lua_pushvalue(m_interpreter, m_key_index);
-          detail::push(m_interpreter, value);
-          lua_settable(m_interpreter, -3);
-          return *this;
-      }
-
-      this_type& operator=(this_type const& value)
-      {
-          value_wrapper_traits<Next>::unwrap(m_interpreter, m_next);
-          detail::stack_pop pop(m_interpreter, 1);
-
-          lua_pushvalue(m_interpreter, m_key_index);
-          detail::push(m_interpreter, value);
-          lua_settable(m_interpreter, -3);
-          return *this;
-      }
-
-      template<class T>
-      index_proxy<this_type> operator[](T const& key)
-      {
-          return index_proxy<this_type>(*this, m_interpreter, key);
-      }
-
-      void push(lua_State* interpreter);
-
-      lua_State* interpreter() const
-      {
-          return m_interpreter;
-      }
-
-  private:
-		struct hidden_type {};
-		
-//      this_type& operator=(index_proxy<Next> const&);
-
-      mutable lua_State* m_interpreter;
-      int m_key_index;
-
-      Next const& m_next;
-  };
-
-} // namespace adl
-
-typedef detail::basic_iterator<detail::basic_access> iterator;
-typedef detail::basic_iterator<detail::raw_access> raw_iterator;
-
-#ifndef LUABIND_USE_VALUE_WRAPPER_TAG
-template<class T>
-struct value_wrapper_traits<adl::index_proxy<T> >
-#else
-template<>
-struct value_wrapper_traits<adl::index_proxy_tag>
-#endif
-{
-    typedef boost::mpl::true_ is_specialized;
-
-    template<class Next>
-    static lua_State* interpreter(adl::index_proxy<Next> const& proxy)
-    {
-        return proxy.interpreter();
-    }
-
-    template<class Next>
-    static void unwrap(lua_State* interpreter, adl::index_proxy<Next> const& proxy)
-    {
-        const_cast<adl::index_proxy<Next>&>(proxy).push(interpreter);
-    }
-};
-
-#ifndef LUABIND_USE_VALUE_WRAPPER_TAG
-template<class AccessPolicy>
-struct value_wrapper_traits<adl::iterator_proxy<AccessPolicy> >
-#else
-template<>
-struct value_wrapper_traits<adl::iterator_proxy_tag>
-#endif
-{
-    typedef boost::mpl::true_ is_specialized;
-
-    template<class Proxy>
-    static lua_State* interpreter(Proxy const& p)
-    {
-        return p.interpreter();
-    }
-
-    template<class Proxy>
-    static void unwrap(lua_State* interpreter, Proxy const& p)
-    {
-        // TODO: Why const_cast?
-        const_cast<Proxy&>(p).push(interpreter);
-    }
-};
-
-namespace adl
-{
-
-  // An object holds a reference to a Lua value residing
-  // in the registry.
+  // An object holds a reference to a Lua value residing in the registry.
   class object : public object_interface<object>
   {
   public:
-      object()
+      object() noexcept
       {}
+
+      object(object const&) = default;
+      object(object&&) noexcept = default;
+      object& operator=(object const&) = default;
+      object& operator=(object&&) noexcept = default;
 
       explicit object(handle const& other)
         : m_handle(other)
+      {}
+
+      explicit object(handle&& other) noexcept
+        : m_handle(static_cast<handle&&>(other))
       {}
 
       explicit object(from_stack const& stack_reference)
@@ -755,19 +437,35 @@ namespace adl
           handle(interpreter, -1).swap(m_handle);
       }
 
-      void push(lua_State* interpreter) const;
-      lua_State* interpreter() const;
-      bool is_valid() const;
-
-      template<class T>
-      index_proxy<object> operator[](T const& key) const
+      void push(lua_State* interpreter) const
       {
-          return index_proxy<object>(
-              *this, m_handle.interpreter(), key
-          );
+          m_handle.push(interpreter);
       }
 
-      void swap(object& other)
+      void replace(lua_State* interpreter, int stack_index)
+      {
+          m_handle.replace(interpreter, stack_index);
+      }
+
+      lua_State* interpreter() const noexcept
+      {
+          return m_handle.interpreter();
+      }
+
+      bool is_valid() const noexcept
+      {
+          return m_handle.interpreter() != 0;
+      }
+
+      index_proxy<object> operator[](char const* key) const;
+      index_proxy<object> operator[](int key) const;
+      index_proxy<object> operator[](unsigned int key) const;
+      index_proxy<object> operator[](double key) const;
+
+      template<class T>
+      index_proxy<object> operator[](T const& key) const;
+
+      void swap(object& other) noexcept
       {
           m_handle.swap(other.m_handle);
       }
@@ -776,31 +474,413 @@ namespace adl
       handle m_handle;
   };
 
-  inline void object::push(lua_State* interpreter) const
+#ifdef LUABIND_USE_VALUE_WRAPPER_TAG
+  struct iterator_proxy_tag;
+#endif
+
+  // Zero-stack-push iterator_proxy backed by basic_iterator's cached m_value.
+  template<class AccessPolicy>
+  class iterator_proxy
+    : public object_interface<iterator_proxy<AccessPolicy> >
   {
-      m_handle.push(interpreter);
+  public:
+#ifdef LUABIND_USE_VALUE_WRAPPER_TAG
+      typedef iterator_proxy_tag value_wrapper_tag;
+#endif
+
+      iterator_proxy(
+          lua_State* interpreter
+        , handle const& table
+        , object const& key
+        , object* cached_val
+      ) noexcept
+        : m_interpreter(interpreter)
+        , m_table(&table)
+        , m_key(&key)
+        , m_cached_val(cached_val)
+      {}
+
+      iterator_proxy(iterator_proxy const&) noexcept = default;
+
+      iterator_proxy& operator=(luabind::detail::nil_type)
+      {
+          m_table->push(m_interpreter);
+          m_key->push(m_interpreter);
+          lua_pushnil(m_interpreter);
+          AccessPolicy::set(m_interpreter, -3);
+          lua_pop(m_interpreter, 1);
+          if (m_cached_val)
+              object().swap(*m_cached_val);
+          return *this;
+      }
+
+      template<class T>
+      iterator_proxy& operator=(T const& value)
+      {
+          m_table->push(m_interpreter);
+          m_key->push(m_interpreter);
+          detail::push(m_interpreter, value);
+          if (m_cached_val)
+              m_cached_val->replace(m_interpreter, -1);
+          AccessPolicy::set(m_interpreter, -3);
+          lua_pop(m_interpreter, 1);
+          return *this;
+      }
+
+      template<class Key>
+      index_proxy<iterator_proxy<AccessPolicy> > operator[](Key const& key)
+      {
+          return index_proxy<iterator_proxy<AccessPolicy> >(
+              *this, m_interpreter, key
+          );
+      }
+
+      operator object const&() const noexcept
+      {
+          return *m_cached_val;
+      }
+
+      lua_State* interpreter() const noexcept
+      {
+          return m_interpreter;
+      }
+
+      void push(lua_State* interpreter) const
+      {
+          assert(interpreter == m_interpreter);
+          m_cached_val->push(interpreter);
+      }
+
+  private:
+      lua_State* m_interpreter;
+      handle const* m_table;
+      object const* m_key;
+      object* m_cached_val;
+  };
+
+} // namespace adl
+
+namespace detail
+{
+  template<class AccessPolicy>
+  class basic_iterator
+    : public boost::iterator_facade<
+        basic_iterator<AccessPolicy>
+      , adl::iterator_proxy<AccessPolicy>
+      , boost::single_pass_traversal_tag
+      , adl::iterator_proxy<AccessPolicy>
+    >
+  {
+  public:
+      basic_iterator() noexcept
+        : m_interpreter(0)
+      {}
+
+      template<class ValueWrapper>
+      explicit basic_iterator(ValueWrapper const& value_wrapper)
+        : m_interpreter(
+              value_wrapper_traits<ValueWrapper>::interpreter(value_wrapper)
+          )
+      {
+          if (!m_interpreter)
+              return;
+
+          detail::stack_pop pop(m_interpreter, 1);
+          value_wrapper_traits<ValueWrapper>::unwrap(m_interpreter, value_wrapper);
+
+          lua_pushnil(m_interpreter);
+          if (lua_next(m_interpreter, -2) != 0)
+          {
+              detail::stack_pop pop2(m_interpreter, 2);
+              m_key.replace(m_interpreter, -2);
+              m_value.replace(m_interpreter, -1);
+          }
+          else
+          {
+              m_interpreter = 0;
+              return;
+          }
+
+          handle(m_interpreter, -1).swap(m_table);
+      }
+
+      adl::object const& key() const noexcept
+      {
+          return m_key;
+      }
+
+  private:
+      friend class boost::iterator_core_access;
+
+      void increment()
+      {
+          m_table.push(m_interpreter);
+          m_key.push(m_interpreter);
+
+          detail::stack_pop pop(m_interpreter, 1);
+
+          if (lua_next(m_interpreter, -2) != 0)
+          {
+              m_key.replace(m_interpreter, -2);
+              m_value.replace(m_interpreter, -1);
+              lua_pop(m_interpreter, 2);
+          }
+          else
+          {
+              m_interpreter = 0;
+              handle().swap(m_table);
+              adl::object().swap(m_key);
+              adl::object().swap(m_value);
+          }
+      }
+
+      bool equal(basic_iterator const& other) const
+      {
+          if (m_interpreter == 0 && other.m_interpreter == 0)
+              return true;
+
+          if (m_interpreter != other.m_interpreter)
+              return false;
+
+          detail::stack_pop pop(m_interpreter, 2);
+          m_key.push(m_interpreter);
+          other.m_key.push(m_interpreter);
+          return lua_equal(m_interpreter, -2, -1) != 0;
+      }
+
+      adl::iterator_proxy<AccessPolicy> dereference() const noexcept
+      {
+          return adl::iterator_proxy<AccessPolicy>(
+              m_interpreter, m_table, m_key, &m_value);
+      }
+
+      lua_State* m_interpreter;
+      handle m_table;
+      adl::object m_key;
+      mutable adl::object m_value;
+  };
+
+#if BOOST_VERSION < 105700
+#define LUABIND_OPERATOR_ADL_WKND(op) \
+  inline bool operator op( \
+      basic_iterator<basic_access> const& x \
+    , basic_iterator<basic_access> const& y) \
+  { \
+      return boost::operator op(x, y); \
+  } \
+ \
+  inline bool operator op( \
+      basic_iterator<raw_access> const& x \
+    , basic_iterator<raw_access> const& y) \
+  { \
+      return boost::operator op(x, y); \
   }
 
-  inline lua_State* object::interpreter() const
+  LUABIND_OPERATOR_ADL_WKND(==)
+  LUABIND_OPERATOR_ADL_WKND(!=)
+
+#undef LUABIND_OPERATOR_ADL_WKND
+#endif
+
+} // namespace detail
+
+namespace adl
+{
+
+#ifdef LUABIND_USE_VALUE_WRAPPER_TAG
+  struct index_proxy_tag;
+#endif
+
+  template<class Next>
+  class index_proxy
+    : public object_interface<index_proxy<Next> >
   {
-      return m_handle.interpreter();
+  public:
+#ifdef LUABIND_USE_VALUE_WRAPPER_TAG
+      typedef index_proxy_tag value_wrapper_tag;
+#endif
+
+      typedef index_proxy<Next> this_type;
+
+      // Non-template C-string key constructor: collapses all char[N] literals!
+      index_proxy(Next const& next, lua_State* interpreter, char const* key)
+        : m_interpreter(interpreter)
+        , m_key_index(lua_gettop(interpreter) + 1)
+        , m_num_key(0)
+        , m_next(next)
+      {
+          lua_pushstring(m_interpreter, key);
+      }
+
+      // Value-stored numeric key constructors: 0 Lua stack push in ctor, 0 pop in dtor!
+      index_proxy(Next const& next, lua_State* interpreter, int key) noexcept
+        : m_interpreter(interpreter)
+        , m_key_index(0)
+        , m_num_key(static_cast<lua_Number>(key))
+        , m_next(next)
+      {}
+
+      index_proxy(Next const& next, lua_State* interpreter, unsigned int key) noexcept
+        : m_interpreter(interpreter)
+        , m_key_index(0)
+        , m_num_key(static_cast<lua_Number>(key))
+        , m_next(next)
+      {}
+
+      index_proxy(Next const& next, lua_State* interpreter, double key) noexcept
+        : m_interpreter(interpreter)
+        , m_key_index(0)
+        , m_num_key(static_cast<lua_Number>(key))
+        , m_next(next)
+      {}
+
+      template<class Key>
+      index_proxy(Next const& next, lua_State* interpreter, Key const& key)
+        : m_interpreter(interpreter)
+        , m_key_index(lua_gettop(interpreter) + 1)
+        , m_num_key(0)
+        , m_next(next)
+      {
+          detail::push(m_interpreter, key);
+      }
+
+      index_proxy(index_proxy const& other) noexcept
+        : m_interpreter(other.m_interpreter)
+        , m_key_index(other.m_key_index)
+        , m_num_key(other.m_num_key)
+        , m_next(other.m_next)
+      {
+          other.m_interpreter = 0;
+          other.m_key_index = 0;
+      }
+
+      ~index_proxy()
+      {
+          if (m_key_index != 0 && m_interpreter)
+              lua_pop(m_interpreter, 1);
+      }
+
+      operator object();
+
+      this_type& operator=(luabind::detail::nil_type)
+      {
+          value_wrapper_traits<Next>::unwrap(m_interpreter, m_next);
+          detail::stack_pop pop(m_interpreter, 1);
+
+          push_key();
+          lua_pushnil(m_interpreter);
+          lua_settable(m_interpreter, -3);
+          return *this;
+      }
+
+      template<class T>
+      this_type& operator=(T const& value)
+      {
+          value_wrapper_traits<Next>::unwrap(m_interpreter, m_next);
+          detail::stack_pop pop(m_interpreter, 1);
+
+          push_key();
+          detail::push(m_interpreter, value);
+          lua_settable(m_interpreter, -3);
+          return *this;
+      }
+
+      this_type& operator=(this_type const& value)
+      {
+          value_wrapper_traits<Next>::unwrap(m_interpreter, m_next);
+          detail::stack_pop pop(m_interpreter, 1);
+
+          push_key();
+          detail::push(m_interpreter, value);
+          lua_settable(m_interpreter, -3);
+          return *this;
+      }
+
+      index_proxy<this_type> operator[](char const* key)
+      {
+          return index_proxy<this_type>(*this, m_interpreter, key);
+      }
+
+      index_proxy<this_type> operator[](int key) noexcept
+      {
+          return index_proxy<this_type>(*this, m_interpreter, key);
+      }
+
+      template<class T>
+      index_proxy<this_type> operator[](T const& key)
+      {
+          return index_proxy<this_type>(*this, m_interpreter, key);
+      }
+
+      void push(lua_State* interpreter);
+
+      lua_State* interpreter() const noexcept
+      {
+          return m_interpreter;
+      }
+
+  private:
+      void push_key() const
+      {
+          if (m_key_index != 0)
+              lua_pushvalue(m_interpreter, m_key_index);
+          else
+              lua_pushnumber(m_interpreter, m_num_key);
+      }
+
+      mutable lua_State* m_interpreter;
+      mutable int m_key_index;
+      lua_Number m_num_key;
+
+      Next const& m_next;
+  };
+
+  inline index_proxy<object> object::operator[](char const* key) const
+  {
+      return index_proxy<object>(*this, m_handle.interpreter(), key);
   }
 
-  inline bool object::is_valid() const
+  inline index_proxy<object> object::operator[](int key) const
   {
-      return m_handle.interpreter() != 0;
+      return index_proxy<object>(*this, m_handle.interpreter(), key);
+  }
+
+  inline index_proxy<object> object::operator[](unsigned int key) const
+  {
+      return index_proxy<object>(*this, m_handle.interpreter(), key);
+  }
+
+  inline index_proxy<object> object::operator[](double key) const
+  {
+      return index_proxy<object>(*this, m_handle.interpreter(), key);
+  }
+
+  template<class T>
+  inline index_proxy<object> object::operator[](T const& key) const
+  {
+      return index_proxy<object>(*this, m_handle.interpreter(), key);
   }
 
   class argument : public object_interface<argument>
   {
   public:
-	  argument(from_stack const& stack_reference)
-		: m_interpreter(stack_reference.interpreter)
-		, m_index(stack_reference.index)
-	  {
-		  if (m_index < 0)
-			  m_index = lua_gettop(m_interpreter) - m_index + 1;
-	  }
+      argument(from_stack const& stack_reference)
+        : m_interpreter(stack_reference.interpreter)
+        , m_index(stack_reference.index)
+      {
+          if (m_index < 0)
+              m_index = lua_gettop(m_interpreter) - m_index + 1;
+      }
+
+      index_proxy<argument> operator[](char const* key) const
+      {
+          return index_proxy<argument>(*this, m_interpreter, key);
+      }
+
+      index_proxy<argument> operator[](int key) const noexcept
+      {
+          return index_proxy<argument>(*this, m_interpreter, key);
+      }
 
       template<class T>
       index_proxy<argument> operator[](T const& key) const
@@ -808,22 +888,71 @@ namespace adl
           return index_proxy<argument>(*this, m_interpreter, key);
       }
 
-	  void push(lua_State* L) const
-	  {
-		  lua_pushvalue(L, m_index);
-	  }
+      void push(lua_State* L) const
+      {
+          lua_pushvalue(L, m_index);
+      }
 
-	  lua_State* interpreter() const
-	  {
-		  return m_interpreter;
-	  }
+      lua_State* interpreter() const noexcept
+      {
+          return m_interpreter;
+      }
 
   private:
-	  lua_State* m_interpreter;
-	  int m_index;
+      lua_State* m_interpreter;
+      int m_index;
   };
 
 } // namespace adl
+
+typedef detail::basic_iterator<detail::basic_access> iterator;
+typedef detail::basic_iterator<detail::raw_access> raw_iterator;
+
+#ifndef LUABIND_USE_VALUE_WRAPPER_TAG
+template<class T>
+struct value_wrapper_traits<adl::index_proxy<T> >
+#else
+template<>
+struct value_wrapper_traits<adl::index_proxy_tag>
+#endif
+{
+    typedef boost::mpl::true_ is_specialized;
+
+    template<class Next>
+    static lua_State* interpreter(adl::index_proxy<Next> const& proxy) noexcept
+    {
+        return proxy.interpreter();
+    }
+
+    template<class Next>
+    static void unwrap(lua_State* interpreter, adl::index_proxy<Next> const& proxy)
+    {
+        const_cast<adl::index_proxy<Next>&>(proxy).push(interpreter);
+    }
+};
+
+#ifndef LUABIND_USE_VALUE_WRAPPER_TAG
+template<class AccessPolicy>
+struct value_wrapper_traits<adl::iterator_proxy<AccessPolicy> >
+#else
+template<>
+struct value_wrapper_traits<adl::iterator_proxy_tag>
+#endif
+{
+    typedef boost::mpl::true_ is_specialized;
+
+    template<class Proxy>
+    static lua_State* interpreter(Proxy const& p) noexcept
+    {
+        return p.interpreter();
+    }
+
+    template<class Proxy>
+    static void unwrap(lua_State* interpreter, Proxy const& p)
+    {
+        p.push(interpreter);
+    }
+};
 
 using adl::object;
 using adl::argument;
@@ -857,7 +986,7 @@ struct value_wrapper_traits<object>
 {
     typedef boost::mpl::true_ is_specialized;
 
-    static lua_State* interpreter(object const& value)
+    static lua_State* interpreter(object const& value) noexcept
     {
         return value.interpreter();
     }
@@ -867,7 +996,7 @@ struct value_wrapper_traits<object>
         value.push(interpreter);
     }
 
-    static bool check(...)
+    static bool check(...) noexcept
     {
         return true;
     }
@@ -878,7 +1007,7 @@ struct value_wrapper_traits<argument>
 {
     typedef boost::mpl::true_ is_specialized;
 
-    static lua_State* interpreter(argument const& value)
+    static lua_State* interpreter(argument const& value) noexcept
     {
         return value.interpreter();
     }
@@ -888,7 +1017,7 @@ struct value_wrapper_traits<argument>
         value.push(interpreter);
     }
 
-    static bool check(...)
+    static bool check(...) noexcept
     {
         return true;
     }
@@ -901,7 +1030,7 @@ inline void adl::index_proxy<Next>::push(lua_State* interpreter)
 
     value_wrapper_traits<Next>::unwrap(m_interpreter, m_next);
 
-    lua_pushvalue(m_interpreter, m_key_index);
+    push_key();
     lua_gettable(m_interpreter, -2);
     lua_remove(m_interpreter, -2);
 }
@@ -914,22 +1043,7 @@ inline adl::index_proxy<Next>::operator object()
     return object(from_stack(m_interpreter, -1));
 }
 
-template<class AccessPolicy>
-adl::iterator_proxy<AccessPolicy>::operator object()
-{
-    lua_pushvalue(m_interpreter, m_key_index);
-    AccessPolicy::get(m_interpreter, m_table_index);
-    detail::stack_pop pop(m_interpreter, 1);
-    return object(from_stack(m_interpreter, -1));
-}
-
-template<class AccessPolicy>
-object detail::basic_iterator<AccessPolicy>::key() const
-{
-    return object(m_key);
-}
-
-namespace detail 
+namespace detail
 {
 
   template<
@@ -952,7 +1066,7 @@ namespace detail
       );
 
 #ifndef LUABIND_NO_ERROR_CHECKING
-      if (!interpreter) 
+      if (LUABIND_UNLIKELY(!interpreter))
           return ErrorPolicy::handle_error(interpreter, typeid(void));
 #endif
 
@@ -968,7 +1082,7 @@ namespace detail
       typename mpl::apply_wrap2<converter_generator, T, lua_to_cpp>::type cv;
 
 #ifndef LUABIND_NO_ERROR_CHECKING
-      if (cv.match(interpreter, LUABIND_DECORATE_TYPE(T), -1) < 0)
+      if (LUABIND_UNLIKELY(cv.match(interpreter, LUABIND_DECORATE_TYPE(T), -1) < 0))
       {
           return ErrorPolicy::handle_error(interpreter, typeid(T));
       }
@@ -979,7 +1093,7 @@ namespace detail
 
 # ifdef BOOST_MSVC
 #  pragma warning(push)
-#  pragma warning(disable:4702) // unreachable code
+#  pragma warning(disable:4702)
 # endif
 
   template<class T>
@@ -987,17 +1101,7 @@ namespace detail
   {
       static T handle_error(lua_State* interpreter, type_id const& type_info)
       {
-#ifndef LUABIND_NO_EXCEPTIONS
-          throw cast_failed(interpreter, type_info);
-#else
-          cast_failed_callback_fun e = get_cast_failed_callback();
-          if (e) e(interpreter, type_info);
-
-          assert(0 && "object_cast failed. If you want to handle this error use "
-              "luabind::set_error_callback()");
-          std::terminate();
-#endif
-          return *(typename boost::remove_reference<T>::type*)0;
+          throw_cast_failed_aux(interpreter, type_info);
       }
   };
 
@@ -1071,14 +1175,14 @@ namespace detail
   struct push_args_from_tuple
   {
       template<class H, class T, class Policies>
-      inline static void apply(lua_State* L, const boost::tuples::cons<H, T>& x, const Policies& p) 
+      inline static void apply(lua_State* L, const boost::tuples::cons<H, T>& x, const Policies& p)
       {
           convert_to_lua_p<Index>(L, *x.get_head(), p);
           push_args_from_tuple<Index+1>::apply(L, x.get_tail(), p);
       }
 
       template<class H, class T>
-      inline static void apply(lua_State* L, const boost::tuples::cons<H, T>& x) 
+      inline static void apply(lua_State* L, const boost::tuples::cons<H, T>& x)
       {
           convert_to_lua(L, *x.get_head());
           push_args_from_tuple<Index+1>::apply(L, x.get_tail());
@@ -1175,9 +1279,6 @@ namespace adl
       );
   }
 
-  // Simple value_wrapper adaptor with the sole purpose of helping with
-  // overload resolution. Use this as a function parameter type instead
-  // of "object" or "argument" to restrict the parameter to Lua tables.
   template <class Base = object>
   struct table : Base
   {
@@ -1208,7 +1309,6 @@ inline object newtable(lua_State* interpreter)
     return object(from_stack(interpreter, -1));
 }
 
-// this could be optimized by returning a proxy
 inline object globals(lua_State* interpreter)
 {
     lua_pushvalue(interpreter, LUA_GLOBALSINDEX);
@@ -1216,7 +1316,6 @@ inline object globals(lua_State* interpreter)
     return object(from_stack(interpreter, -1));
 }
 
-// this could be optimized by returning a proxy
 inline object registry(lua_State* interpreter)
 {
     lua_pushvalue(interpreter, LUA_REGISTRYINDEX);
@@ -1245,8 +1344,6 @@ inline void settable(ValueWrapper const& table, K const& key, T const& value)
         table
     );
 
-    // TODO: Exception safe?
-    
     value_wrapper_traits<ValueWrapper>::unwrap(interpreter, table);
     detail::stack_pop pop(interpreter, 1);
     detail::push(interpreter, key);
@@ -1275,8 +1372,6 @@ inline void rawset(ValueWrapper const& table, K const& key, T const& value)
         table
     );
 
-    // TODO: Exception safe?
-    
     value_wrapper_traits<ValueWrapper>::unwrap(interpreter, table);
     detail::stack_pop pop(interpreter, 1);
     detail::push(interpreter, key);
@@ -1382,9 +1477,7 @@ object property(GetValueWrapper const& get)
     );
 
     value_wrapper_traits<GetValueWrapper>::unwrap(interpreter, get);
-    lua_pushnil(interpreter);
-
-    lua_pushcclosure(interpreter, &detail::property_tag, 2);
+    detail::push_property_closure(interpreter, false);
     detail::stack_pop pop(interpreter, 1);
 
     return object(from_stack(interpreter, -1));
@@ -1400,15 +1493,12 @@ object property(GetValueWrapper const& get, SetValueWrapper const& set)
     value_wrapper_traits<GetValueWrapper>::unwrap(interpreter, get);
     value_wrapper_traits<SetValueWrapper>::unwrap(interpreter, set);
 
-    lua_pushcclosure(interpreter, &detail::property_tag, 2);
+    detail::push_property_closure(interpreter, true);
     detail::stack_pop pop(interpreter, 1);
 
     return object(from_stack(interpreter, -1));
-
 }
-
 
 } // namespace luabind
 
 #endif // LUABIND_OBJECT_050419_HPP
-

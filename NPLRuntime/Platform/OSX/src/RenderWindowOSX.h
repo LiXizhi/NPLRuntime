@@ -12,6 +12,7 @@ namespace ParaEngine
     {
     public:
         RenderWindowOSX(const int width,const int height);
+        explicit RenderWindowOSX(NSWindow* existingWindow);
         virtual ~RenderWindowOSX() override;
     public:
         virtual unsigned int GetWidth() const override;
@@ -41,6 +42,9 @@ namespace ParaEngine
         void OnFlagsChanged(NSEvent* event);
         void OnScrollWheel(NSEvent* event);
         void OnInsertText(NSString* string);
+        bool ShouldAcceptTextInput() const;
+        bool ShouldEnableIME() const;
+        void SyncIMEState();
         
         NSRect GetCharacterRect();
     private:

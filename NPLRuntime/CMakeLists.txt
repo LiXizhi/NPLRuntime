@@ -371,6 +371,19 @@ if (NPLRUNTIME_BUILD_TESTS AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tests/rhi_tes
 		target_link_libraries(IOSWritablePathTest PRIVATE ParaEngine "-framework Foundation")
 		target_link_options(IOSWritablePathTest PRIVATE "-Wl,-dead_strip")
 		add_test(NAME ios_writable_path_host COMMAND IOSWritablePathTest)
+
+		add_executable(MacIMETextInputFocusTest
+			tests/MacIMETextInputFocusTest.mm
+			tests/rhi_tests/headless_platform_stubs.cpp
+			Platform/OSX/src/RenderViewOSX.mm
+			Platform/OSX/src/RenderWindowOSX.mm)
+		target_include_directories(MacIMETextInputFocusTest PRIVATE
+			${CMAKE_CURRENT_SOURCE_DIR}/ParaEngine
+			${CMAKE_CURRENT_SOURCE_DIR}/Platform/OSX/src)
+		target_compile_definitions(MacIMETextInputFocusTest PRIVATE NPL_TEST_PLATFORM_RENDER_WINDOW)
+		target_link_libraries(MacIMETextInputFocusTest PRIVATE ParaEngine "-framework Cocoa" "-framework Carbon")
+		target_link_options(MacIMETextInputFocusTest PRIVATE "-Wl,-dead_strip")
+		add_test(NAME mac_ime_text_input_focus COMMAND MacIMETextInputFocusTest)
 	endif()
 	if (APPLE AND NOT IOS AND TARGET luajit21)
 		add_executable(MacLuaJITSmoke tests/MacLuaJITSmoke.c)

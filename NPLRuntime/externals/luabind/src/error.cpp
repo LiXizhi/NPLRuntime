@@ -23,7 +23,8 @@
 #define LUABIND_BUILDING
 
 #include <luabind/error.hpp>
-
+#include <cassert>
+#include <exception>
 
 namespace luabind
 {
@@ -37,11 +38,7 @@ namespace luabind
 #endif
 	}
 
-
 #ifdef LUABIND_NO_EXCEPTIONS
-
-	typedef void(*error_callback_fun)(lua_State*);
-	typedef void(*cast_failed_callback_fun)(lua_State*, type_id const&);
 
 	void set_error_callback(error_callback_fun e)
 	{
@@ -64,6 +61,22 @@ namespace luabind
 	}
 
 #endif
+
+	namespace detail
+	{
+		[[noreturn]] LUABIND_API LUABIND_NOINLINE void throw_cast_failed_aux(
+			lua_State* L, type_id const& info)
+		{
+#ifndef LUABIND_NO_EXCEPTIONS
+			throw cast_failed(L, info);
+#else
+			if (cast_failed_callback)
+				cast_failed_callback(L, info);
+			assert(0 && "object_cast failed. If you want to handle this error use luabind::set_error_callback()");
+			std::terminate();
+#endif
+		}
+	}
 
 	void set_pcall_callback(pcall_callback_fun e)
 	{
