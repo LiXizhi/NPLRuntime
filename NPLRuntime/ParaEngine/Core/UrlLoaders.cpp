@@ -560,6 +560,8 @@ void ParaEngine::CUrlProcessor::SetResourceError()
 }
 
 
+// Callback code follows the generated msg table on a new line. Legacy callbacks
+// can supply their own semicolon, and Lua 5.1 rejects two consecutive delimiters.
 void ParaEngine::CUrlProcessor::SetScriptCallback(const char* sCallback)
 {
 	if (sCallback)
@@ -924,7 +926,7 @@ size_t ParaEngine::CUrlProcessor::write_data_callback(void *buffer, size_t size,
 				writer.WriteName("type");
 				writer.WriteValue("stream");
 				writer.EndTable();
-				writer.WriteParamDelimiter();
+				writer.Append("\n");
 				writer.Append(m_sNPLCallback.c_str());
 				InvokeCallbackScript(writer.ToString().c_str(), (int)(writer.ToString().size()));
 			}
@@ -1002,7 +1004,7 @@ int ParaEngine::CUrlProcessor::progress_callback(double dltotal, double dlnow, d
 				writer.WriteValue((int)m_lastDownloadSize);
 			}
 			writer.EndTable();
-			writer.WriteParamDelimiter();
+			writer.Append("\n");
 			writer.Append(m_sNPLCallback.c_str());
 
 			InvokeCallbackScript(writer.ToString().c_str(), (int)(writer.ToString().size()));
@@ -1112,7 +1114,7 @@ void ParaEngine::CUrlProcessor::CompleteTask()
 		writer.WriteName("rcode");
 		writer.WriteValue(m_responseCode);
 		writer.EndTable();
-		writer.WriteParamDelimiter();
+		writer.Append("\n");
 		writer.Append(m_sNPLCallback.c_str());
 
 		InvokeCallbackScript(writer.ToString().c_str(), (int)(writer.ToString().size()));
