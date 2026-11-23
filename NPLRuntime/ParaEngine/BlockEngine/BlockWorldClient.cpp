@@ -32,6 +32,7 @@
 #include "ViewportManager.h"
 #include "LightObject.h"
 #include "NPLHelper.h"
+#include "util/ParaTime.h"
 #include "util/os_calls.h"
 #include "ChunkVertexBuilderManager.h"
 #include "MultiFrameBlockWorldRenderer.h"
@@ -48,10 +49,6 @@
 
 // define to output log for debugging.
 //#define PRINT_CHUNK_LOG
-
-#ifdef PRINT_CHUNK_LOG
-#include "ParaTime.h"
-#endif
 
 namespace ParaEngine
 {
