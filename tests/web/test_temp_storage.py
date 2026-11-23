@@ -106,6 +106,7 @@ def regression(engine, threaded=False):
               FS.writeFile(p + '1','ordinary hash-shaped file');
               FS.writeFile(p + '.tmp','ordinary');
               FS.symlink('/temp/moved/data','/temp/link');
+              FS.symlink('/temp/missing','/temp/dangling');
               FS.writeFile('/temp/haqi-wardrobe/packages/installed','wardrobe');
             }""", CACHE_PATH)
             deadline = time.monotonic() + 5
@@ -128,6 +129,8 @@ def regression(engine, threaded=False):
             second.evaluate("sync(false)")
             second.close()
             open_game(page)
+            assert page.evaluate("FS.readlink('/temp/link')") == "/temp/moved/data"
+            assert page.evaluate("FS.readlink('/temp/dangling')") == "/temp/missing"
             restored = page.evaluate("""p => {
               const read = name => FS.readFile(name, {encoding:'utf8'});
               return [read('/temp/link'), read('/temp/preloaded/seed'), read('/temp/cache/notes'),

@@ -201,11 +201,16 @@ addToLibrary({
           if (mount.assets.has(path)) {
             store.delete(path);
           } else if (node && node.mount === mount) {
-            IDBFS.loadLocalEntry(path, (err, entry) => {
-              if (err) throw err;
-              store.put(entry, path);
-              node.savedInTemp = true;
-            });
+            // Some IDBFS versions stat the target but read the link node's empty contents.
+            if (FS.isLink(node.mode)) {
+              store.put({mode: node.mode, link: node.link, timestamp: node.node_ops.getattr(node).mtime}, path);
+            } else {
+              IDBFS.loadLocalEntry(path, (err, entry) => {
+                if (err) throw err;
+                store.put(entry, path);
+              });
+            }
+            node.savedInTemp = true;
           } else if (!node) {
             // A packaged default is recreated on every boot unless its deletion is recorded.
             if (mount.defaults.has(path)) store.put({deleted: true}, path);
