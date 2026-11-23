@@ -204,20 +204,29 @@ namespace ParaEngine {
 				m_lettersInfo.resize(stringLen);
 				for (size_t i = 0; i < stringLen; i++)
 				{
-					char16_t c = utf16Text[i];
-					if (fontAtlas->getLetterDefinitionForChar(c, tempDefinition))
+					size_t consumed = 1;
+					const char32_t cpKey = decodeUTF16CodePointWithVS(utf16Text, i, consumed);
+					if (fontAtlas->getLetterDefinitionForChar(cpKey, tempDefinition))
 					{
 						charAdvance = tempDefinition.xAdvance;
 					}
 					else
 					{
-						charAdvance = -1;
+						charAdvance = 0;
 					}
 
 					auto& curInfo = m_lettersInfo[i];
 					curInfo.x = nextFontPositionX;
 					curInfo.y = charAdvance + horizontalKernings[i];
 					nextFontPositionX += charAdvance + horizontalKernings[i];
+
+					if (consumed == 2 && (i + 1) < stringLen)
+					{
+						auto& trailInfo = m_lettersInfo[i + 1];
+						trailInfo.x = nextFontPositionX;
+						trailInfo.y = 0;
+						++i;
+					}
 				}
 
 				delete[] horizontalKernings;

@@ -1,3 +1,9 @@
+#if defined(__APPLE__)
+#include <CoreFoundation/CoreFoundation.h>
+#include <CoreGraphics/CoreGraphics.h>
+#include <CoreText/CoreText.h>
+#endif
+
 #include "ParaEngine.h"
 #include "edtaa3func.h"
 
@@ -9,7 +15,9 @@
 #include FT_TRUETYPE_TABLES_H
 #include FT_TRUETYPE_TAGS_H
 
+#include <algorithm>
 #include <cmath>
+#include <cstring>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -295,11 +303,30 @@ bool FontFreeType::createFontObject(const std::string &fontName, float fontSize)
     }
 
     // set the requested font size
+    _requestedFontSize = fontSize;
     int dpi = 72;
     const float scaledFontSize = fontSize * GL_CONTENT_SCALE_FACTOR();
     int fontSizePoints = static_cast<int>(std::floor(64.f * scaledFontSize + 0.5f));
     if (FT_Set_Char_Size(face, fontSizePoints, fontSizePoints, dpi, dpi))
-        return false;
+    {
+        // Fixed-size bitmap fonts (e.g. color emoji) may have fixed strikes instead of scalable outlines
+        if (face->num_fixed_sizes > 0)
+        {
+            int bestIdx = 0;
+            int bestDiff = 100000;
+            for (int s = 0; s < face->num_fixed_sizes; ++s)
+            {
+                int diff = std::abs(face->available_sizes[s].height - static_cast<int>(scaledFontSize));
+                if (diff < bestDiff) { bestDiff = diff; bestIdx = s; }
+            }
+            if (FT_Select_Size(face, bestIdx))
+                return false;
+        }
+        else
+        {
+            return false;
+        }
+    }
 
     // store the face globally
     _fontRef = face;
@@ -400,11 +427,18 @@ FontFreeType::~FontFreeType()
         {
             FT_Done_Face(_fallbackFontRef);
         }
+        for (FT_Face extraFace : _extraFallbackFaces)
+        {
+            if (extraFace)
+                FT_Done_Face(extraFace);
+        }
     }
+    _extraFallbackFaces.clear();
 
-    if (!_fontName.empty())
-    {
-        auto it = s_cacheFontData.find(_fontName);
+    auto decRefCache = [](const std::string& name) {
+        if (name.empty())
+            return;
+        auto it = s_cacheFontData.find(name);
         if (it != s_cacheFontData.end())
         {
             if (it->second.referenceCount <= 1)
@@ -412,19 +446,15 @@ FontFreeType::~FontFreeType()
             else
                 it->second.referenceCount -= 1;
         }
-    }
+    };
 
-    if (!_fallbackFontName.empty())
+    decRefCache(_fontName);
+    decRefCache(_fallbackFontName);
+    for (const auto& extraName : _extraFallbackNames)
     {
-        auto it = s_cacheFontData.find(_fallbackFontName);
-        if (it != s_cacheFontData.end())
-        {
-            if (it->second.referenceCount <= 1)
-                s_cacheFontData.erase(it);
-            else
-                it->second.referenceCount -= 1;
-        }
+        decRefCache(extraName);
     }
+    _extraFallbackNames.clear();
 }
 
 GLFontAtlas * FontFreeType::createFontAtlas()
@@ -508,8 +538,417 @@ const char* FontFreeType::getFontFamily() const
     return _fontRef->family_name;
 }
 
-unsigned char* FontFreeType::getGlyphBitmap(unsigned short theChar, long &outWidth, long &outHeight, CCRect &outRect,int &xAdvance)
+namespace
 {
+	bool isDefaultColorEmoji(char32_t cp, bool explicitEmojiVS)
+	{
+		if (explicitEmojiVS)
+			return true;
+		if (cp >= 0x1F000u && cp <= 0x1FAFFu)
+			return true;
+		if (cp >= 0x1F1E6u && cp <= 0x1F1FFu)
+			return true;
+		switch (cp)
+		{
+		case 0x231Au: case 0x231Bu:
+		case 0x23E9u: case 0x23EAu: case 0x23EBu: case 0x23ECu: case 0x23F0u: case 0x23F3u:
+		case 0x25FDu: case 0x25FEu:
+		case 0x2614u: case 0x2615u:
+		case 0x2648u: case 0x2649u: case 0x264Au: case 0x264Bu: case 0x264Cu: case 0x264Du:
+		case 0x264Eu: case 0x264Fu: case 0x2650u: case 0x2651u: case 0x2652u: case 0x2653u:
+		case 0x267Fu: case 0x2693u: case 0x26A1u: case 0x26AAu: case 0x26ABu:
+		case 0x26BDu: case 0x26BEu: case 0x26C4u: case 0x26C5u: case 0x26CEu: case 0x26D4u:
+		case 0x26EAu: case 0x26F2u: case 0x26F3u: case 0x26F5u: case 0x26FAu: case 0x26FDu:
+		case 0x2705u: case 0x270Au: case 0x270Bu: case 0x2728u: case 0x274Cu: case 0x274Eu:
+		case 0x2753u: case 0x2754u: case 0x2755u: case 0x2757u:
+		case 0x2795u: case 0x2796u: case 0x2797u: case 0x27B0u: case 0x27BFu:
+		case 0x2B1Bu: case 0x2B1Cu: case 0x2B50u: case 0x2B55u:
+			return true;
+		default:
+			return false;
+		}
+	}
+
+#if defined(__APPLE__)
+	unsigned char* rasterizeCoreTextFallbackOrEmoji(
+		char32_t cp, float scaledFontSize, bool bold, bool wantColorEmoji,
+		long& outWidth, long& outHeight, CCRect& outRect, int& xAdvance, bool& outIsColor)
+	{
+		if (cp == 0 || scaledFontSize <= 1.0f)
+			return nullptr;
+
+		UniChar chars[2];
+		CFIndex charLen = 0;
+		if (cp <= 0xFFFFu)
+		{
+			chars[0] = static_cast<UniChar>(cp);
+			charLen = 1;
+		}
+		else if (cp <= 0x10FFFFu)
+		{
+			const char32_t u = cp - 0x10000u;
+			chars[0] = static_cast<UniChar>(0xD800u + (u >> 10));
+			chars[1] = static_cast<UniChar>(0xDC00u + (u & 0x3FFu));
+			charLen = 2;
+		}
+		else
+		{
+			return nullptr;
+		}
+
+		CTFontRef targetFont = nullptr;
+		bool isEmojiFont = false;
+
+		if (wantColorEmoji)
+		{
+			const CGFloat emojiPt = static_cast<CGFloat>(scaledFontSize * 0.90f);
+			targetFont = CTFontCreateWithName(CFSTR("Apple Color Emoji"), emojiPt, nullptr);
+			if (targetFont)
+			{
+				CGGlyph testGlyphs[2] = { 0, 0 };
+				if (CTFontGetGlyphsForCharacters(targetFont, chars, testGlyphs, charLen) && testGlyphs[0] != 0)
+				{
+					isEmojiFont = true;
+				}
+				else
+				{
+					CFRelease(targetFont);
+					targetFont = nullptr;
+				}
+			}
+		}
+
+		if (!targetFont)
+		{
+			CTFontRef baseSysFont = CTFontCreateUIFontForLanguage(
+				bold ? kCTFontUIFontEmphasizedSystem : kCTFontUIFontSystem,
+				static_cast<CGFloat>(scaledFontSize), nullptr);
+			if (!baseSysFont)
+				return nullptr;
+
+			CFStringRef cfStr = CFStringCreateWithCharacters(kCFAllocatorDefault, chars, charLen);
+			if (cfStr)
+			{
+				targetFont = CTFontCreateForString(baseSysFont, cfStr, CFRangeMake(0, charLen));
+				CFRelease(cfStr);
+			}
+			CFRelease(baseSysFont);
+			if (!targetFont)
+				return nullptr;
+
+			CFStringRef famName = CTFontCopyFamilyName(targetFont);
+			if (famName)
+			{
+				if (CFStringFind(famName, CFSTR("Emoji"), kCFCompareCaseInsensitive).location != kCFNotFound)
+					isEmojiFont = true;
+				CFRelease(famName);
+			}
+		}
+
+		CGGlyph glyphs[2] = { 0, 0 };
+		if (!CTFontGetGlyphsForCharacters(targetFont, chars, glyphs, charLen) || glyphs[0] == 0)
+		{
+			CFRelease(targetFont);
+			return nullptr;
+		}
+
+		CGSize adv = CGSizeZero;
+		CTFontGetAdvancesForGlyphs(targetFont, kCTFontOrientationHorizontal, &glyphs[0], &adv, 1);
+		CGRect bbox = CGRectZero;
+		CTFontGetBoundingRectsForGlyphs(targetFont, kCTFontOrientationHorizontal, &glyphs[0], &bbox, 1);
+
+		xAdvance = static_cast<int>(std::floor(adv.width + 0.5));
+		if (xAdvance <= 0)
+			xAdvance = static_cast<int>(std::floor(scaledFontSize + 0.5f));
+
+		if (bbox.size.width <= 0.05 || bbox.size.height <= 0.05)
+		{
+			CFRelease(targetFont);
+			outWidth = 0;
+			outHeight = 0;
+			outRect.origin.x = 0;
+			outRect.origin.y = 0;
+			outRect.size.width = 0;
+			outRect.size.height = 0;
+			outIsColor = false;
+			return nullptr;
+		}
+
+		const int penX = static_cast<int>(std::ceil((std::max)(0.0, -bbox.origin.x))) + 3;
+		const int penY = static_cast<int>(std::ceil((std::max)(0.0, -bbox.origin.y))) + 3;
+		const int bufW = (std::min)(128, (std::max)(8, static_cast<int>(std::ceil(bbox.size.width + std::fabs(bbox.origin.x))) + 8));
+		const int bufH = (std::min)(128, (std::max)(8, static_cast<int>(std::ceil(bbox.size.height + std::fabs(bbox.origin.y))) + 8));
+
+		std::vector<unsigned char> rgba(static_cast<size_t>(bufW * bufH * 4), 0);
+		CGColorSpaceRef cs = CGColorSpaceCreateDeviceRGB();
+		CGContextRef ctx = CGBitmapContextCreate(
+			rgba.data(), bufW, bufH, 8, bufW * 4, cs,
+			static_cast<uint32_t>(kCGImageAlphaPremultipliedLast) | static_cast<uint32_t>(kCGBitmapByteOrder32Big));
+		CGColorSpaceRelease(cs);
+
+		if (!ctx)
+		{
+			CFRelease(targetFont);
+			return nullptr;
+		}
+
+		CGContextSetAllowsAntialiasing(ctx, true);
+		CGContextSetShouldAntialias(ctx, true);
+		CGContextSetAllowsFontSmoothing(ctx, !isEmojiFont);
+		CGContextSetShouldSmoothFonts(ctx, !isEmojiFont);
+		CGContextSetRGBFillColor(ctx, 1.0, 1.0, 1.0, 1.0);
+
+		CGPoint drawPt = CGPointMake(static_cast<CGFloat>(penX), static_cast<CGFloat>(penY));
+		CTFontDrawGlyphs(targetFont, &glyphs[0], &drawPt, 1, ctx);
+		CGContextRelease(ctx);
+		CFRelease(targetFont);
+
+		// Find tight non-transparent pixel bounds (row 0 is top of image)
+		int minC = bufW, maxC = -1, minR = bufH, maxR = -1;
+		for (int r = 0; r < bufH; ++r)
+		{
+			const unsigned char* rowPtr = rgba.data() + static_cast<size_t>(r * bufW * 4);
+			for (int c = 0; c < bufW; ++c)
+			{
+				if (rowPtr[c * 4 + 3] > 0)
+				{
+					if (c < minC) minC = c;
+					if (c > maxC) maxC = c;
+					if (r < minR) minR = r;
+					if (r > maxR) maxR = r;
+				}
+			}
+		}
+
+		if (maxC < minC || maxR < minR)
+		{
+			outWidth = 0;
+			outHeight = 0;
+			outIsColor = false;
+			return nullptr;
+		}
+
+		const int cropW = maxC - minC + 1;
+		const int cropH = maxR - minR + 1;
+		const int baselineRowFromTop = bufH - penY;
+		const int bitmapTop = baselineRowFromTop - minR;
+
+		outRect.origin.x = static_cast<float>(minC - penX);
+		outRect.origin.y = static_cast<float>(-bitmapTop);
+		outRect.size.width = static_cast<float>(cropW);
+		outRect.size.height = static_cast<float>(cropH);
+		outWidth = cropW;
+		outHeight = cropH;
+		outIsColor = isEmojiFont;
+
+		if (isEmojiFont)
+		{
+			unsigned char* outBuf = new (std::nothrow) unsigned char[static_cast<size_t>(cropW * cropH * 4)];
+			if (!outBuf)
+				return nullptr;
+			for (int r = 0; r < cropH; ++r)
+			{
+				const unsigned char* srcRow = rgba.data() + static_cast<size_t>((minR + r) * bufW * 4);
+				unsigned char* dstRow = outBuf + static_cast<size_t>(r * cropW * 4);
+				for (int c = 0; c < cropW; ++c)
+				{
+					const unsigned char pr = srcRow[(minC + c) * 4 + 0];
+					const unsigned char pg = srcRow[(minC + c) * 4 + 1];
+					const unsigned char pb = srcRow[(minC + c) * 4 + 2];
+					const unsigned char pa = srcRow[(minC + c) * 4 + 3];
+					if (pa > 0 && pa < 255)
+					{
+						dstRow[c * 4 + 0] = static_cast<unsigned char>((std::min)(255, (static_cast<int>(pr) * 255 + pa / 2) / pa));
+						dstRow[c * 4 + 1] = static_cast<unsigned char>((std::min)(255, (static_cast<int>(pg) * 255 + pa / 2) / pa));
+						dstRow[c * 4 + 2] = static_cast<unsigned char>((std::min)(255, (static_cast<int>(pb) * 255 + pa / 2) / pa));
+						dstRow[c * 4 + 3] = pa;
+					}
+					else
+					{
+						dstRow[c * 4 + 0] = pr;
+						dstRow[c * 4 + 1] = pg;
+						dstRow[c * 4 + 2] = pb;
+						dstRow[c * 4 + 3] = pa;
+					}
+				}
+			}
+			return outBuf;
+		}
+		else
+		{
+			unsigned char* outGray = new (std::nothrow) unsigned char[static_cast<size_t>(cropW * cropH)];
+			if (!outGray)
+				return nullptr;
+			for (int r = 0; r < cropH; ++r)
+			{
+				const unsigned char* srcRow = rgba.data() + static_cast<size_t>((minR + r) * bufW * 4);
+				unsigned char* dstRow = outGray + static_cast<size_t>(r * cropW);
+				for (int c = 0; c < cropW; ++c)
+				{
+					dstRow[c] = srcRow[(minC + c) * 4 + 3];
+				}
+			}
+			return outGray;
+		}
+	}
+#endif
+}
+
+bool FontFreeType::addExtraFallbackFont(const std::string &fontPath)
+{
+	if (fontPath.empty() || fontPath == _fontName || fontPath == _fallbackFontName)
+		return false;
+	for (const auto& existing : _extraFallbackNames)
+	{
+		if (existing == fontPath)
+			return false;
+	}
+	if (!CFileUtils::FileExist(fontPath.c_str()))
+		return false;
+
+	auto it = s_cacheFontData.find(fontPath);
+	if (it != s_cacheFontData.end())
+	{
+		it->second.referenceCount += 1;
+	}
+	else
+	{
+		s_cacheFontData[fontPath].referenceCount = 1;
+		s_cacheFontData[fontPath].data = CFileUtils::GetDataFromFile(fontPath.c_str());
+		if (s_cacheFontData[fontPath].data.isNull())
+		{
+			s_cacheFontData.erase(fontPath);
+			return false;
+		}
+	}
+
+	auto releaseCache = [&]() {
+		auto cit = s_cacheFontData.find(fontPath);
+		if (cit != s_cacheFontData.end())
+		{
+			if (cit->second.referenceCount <= 1)
+				s_cacheFontData.erase(cit);
+			else
+				cit->second.referenceCount -= 1;
+		}
+	};
+
+	FT_Face face = nullptr;
+	if (FT_New_Memory_Face(getFTLibrary(), (const FT_Byte*)(s_cacheFontData[fontPath].data.GetBytes()), s_cacheFontData[fontPath].data.GetSize(), 0, &face))
+	{
+		releaseCache();
+		return false;
+	}
+	if (FT_Select_Charmap(face, FT_ENCODING_UNICODE))
+	{
+		FT_Done_Face(face);
+		releaseCache();
+		return false;
+	}
+
+	const float scaledSize = _requestedFontSize * GL_CONTENT_SCALE_FACTOR();
+	const int fontSizePoints = static_cast<int>(std::floor(64.f * scaledSize + 0.5f));
+	if (FT_Set_Char_Size(face, fontSizePoints, fontSizePoints, 72, 72))
+	{
+		if (face->num_fixed_sizes > 0)
+		{
+			int bestIdx = 0, bestDiff = 100000;
+			for (int s = 0; s < face->num_fixed_sizes; ++s)
+			{
+				int diff = std::abs(face->available_sizes[s].height - static_cast<int>(scaledSize));
+				if (diff < bestDiff) { bestDiff = diff; bestIdx = s; }
+			}
+			if (FT_Select_Size(face, bestIdx))
+			{
+				FT_Done_Face(face);
+				releaseCache();
+				return false;
+			}
+		}
+		else
+		{
+			FT_Done_Face(face);
+			releaseCache();
+			return false;
+		}
+	}
+
+	_extraFallbackNames.push_back(fontPath);
+	_extraFallbackFaces.push_back(face);
+	return true;
+}
+
+void FontFreeType::ensureSystemFallbackChain()
+{
+	if (_systemFallbacksInited)
+		return;
+	_systemFallbacksInited = true;
+
+#ifdef WIN32
+	char szWinPath[MAX_PATH] = { 0 };
+	GetWindowsDirectoryA(szWinPath, MAX_PATH);
+	std::string winDir = szWinPath;
+	addExtraFallbackFont(winDir + "/Fonts/seguisym.ttf");
+	addExtraFallbackFont(winDir + "/Fonts/seguiemj.ttf");
+	addExtraFallbackFont(winDir + "/Fonts/arialuni.ttf");
+#elif defined(__APPLE__)
+	addExtraFallbackFont("/System/Library/Fonts/STHeiti Medium.ttc");
+	addExtraFallbackFont("/System/Library/Fonts/Apple Symbols.ttf");
+	addExtraFallbackFont("/System/Library/Fonts/Supplemental/Arial Unicode.ttf");
+	addExtraFallbackFont("/System/Library/Fonts/Menlo.ttc");
+	addExtraFallbackFont("/System/Library/Fonts/ZapfDingbats.ttf");
+#else
+	addExtraFallbackFont("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf");
+	addExtraFallbackFont("/usr/share/fonts/truetype/noto/NotoSansSymbols-Regular.ttf");
+	addExtraFallbackFont("/usr/share/fonts/truetype/noto/NotoSansSymbols2-Regular.ttf");
+	addExtraFallbackFont("/usr/share/fonts/truetype/noto/NotoColorEmoji.ttf");
+#endif
+}
+
+unsigned char* FontFreeType::getGlyphBitmap(unsigned short theChar, long &outWidth, long &outHeight, CCRect &outRect, int &xAdvance)
+{
+	bool isColor = false;
+	bool ownsBuffer = false;
+	return getGlyphBitmap(static_cast<char32_t>(theChar), outWidth, outHeight, outRect, xAdvance, isColor, ownsBuffer);
+}
+
+unsigned char* FontFreeType::getGlyphBitmap(char32_t rawCharKey, long &outWidth, long &outHeight, CCRect &outRect, int &xAdvance, bool &outIsColor, bool &outOwnsBuffer)
+{
+    outIsColor = false;
+    outOwnsBuffer = false;
+    const bool explicitEmojiVS = (rawCharKey & kEmojiPresentationFlag) != 0;
+    const char32_t theChar = rawCharKey & ~kEmojiPresentationFlag;
+
+    // Zero-width variation selectors & joiners (`U+FE0F`, `U+FE0E`, `U+200B`, `U+200D`)
+    if (theChar == 0xFE0Fu || theChar == 0xFE0Eu || theChar == 0x200Bu || theChar == 0x200Du)
+    {
+        outWidth = 0;
+        outHeight = 0;
+        outRect.origin.x = 0;
+        outRect.origin.y = 0;
+        outRect.size.width = 0;
+        outRect.size.height = 0;
+        xAdvance = 0;
+        return nullptr;
+    }
+
+    const bool wantColorEmoji = isDefaultColorEmoji(theChar, explicitEmojiVS);
+
+#if defined(__APPLE__)
+    if (wantColorEmoji && !_distanceFieldEnabled && _outlineSize <= 0.0f)
+    {
+        const float scaledSize = _requestedFontSize * GL_CONTENT_SCALE_FACTOR();
+        unsigned char* emojiBmp = rasterizeCoreTextFallbackOrEmoji(
+            theChar, scaledSize, _bold, true, outWidth, outHeight, outRect, xAdvance, outIsColor);
+        if (emojiBmp && outWidth > 0 && outHeight > 0)
+        {
+            outOwnsBuffer = true;
+            return emojiBmp;
+        }
+        delete[] emojiBmp;
+    }
+#endif
+
     bool invalidChar = true;
     unsigned char* ret = nullptr;
     do
@@ -517,25 +956,78 @@ unsigned char* FontFreeType::getGlyphBitmap(unsigned short theChar, long &outWid
         if (_fontRef == nullptr)
             break;
 
-        FT_Face face = _fontRef;
-        if (_fallbackFontRef != nullptr && FT_Get_Char_Index(_fontRef, theChar) == 0)
+        FT_Face face = nullptr;
+        if (!wantColorEmoji && FT_Get_Char_Index(_fontRef, static_cast<FT_ULong>(theChar)) != 0)
         {
-            if (FT_Get_Char_Index(_fallbackFontRef, theChar) != 0)
+            face = _fontRef;
+        }
+        else if (!wantColorEmoji && _fallbackFontRef != nullptr && FT_Get_Char_Index(_fallbackFontRef, static_cast<FT_ULong>(theChar)) != 0)
+        {
+            face = _fallbackFontRef;
+        }
+        else
+        {
+            ensureSystemFallbackChain();
+            // If `wantColorEmoji`, prefer color-capable faces first (`FT_HAS_COLOR`)
+            if (wantColorEmoji)
             {
-                face = _fallbackFontRef;
+                for (FT_Face extraFace : _extraFallbackFaces)
+                {
+                    if (extraFace && FT_HAS_COLOR(extraFace) && FT_Get_Char_Index(extraFace, static_cast<FT_ULong>(theChar)) != 0)
+                    {
+                        face = extraFace;
+                        break;
+                    }
+                }
+            }
+            if (!face)
+            {
+                for (FT_Face extraFace : _extraFallbackFaces)
+                {
+                    if (extraFace && FT_Get_Char_Index(extraFace, static_cast<FT_ULong>(theChar)) != 0)
+                    {
+                        face = extraFace;
+                        break;
+                    }
+                }
             }
         }
 
-        const bool synthesizeBold = _bold && ((face->style_flags & FT_STYLE_FLAG_BOLD) == 0);
+        if (face == nullptr)
+        {
+#if defined(__APPLE__)
+            if (!_distanceFieldEnabled && _outlineSize <= 0.0f)
+            {
+                const float scaledSize = _requestedFontSize * GL_CONTENT_SCALE_FACTOR();
+                unsigned char* ctBmp = rasterizeCoreTextFallbackOrEmoji(
+                    theChar, scaledSize, _bold, wantColorEmoji, outWidth, outHeight, outRect, xAdvance, outIsColor);
+                if (ctBmp || xAdvance > 0)
+                {
+                    outOwnsBuffer = (ctBmp != nullptr);
+                    return ctBmp;
+                }
+            }
+#endif
+            break;
+        }
+
+        const bool faceHasColor = FT_HAS_COLOR(face) != 0;
+        const bool synthesizeBold = _bold && !faceHasColor && ((face->style_flags & FT_STYLE_FLAG_BOLD) == 0);
         FT_Int32 loadFlags = _distanceFieldEnabled
             ? (FT_LOAD_NO_HINTING | FT_LOAD_NO_AUTOHINT)
             : FT_LOAD_NO_AUTOHINT;
+        if (faceHasColor && !_distanceFieldEnabled && _outlineSize <= 0.0f)
+        {
+#ifdef FT_LOAD_COLOR
+            loadFlags |= FT_LOAD_COLOR;
+#endif
+        }
         if (!synthesizeBold)
         {
             loadFlags |= FT_LOAD_RENDER;
         }
 
-        if (FT_Load_Char(face, theChar, loadFlags))
+        if (FT_Load_Char(face, static_cast<FT_ULong>(theChar), loadFlags))
             break;
 
         if (synthesizeBold)
@@ -546,6 +1038,63 @@ unsigned char* FontFreeType::getGlyphBitmap(unsigned short theChar, long &outWid
                 if (FT_Render_Glyph(face->glyph, FT_RENDER_MODE_NORMAL))
                     break;
             }
+        }
+
+        // Handle BGRA color emoji bitmaps from FreeType (`FT_PIXEL_MODE_BGRA`)
+        if (face->glyph->bitmap.pixel_mode == FT_PIXEL_MODE_BGRA && face->glyph->bitmap.buffer != nullptr
+            && face->glyph->bitmap.width > 0 && face->glyph->bitmap.rows > 0)
+        {
+            const int srcW = static_cast<int>(face->glyph->bitmap.width);
+            const int srcH = static_cast<int>(face->glyph->bitmap.rows);
+            const int srcPitch = face->glyph->bitmap.pitch;
+            const float targetMaxH = (std::max)(8.0f, _requestedFontSize * GL_CONTENT_SCALE_FACTOR() * 1.15f);
+            const float downScale = (srcH > targetMaxH) ? (targetMaxH / static_cast<float>(srcH)) : 1.0f;
+            const int dstW = (std::max)(1, static_cast<int>(std::floor(srcW * downScale + 0.5f)));
+            const int dstH = (std::max)(1, static_cast<int>(std::floor(srcH * downScale + 0.5f)));
+
+            unsigned char* rgbaOut = new (std::nothrow) unsigned char[static_cast<size_t>(dstW * dstH * 4)];
+            if (!rgbaOut)
+                break;
+
+            for (int dy = 0; dy < dstH; ++dy)
+            {
+                const int sy = (std::min)(srcH - 1, static_cast<int>((dy + 0.5f) / downScale));
+                const unsigned char* sRow = face->glyph->bitmap.buffer + sy * srcPitch;
+                unsigned char* dRow = rgbaOut + static_cast<size_t>(dy * dstW * 4);
+                for (int dx = 0; dx < dstW; ++dx)
+                {
+                    const int sx = (std::min)(srcW - 1, static_cast<int>((dx + 0.5f) / downScale));
+                    const unsigned char b = sRow[sx * 4 + 0];
+                    const unsigned char g = sRow[sx * 4 + 1];
+                    const unsigned char r = sRow[sx * 4 + 2];
+                    const unsigned char a = sRow[sx * 4 + 3];
+                    if (a > 0 && a < 255)
+                    {
+                        dRow[dx * 4 + 0] = static_cast<unsigned char>((std::min)(255, (static_cast<int>(r) * 255 + a / 2) / a));
+                        dRow[dx * 4 + 1] = static_cast<unsigned char>((std::min)(255, (static_cast<int>(g) * 255 + a / 2) / a));
+                        dRow[dx * 4 + 2] = static_cast<unsigned char>((std::min)(255, (static_cast<int>(b) * 255 + a / 2) / a));
+                        dRow[dx * 4 + 3] = a;
+                    }
+                    else
+                    {
+                        dRow[dx * 4 + 0] = r;
+                        dRow[dx * 4 + 1] = g;
+                        dRow[dx * 4 + 2] = b;
+                        dRow[dx * 4 + 3] = a;
+                    }
+                }
+            }
+
+            outRect.origin.x = std::floor(face->glyph->bitmap_left * downScale + 0.5f);
+            outRect.origin.y = -std::floor(face->glyph->bitmap_top * downScale + 0.5f);
+            outRect.size.width = static_cast<float>(dstW);
+            outRect.size.height = static_cast<float>(dstH);
+            xAdvance = (std::max)(dstW, static_cast<int>(std::floor(((face->glyph->metrics.horiAdvance + 32) >> 6) * downScale + 0.5f)));
+            outWidth = dstW;
+            outHeight = dstH;
+            outIsColor = true;
+            outOwnsBuffer = true;
+            return rgbaOut;
         }
 
         auto& metrics = face->glyph->metrics;
@@ -630,6 +1179,7 @@ unsigned char* FontFreeType::getGlyphBitmap(unsigned short theChar, long &outWid
             delete [] outlineBitmap;
             delete [] copyBitmap;
             ret = blendImage;
+            outOwnsBuffer = true;
         }
 
         invalidChar = false;
@@ -649,10 +1199,10 @@ unsigned char* FontFreeType::getGlyphBitmap(unsigned short theChar, long &outWid
     }
 }
 
-unsigned char * FontFreeType::getGlyphBitmapWithOutline(FT_Face face, unsigned short theChar, FT_BBox &bbox)
+unsigned char * FontFreeType::getGlyphBitmapWithOutline(FT_Face face, char32_t theChar, FT_BBox &bbox)
 {
     unsigned char* ret = nullptr;
-    if (face && FT_Load_Char(face, theChar, FT_LOAD_NO_BITMAP) == 0)
+    if (face && FT_Load_Char(face, static_cast<FT_ULong>(theChar), FT_LOAD_NO_BITMAP) == 0)
     {
         if (face->glyph->format == FT_GLYPH_FORMAT_OUTLINE)
         {
@@ -851,6 +1401,25 @@ void FontFreeType::renderCharAt(unsigned char *dest,int posX, int posY, unsigned
 
             iX  = posX;
             iY += 1;
+        }
+    }
+}
+
+void FontFreeType::renderColorCharAt(unsigned char *dest, int posX, int posY, const unsigned char* rgbaBitmap, long bitmapWidth, long bitmapHeight)
+{
+    if (!dest || !rgbaBitmap || bitmapWidth <= 0 || bitmapHeight <= 0)
+        return;
+    for (long y = 0; y < bitmapHeight; ++y)
+    {
+        const int dstY = posY + static_cast<int>(y);
+        if (dstY < 0 || dstY >= GLFontAtlas::CacheTextureHeight)
+            continue;
+        const unsigned char* srcRow = rgbaBitmap + static_cast<size_t>(y * bitmapWidth * 4);
+        unsigned char* dstRow = dest + static_cast<size_t>((dstY * GLFontAtlas::CacheTextureWidth + posX) * 4);
+        const long copyCols = (std::min)(bitmapWidth, static_cast<long>(GLFontAtlas::CacheTextureWidth - posX));
+        if (copyCols > 0)
+        {
+            memcpy(dstRow, srcRow, static_cast<size_t>(copyCols * 4));
         }
     }
 }

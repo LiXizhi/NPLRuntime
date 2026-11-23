@@ -1,6 +1,7 @@
 #pragma once
 #include <string>
 #include <unordered_map>
+#include <vector>
 #include <iconv.h>
 
 #include "GLType.h"
@@ -17,14 +18,15 @@ namespace ParaEngine
 	public:
 		static const int CacheTextureWidth;
 		static const int CacheTextureHeight;
+		static const int ColorPageSlotBase = 10000;
 		static const char* CMD_PURGE_FONTATLAS;
 		static const char* CMD_RESET_FONTATLAS;
 		
 		GLFontAtlas(Font &theFont);
 		virtual ~GLFontAtlas();
 
-		void addLetterDefinition(char16_t utf16Char, const FontLetterDefinition &letterDefinition);
-		bool getLetterDefinitionForChar(char16_t utf16Char, FontLetterDefinition &letterDefinition);
+		void addLetterDefinition(char32_t utf32Char, const FontLetterDefinition &letterDefinition);
+		bool getLetterDefinitionForChar(char32_t utf32Char, FontLetterDefinition &letterDefinition);
 
 		uint64_t getLayoutRevision() const { return _layoutRevision; }
 		bool prepareLetterDefinitions(const std::u16string& utf16String);
@@ -67,10 +69,11 @@ namespace ParaEngine
 		void reset();
 
 		void releaseTextures();
+		void ensureColorPageInitialized();
 
-		void findNewCharacters(const std::u16string& u16Text, std::unordered_map<unsigned short, unsigned short>& charCodeMap);
+		void findNewCharacters(const std::u16string& u16Text, std::unordered_map<char32_t, char32_t>& charCodeMap);
 
-		void conversionU16TOGB2312(const std::u16string& u16Text, std::unordered_map<unsigned short, unsigned short>& charCodeMap);
+		void conversionU16TOGB2312(const std::u16string& u16Text, std::unordered_map<char32_t, char32_t>& charCodeMap);
 
 		/**
 		 * Scale each font letter by scaleFactor.
@@ -80,7 +83,7 @@ namespace ParaEngine
 		void scaleFontLetterDefinition(float scaleFactor);
 
 		std::unordered_map<size_t, GLTexture2D*> _atlasTextures;
-		std::unordered_map<char16_t, FontLetterDefinition> _letterDefinitions;
+		std::unordered_map<char32_t, FontLetterDefinition> _letterDefinitions;
 		uint64_t _layoutRevision = 0;
 		float _lineHeight;
 		Font* _font;
@@ -95,6 +98,15 @@ namespace ParaEngine
 		float _currentPageOrigY;
 		int _letterPadding;
 		int _letterEdgeExtend;
+
+		// Lazy RGBA8 color atlas pages for system color emoji glyphs
+		bool _colorPageInited = false;
+		int _currentColorPage = 0;
+		unsigned char* _currentColorPageData = nullptr;
+		int _currentColorPageDataSize = 0;
+		float _currentColorOrigX = 0.0f;
+		float _currentColorOrigY = 0.0f;
+		int _currColorLineHeight = 0;
 
 		int _fontAscender;
 

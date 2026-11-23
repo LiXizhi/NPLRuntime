@@ -1190,13 +1190,8 @@ int ParaEngine::StringHelper::fast_dtoa(double num, char* result, int buf_size, 
 
 bool ParaEngine::StringHelper::UTF8ToUTF16(const std::string& utf8, std::u16string& outUtf16)
 {
-
 	using boost::locale::conv::utf_to_utf;
-
-	std::wstring str = utf_to_utf<wchar_t>(utf8.c_str(), utf8.c_str() + utf8.size());
-
-	outUtf16 = std::u16string(str.begin(), str.end());
-
+	outUtf16 = utf_to_utf<char16_t>(utf8.c_str(), utf8.c_str() + utf8.size());
 	return true;
 }
 

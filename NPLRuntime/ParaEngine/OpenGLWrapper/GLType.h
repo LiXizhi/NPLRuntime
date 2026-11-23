@@ -131,10 +131,41 @@ struct FontLetterDefinition
 	float offsetY;
 	int textureID;
 	bool validDefinition;
+	bool isColor = false;
 	int xAdvance;
 
 	int clipBottom;
 };
+
+// Flag bit OR'd onto BMP `char32_t` keys when followed by `U+FE0F` (Variation Selector-16: Emoji Presentation)
+static constexpr char32_t kEmojiPresentationFlag = 0x200000u;
+
+inline char32_t decodeUTF16CodePointWithVS(const std::u16string& str, size_t idx, size_t& outUnitsConsumed)
+{
+	const size_t n = str.size();
+	if (idx >= n)
+	{
+		outUnitsConsumed = 1;
+		return 0;
+	}
+	const char16_t c0 = str[idx];
+	char32_t cp = static_cast<char32_t>(c0);
+	outUnitsConsumed = 1;
+	if (c0 >= 0xD800 && c0 <= 0xDBFF && (idx + 1) < n)
+	{
+		const char16_t c1 = str[idx + 1];
+		if (c1 >= 0xDC00 && c1 <= 0xDFFF)
+		{
+			cp = 0x10000u + ((static_cast<char32_t>(c0 - 0xD800) << 10) | static_cast<char32_t>(c1 - 0xDC00));
+			outUnitsConsumed = 2;
+		}
+	}
+	if ((idx + outUnitsConsumed) < n && str[idx + outUnitsConsumed] == 0xFE0F && cp < 0x10000u)
+	{
+		cp |= kEmojiPresentationFlag;
+	}
+	return cp;
+}
 
 
 struct Color4B;

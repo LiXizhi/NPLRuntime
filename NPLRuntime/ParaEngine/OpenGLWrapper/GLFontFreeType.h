@@ -4,6 +4,7 @@
 #include "GLFont.h"
 
 #include <string>
+#include <vector>
 
 #include "ft2build.h"
 #include FT_FREETYPE_H
@@ -37,7 +38,9 @@ namespace ParaEngine
 
 		int* getHorizontalKerningForTextUTF16(const std::u16string& text, int &outNumLetters) const override;
 
+		unsigned char* getGlyphBitmap(char32_t theChar, long &outWidth, long &outHeight, CCRect &outRect, int &xAdvance, bool &outIsColor, bool &outOwnsBuffer);
 		unsigned char* getGlyphBitmap(unsigned short theChar, long &outWidth, long &outHeight, CCRect &outRect, int &xAdvance);
+		void renderColorCharAt(unsigned char *dest, int posX, int posY, const unsigned char* rgbaBitmap, long bitmapWidth, long bitmapHeight);
 
 		int getFontAscender() const;
 		const char* getFontFamily() const;
@@ -58,18 +61,24 @@ namespace ParaEngine
 
 		bool createFontObject(const std::string &fontName, float fontSize);
 		bool createFallbackFontObject(const std::string &fallbackFontName, float fontSize);
+		void ensureSystemFallbackChain();
+		bool addExtraFallbackFont(const std::string &fontPath);
 
 		bool initFreeType();
 		FT_Library getFTLibrary();
 
 		int getHorizontalKerningForChars(unsigned short firstChar, unsigned short secondChar) const;
-		unsigned char* getGlyphBitmapWithOutline(FT_Face face, unsigned short code, FT_BBox &bbox);
+		unsigned char* getGlyphBitmapWithOutline(FT_Face face, char32_t code, FT_BBox &bbox);
 
 		void setGlyphCollection(GlyphCollection glyphs, const char* customGlyphs = nullptr);
 		const char* getGlyphCollection() const;
 
 		FT_Face _fontRef;
 		FT_Face _fallbackFontRef;
+		std::vector<FT_Face> _extraFallbackFaces;
+		std::vector<std::string> _extraFallbackNames;
+		bool _systemFallbacksInited = false;
+		float _requestedFontSize = 14.0f;
 		FT_Stroker _stroker;
 		FT_Encoding _encoding;
 

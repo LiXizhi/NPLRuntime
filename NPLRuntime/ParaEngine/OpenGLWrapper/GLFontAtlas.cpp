@@ -35,6 +35,8 @@ GLFontAtlas::~GLFontAtlas()
     releaseTextures();
 
     delete []_currentPageData;
+    delete []_currentColorPageData;
+    _currentColorPageData = nullptr;
 
 
 	if (_iconv)
@@ -43,6 +45,7 @@ GLFontAtlas::~GLFontAtlas()
 		_iconv = nullptr;
 	}
 	_inited = false;
+	_colorPageInited = false;
 }
 
 void GLFontAtlas::reset()
@@ -54,6 +57,13 @@ void GLFontAtlas::reset()
     _currentPage = 0;
     _currentPageOrigX = 0;
     _currentPageOrigY = 0;
+    _colorPageInited = false;
+    _currentColorPage = 0;
+    _currentColorOrigX = 0;
+    _currentColorOrigY = 0;
+    _currColorLineHeight = 0;
+    delete []_currentColorPageData;
+    _currentColorPageData = nullptr;
     _letterDefinitions.clear();
 	_inited = false;
 }
@@ -79,10 +89,10 @@ void GLFontAtlas::purgeTexturesAtlas()
 }
 
 
-void GLFontAtlas::addLetterDefinition(char16_t utf16Char, const FontLetterDefinition &letterDefinition)
+void GLFontAtlas::addLetterDefinition(char32_t utf32Char, const FontLetterDefinition &letterDefinition)
 {
     ++_layoutRevision;
-    _letterDefinitions[utf16Char] = letterDefinition;
+    _letterDefinitions[utf32Char] = letterDefinition;
 }
 
 void GLFontAtlas::scaleFontLetterDefinition(float scaleFactor)
@@ -98,9 +108,9 @@ void GLFontAtlas::scaleFontLetterDefinition(float scaleFactor)
     }
 }
 
-bool GLFontAtlas::getLetterDefinitionForChar(char16_t utf16Char, FontLetterDefinition &letterDefinition)
+bool GLFontAtlas::getLetterDefinitionForChar(char32_t utf32Char, FontLetterDefinition &letterDefinition)
 {
-    auto outIterator = _letterDefinitions.find(utf16Char);
+    auto outIterator = _letterDefinitions.find(utf32Char);
 
     if (outIterator != _letterDefinitions.end())
     {
@@ -113,7 +123,7 @@ bool GLFontAtlas::getLetterDefinitionForChar(char16_t utf16Char, FontLetterDefin
     }
 }
 
-void GLFontAtlas::conversionU16TOGB2312(const std::u16string& u16Text, std::unordered_map<unsigned short, unsigned short>& charCodeMap)
+void GLFontAtlas::conversionU16TOGB2312(const std::u16string& u16Text, std::unordered_map<char32_t, char32_t>& charCodeMap)
 {
 	OUTPUT_LOG("conversionU16TOGB2312");
     size_t strLen = u16Text.length();
@@ -181,65 +191,71 @@ void GLFontAtlas::conversionU16TOGB2312(const std::u16string& u16Text, std::unor
     delete[] gb2312Text;
 }
 
-void GLFontAtlas::findNewCharacters(const std::u16string& u16Text, std::unordered_map<unsigned short, unsigned short>& charCodeMap)
+void GLFontAtlas::findNewCharacters(const std::u16string& u16Text, std::unordered_map<char32_t, char32_t>& charCodeMap)
 {
-    std::u16string newChars;
-
-    //find new characters
-    if (_letterDefinitions.empty())
+    FT_Encoding charEncoding = _fontFreeType->getEncoding();
+    if (charEncoding == FT_ENCODING_UNICODE)
     {
-        // fixed #16169: new android project crash in android 5.0.2 device (Nexus 7) when use 3.12.
-        // While using clang compiler with gnustl_static on android, the copy assignment operator of `std::u16string`
-        // will affect the memory validity, it means after `newChars` is destroyed, the memory of `u16Text` holds
-        // will be a dead region. `u16text` represents the variable in `Label::_utf16Text`, when somewhere
-        // allocates memory by `malloc, realloc, new, new[]`, the generated memory address may be the same
-        // as `Label::_utf16Text` holds. If doing a `memset` or other memory operations, the orignal `Label::_utf16Text`
-        // will be in an unknown state. Meanwhile, a bunch lots of logic which depends on `Label::_utf16Text`
-        // will be broken.
-
-        // newChars = u16Text;
-
-        // Using `append` method is a workaround for this issue. So please be carefuly while using the assignment operator
-        // of `std::u16string`.
-        newChars.append(u16Text);
-    }
-    else
-    {
-        auto length = u16Text.length();
-        for (size_t i = 0; i < length; ++i)
+        const size_t length = u16Text.length();
+        for (size_t i = 0; i < length; )
         {
-            auto outIterator = _letterDefinitions.find(u16Text[i]);
-            if (outIterator == _letterDefinitions.end())
+            size_t consumed = 1;
+            const char32_t cpKey = decodeUTF16CodePointWithVS(u16Text, i, consumed);
+            if (_letterDefinitions.find(cpKey) == _letterDefinitions.end())
             {
-                if (newChars.empty())
-                    newChars.reserve(length - i);
-                newChars.push_back(u16Text[i]);
+                charCodeMap[cpKey] = cpKey;
             }
+            i += consumed;
+        }
+        return;
+    }
+
+    std::u16string newChars;
+    const size_t length = u16Text.length();
+    for (size_t i = 0; i < length; ++i)
+    {
+        if (_letterDefinitions.find(static_cast<char32_t>(u16Text[i])) == _letterDefinitions.end())
+        {
+            newChars.push_back(u16Text[i]);
         }
     }
-
     if (!newChars.empty())
     {
-        FT_Encoding charEncoding = _fontFreeType->getEncoding();
-        switch (charEncoding)
-        {
-        case FT_ENCODING_UNICODE:
-        {
-            for (auto u16Code : newChars)
-            {
-                charCodeMap[u16Code] = u16Code;
-            }
-            break;
-        }
-        case FT_ENCODING_GB2312:
+        if (charEncoding == FT_ENCODING_GB2312)
         {
             conversionU16TOGB2312(newChars, charCodeMap);
-            break;
         }
-        default:
+        else
+        {
             OUTPUT_LOG("FontAtlas::findNewCharacters: Unsupported encoding:%d", charEncoding);
-            break;
         }
+    }
+}
+
+void GLFontAtlas::ensureColorPageInitialized()
+{
+    if (_colorPageInited)
+        return;
+    _colorPageInited = true;
+    _currentColorPage = 0;
+    _currentColorOrigX = 0.0f;
+    _currentColorOrigY = 0.0f;
+    _currColorLineHeight = 0;
+    _currentColorPageDataSize = CacheTextureWidth * CacheTextureHeight * 4;
+    delete[] _currentColorPageData;
+    _currentColorPageData = new (std::nothrow) unsigned char[_currentColorPageDataSize];
+    if (_currentColorPageData)
+    {
+        memset(_currentColorPageData, 0, _currentColorPageDataSize);
+        auto tex = new (std::nothrow) GLTexture2D;
+        if (_antialiasEnabled)
+            tex->setAntiAliasTexParameters();
+        else
+            tex->setAliasTexParameters();
+        tex->initWithData(_currentColorPageData, _currentColorPageDataSize,
+            PixelFormat::A8R8G8B8, CacheTextureWidth, CacheTextureHeight, Size(CacheTextureWidth, CacheTextureHeight));
+        addTexture(tex, ColorPageSlotBase + _currentColorPage);
+        tex->Release();
     }
 }
 
@@ -248,13 +264,11 @@ bool GLFontAtlas::prepareLetterDefinitions(const std::u16string& utf16Text)
 
 	init();
 
-	//OUTPUT_LOG("prepareLetterDefinitions %s\n", u8Str.c_str());
-
     if (_fontFreeType == nullptr)
     {
         return false;
     }
-    std::unordered_map<unsigned short, unsigned short> codeMapOfNewChar;
+    std::unordered_map<char32_t, char32_t> codeMapOfNewChar;
     findNewCharacters(utf16Text, codeMapOfNewChar);
     if (codeMapOfNewChar.empty())
     {
@@ -273,83 +287,191 @@ bool GLFontAtlas::prepareLetterDefinitions(const std::u16string& utf16Text)
     auto  pixelFormat = _fontFreeType->getOutlineSize() > 0 ? PixelFormat::A8L8 : PixelFormat::A8;
 
     float startY = _currentPageOrigY;
+    float colorStartY = _currentColorOrigY;
+    bool touchedMonoPage = false;
+    bool touchedColorPage = false;
 
     for (auto&& it : codeMapOfNewChar)
     {
-        auto bitmap = _fontFreeType->getGlyphBitmap(it.second, bitmapWidth, bitmapHeight, tempRect, tempDef.xAdvance);
+        const char32_t rawCp = it.second & ~kEmojiPresentationFlag;
+        // Invisible variation selectors / zero-width joiners (`U+FE0F`, `U+FE0E`, `U+200B`, `U+200D`)
+        if (rawCp == 0xFE0Fu || rawCp == 0xFE0Eu || rawCp == 0x200Bu || rawCp == 0x200Du)
+        {
+            FontLetterDefinition zwDef{};
+            zwDef.validDefinition = true;
+            zwDef.isColor = false;
+            zwDef.width = 0;
+            zwDef.height = 0;
+            zwDef.U = 0;
+            zwDef.V = 0;
+            zwDef.offsetX = 0;
+            zwDef.offsetY = 0;
+            zwDef.textureID = 0;
+            zwDef.xAdvance = 0;
+            _letterDefinitions[it.first] = zwDef;
+            ++_layoutRevision;
+            continue;
+        }
+
+        bool isColorGlyph = false;
+        bool ownsBitmapBuf = false;
+        tempDef = FontLetterDefinition{};
+        auto bitmap = _fontFreeType->getGlyphBitmap(it.second, bitmapWidth, bitmapHeight, tempRect, tempDef.xAdvance, isColorGlyph, ownsBitmapBuf);
         if (bitmap && bitmapWidth > 0 && bitmapHeight > 0)
         {
             tempDef.validDefinition = true;
-            tempDef.width = tempRect.size.width + _letterPadding + _letterEdgeExtend;
-            tempDef.height = tempRect.size.height + _letterPadding + _letterEdgeExtend;
-            tempDef.offsetX = tempRect.origin.x + adjustForDistanceMap - adjustForExtend;
-            tempDef.offsetY = _fontAscender + tempRect.origin.y - adjustForDistanceMap - adjustForExtend;
+            tempDef.isColor = isColorGlyph;
 
-            glyphHeight = static_cast<int>(bitmapHeight) + _letterPadding + _letterEdgeExtend;
-            if (_currentPageOrigX + tempDef.width > CacheTextureWidth)
+            if (isColorGlyph)
             {
-                _currentPageOrigY += _currLineHeight;
-                _currLineHeight = 0;
-                _currentPageOrigX = 0;
+                ensureColorPageInitialized();
+                colorStartY = touchedColorPage ? colorStartY : _currentColorOrigY;
+                touchedColorPage = true;
+
+                const int colorExtend = _letterEdgeExtend;
+                const int colorHalfExt = colorExtend / 2;
+                tempDef.width = tempRect.size.width + colorExtend;
+                tempDef.height = tempRect.size.height + colorExtend;
+                tempDef.offsetX = tempRect.origin.x - colorHalfExt;
+                tempDef.offsetY = _fontAscender + tempRect.origin.y - colorHalfExt;
+
+                glyphHeight = static_cast<int>(bitmapHeight) + colorExtend;
+                if (_currentColorOrigX + tempDef.width > CacheTextureWidth)
+                {
+                    _currentColorOrigY += _currColorLineHeight;
+                    _currColorLineHeight = 0;
+                    _currentColorOrigX = 0;
+                }
+                const int minRowH = (std::max)(static_cast<int>(_lineHeight) + colorExtend, glyphHeight);
+                if (_currentColorOrigY + minRowH >= CacheTextureHeight)
+                {
+                    const int slotId = ColorPageSlotBase + _currentColorPage;
+                    if (_currentColorPageData && _atlasTextures.count(slotId))
+                    {
+                        unsigned char* cData = _currentColorPageData + CacheTextureWidth * static_cast<int>(colorStartY) * 4;
+                        _atlasTextures[slotId]->updateWithData(cData, 0, colorStartY, CacheTextureWidth, CacheTextureHeight - colorStartY);
+                    }
+                    colorStartY = 0.0f;
+                    _currColorLineHeight = 0;
+                    _currentColorOrigX = 0;
+                    _currentColorOrigY = 0;
+                    if (_currentColorPageData)
+                        memset(_currentColorPageData, 0, _currentColorPageDataSize);
+                    _currentColorPage++;
+                    auto tex = new (std::nothrow) GLTexture2D;
+                    if (_antialiasEnabled)
+                        tex->setAntiAliasTexParameters();
+                    else
+                        tex->setAliasTexParameters();
+                    tex->initWithData(_currentColorPageData, _currentColorPageDataSize,
+                        PixelFormat::A8R8G8B8, CacheTextureWidth, CacheTextureHeight, Size(CacheTextureWidth, CacheTextureHeight));
+                    addTexture(tex, ColorPageSlotBase + _currentColorPage);
+                    tex->Release();
+                }
+                if (glyphHeight > _currColorLineHeight)
+                    _currColorLineHeight = glyphHeight;
+
+                _fontFreeType->renderColorCharAt(_currentColorPageData,
+                    static_cast<int>(_currentColorOrigX) + colorHalfExt,
+                    static_cast<int>(_currentColorOrigY) + colorHalfExt,
+                    bitmap, bitmapWidth, bitmapHeight);
+
+                tempDef.U = _currentColorOrigX;
+                tempDef.V = _currentColorOrigY;
+                tempDef.textureID = ColorPageSlotBase + _currentColorPage;
+                _currentColorOrigX += tempDef.width + 1;
+
+                tempDef.width /= scaleFactor;
+                tempDef.height /= scaleFactor;
+                tempDef.U /= scaleFactor;
+                tempDef.V /= scaleFactor;
+
+                if (ownsBitmapBuf)
+                    delete[] bitmap;
             }
-            const int minRowHeight = (std::max)(static_cast<int>(_lineHeight) + _letterPadding + _letterEdgeExtend, glyphHeight);
-            if (_currentPageOrigY + minRowHeight >= CacheTextureHeight)
+            else
             {
-                unsigned char *data = nullptr;
-                if (pixelFormat == PixelFormat::A8L8)
-                {
-                    data = _currentPageData + CacheTextureWidth * (int)startY * 2;
-                }
-                else
-                {
-                    data = _currentPageData + CacheTextureWidth * (int)startY;
-                }
-                _atlasTextures[_currentPage]->updateWithData(data, 0, startY,
-                    CacheTextureWidth, CacheTextureHeight - startY);
+                touchedMonoPage = true;
+                tempDef.width = tempRect.size.width + _letterPadding + _letterEdgeExtend;
+                tempDef.height = tempRect.size.height + _letterPadding + _letterEdgeExtend;
+                tempDef.offsetX = tempRect.origin.x + adjustForDistanceMap - adjustForExtend;
+                tempDef.offsetY = _fontAscender + tempRect.origin.y - adjustForDistanceMap - adjustForExtend;
 
-                startY = 0.0f;
+                glyphHeight = static_cast<int>(bitmapHeight) + _letterPadding + _letterEdgeExtend;
+                if (_currentPageOrigX + tempDef.width > CacheTextureWidth)
+                {
+                    _currentPageOrigY += _currLineHeight;
+                    _currLineHeight = 0;
+                    _currentPageOrigX = 0;
+                }
+                const int minRowHeight = (std::max)(static_cast<int>(_lineHeight) + _letterPadding + _letterEdgeExtend, glyphHeight);
+                if (_currentPageOrigY + minRowHeight >= CacheTextureHeight)
+                {
+                    unsigned char *data = nullptr;
+                    if (pixelFormat == PixelFormat::A8L8)
+                    {
+                        data = _currentPageData + CacheTextureWidth * (int)startY * 2;
+                    }
+                    else
+                    {
+                        data = _currentPageData + CacheTextureWidth * (int)startY;
+                    }
+                    _atlasTextures[_currentPage]->updateWithData(data, 0, startY,
+                        CacheTextureWidth, CacheTextureHeight - startY);
 
-                _currLineHeight = 0;
-                _currentPageOrigX = 0;
-                _currentPageOrigY = 0;
-                memset(_currentPageData, 0, _currentPageDataSize);
-                _currentPage++;
-                auto tex = new (std::nothrow) GLTexture2D;
-                if (_antialiasEnabled)
-                {
-                    tex->setAntiAliasTexParameters();
+                    startY = 0.0f;
+
+                    _currLineHeight = 0;
+                    _currentPageOrigX = 0;
+                    _currentPageOrigY = 0;
+                    memset(_currentPageData, 0, _currentPageDataSize);
+                    _currentPage++;
+                    auto tex = new (std::nothrow) GLTexture2D;
+                    if (_antialiasEnabled)
+                    {
+                        tex->setAntiAliasTexParameters();
+                    }
+                    else
+                    {
+                        tex->setAliasTexParameters();
+                    }
+                    tex->initWithData(_currentPageData, _currentPageDataSize,
+                        pixelFormat, CacheTextureWidth, CacheTextureHeight, Size(CacheTextureWidth, CacheTextureHeight));
+                    addTexture(tex, _currentPage);
+                    tex->Release();
                 }
-                else
+                if (glyphHeight > _currLineHeight)
                 {
-                    tex->setAliasTexParameters();
+                    _currLineHeight = glyphHeight;
                 }
-                tex->initWithData(_currentPageData, _currentPageDataSize,
-                    pixelFormat, CacheTextureWidth, CacheTextureHeight, Size(CacheTextureWidth, CacheTextureHeight));
-                addTexture(tex, _currentPage);
-                tex->Release();
+                _fontFreeType->renderCharAt(_currentPageData, _currentPageOrigX + adjustForExtend, _currentPageOrigY + adjustForExtend, bitmap, bitmapWidth, bitmapHeight);
+
+                tempDef.U = _currentPageOrigX;
+                tempDef.V = _currentPageOrigY;
+                tempDef.textureID = _currentPage;
+                _currentPageOrigX += tempDef.width + 1;
+                // take from pixels to points
+                tempDef.width = tempDef.width / scaleFactor;
+                tempDef.height = tempDef.height / scaleFactor;
+                tempDef.U = tempDef.U / scaleFactor;
+                tempDef.V = tempDef.V / scaleFactor;
+
+                // Note: when `_outlineSize > 0`, `renderCharAt` already freed `bitmap`
+                if (ownsBitmapBuf && _fontFreeType->getOutlineSize() <= 0.0f)
+                {
+                    delete[] bitmap;
+                }
             }
-            if (glyphHeight > _currLineHeight)
-            {
-                _currLineHeight = glyphHeight;
-            }
-            _fontFreeType->renderCharAt(_currentPageData, _currentPageOrigX + adjustForExtend, _currentPageOrigY + adjustForExtend, bitmap, bitmapWidth, bitmapHeight);
-
-            tempDef.U = _currentPageOrigX;
-            tempDef.V = _currentPageOrigY;
-            tempDef.textureID = _currentPage;
-            _currentPageOrigX += tempDef.width + 1;
-            // take from pixels to points
-            tempDef.width = tempDef.width / scaleFactor;
-            tempDef.height = tempDef.height / scaleFactor;
-            tempDef.U = tempDef.U / scaleFactor;
-            tempDef.V = tempDef.V / scaleFactor;
         }
         else{
+            if (ownsBitmapBuf && bitmap)
+                delete[] bitmap;
             if (tempDef.xAdvance)
                 tempDef.validDefinition = true;
             else
                 tempDef.validDefinition = false;
 
+            tempDef.isColor = false;
             tempDef.width = 0;
             tempDef.height = 0;
             tempDef.U = 0;
@@ -361,21 +483,36 @@ bool GLFontAtlas::prepareLetterDefinitions(const std::u16string& utf16Text)
         }
 
         _letterDefinitions[it.first] = tempDef;
+        ++_layoutRevision;
     }
 
-    const int updateHeight = static_cast<int>(_currentPageOrigY - startY) + _currLineHeight;
-    if (updateHeight > 0)
+    if (touchedMonoPage)
     {
-        unsigned char *data = nullptr;
-        if (pixelFormat == PixelFormat::A8L8)
+        const int updateHeight = static_cast<int>(_currentPageOrigY - startY) + _currLineHeight;
+        if (updateHeight > 0)
         {
-            data = _currentPageData + CacheTextureWidth * (int)startY * 2;
+            unsigned char *data = nullptr;
+            if (pixelFormat == PixelFormat::A8L8)
+            {
+                data = _currentPageData + CacheTextureWidth * (int)startY * 2;
+            }
+            else
+            {
+                data = _currentPageData + CacheTextureWidth * (int)startY;
+            }
+            _atlasTextures[_currentPage]->updateWithData(data, 0, startY, CacheTextureWidth, updateHeight);
         }
-        else
+    }
+
+    if (touchedColorPage && _currentColorPageData)
+    {
+        const int cSlot = ColorPageSlotBase + _currentColorPage;
+        const int cUpdateH = static_cast<int>(_currentColorOrigY - colorStartY) + _currColorLineHeight;
+        if (cUpdateH > 0 && _atlasTextures.count(cSlot))
         {
-            data = _currentPageData + CacheTextureWidth * (int)startY;
+            unsigned char* cData = _currentColorPageData + CacheTextureWidth * static_cast<int>(colorStartY) * 4;
+            _atlasTextures[cSlot]->updateWithData(cData, 0, colorStartY, CacheTextureWidth, cUpdateH);
         }
-        _atlasTextures[_currentPage]->updateWithData(data, 0, startY, CacheTextureWidth, updateHeight);
     }
 
     return true;

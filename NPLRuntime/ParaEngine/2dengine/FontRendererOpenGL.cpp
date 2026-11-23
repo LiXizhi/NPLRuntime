@@ -89,7 +89,9 @@ CFontRendererOpenGL* ParaEngine::CFontRendererOpenGL::create(const std::string& 
 	fallbackFontFile = pickExistingFile({
 		"fonts/DroidSansFallback.ttf",
 		"/System/Library/Fonts/PingFang.ttc",
+		"/System/Library/Fonts/STHeiti Medium.ttc",
 		"/System/Library/Fonts/STHeiti Light.ttc",
+		"/System/Library/Fonts/Supplemental/Arial Unicode.ttf",
 		"/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
 		"/usr/share/fonts/truetype/droid/DroidSansFallbackFull.ttf",
 		"/usr/share/fonts/truetype/wqy/wqy-microhei.ttc"
@@ -848,13 +850,20 @@ void ParaEngine::CFontRendererOpenGL::DoRender(CSpriteRenderer* pSprite, DWORD c
 
 	TextureEntityOpenGL atlasTexture;
 	GLTexture2D* currentPage = nullptr;
-	auto drawGlyph = [&](GLTexture2D* page, const RECT& rect, const Vector3& position) {
+	bool inColorSpriteMode = false;
+	auto drawGlyph = [&](GLTexture2D* page, const RECT& rect, const Vector3& position, bool isColorGlyph) {
+		if (!m_bUseCustomShader && isColorGlyph != inColorSpriteMode)
+		{
+			pSprite->SetTextMode(!isColorGlyph);
+			inColorSpriteMode = isColorGlyph;
+		}
 		if (page != currentPage)
 		{
 			atlasTexture.SetInnerTexture(page);
 			currentPage = page;
 		}
-		pSprite->DrawQuad(&atlasTexture, &rect, NULL, &position, color);
+		const DWORD quadColor = isColorGlyph ? ((color & 0xFF000000u) | 0x00FFFFFFu) : color;
+		pSprite->DrawQuad(&atlasTexture, &rect, NULL, &position, quadColor);
 	};
 
 	if (renderAtlas != _fontAtlas)
@@ -887,13 +896,20 @@ void ParaEngine::CFontRendererOpenGL::DoRender(CSpriteRenderer* pSprite, DWORD c
 			if (!layoutDef.validDefinition)
 				continue;
 
-			const char16_t ch = _currentUTF16String[ctr];
-			if (!renderAtlas->getLetterDefinitionForChar(ch, renderDef) || !renderDef.validDefinition || renderDef.width <= 0.f || renderDef.height <= 0.f)
+			size_t consumed = 1;
+			const char32_t cpKey = decodeUTF16CodePointWithVS(_currentUTF16String, static_cast<size_t>(ctr), consumed);
+			if (!renderAtlas->getLetterDefinitionForChar(cpKey, renderDef) || !renderDef.validDefinition || renderDef.width <= 0.f || renderDef.height <= 0.f)
+			{
+				if (consumed == 2) ++ctr;
 				continue;
+			}
 
 			auto texIt = textures.find(renderDef.textureID);
 			if (texIt == textures.end() || !texIt->second)
+			{
+				if (consumed == 2) ++ctr;
 				continue;
+			}
 
 			const float penLayoutX = _lettersInfo[ctr].position.x - layoutDef.offsetX;
 			const float lineTopLayoutY = (getHeight() - _lettersInfo[ctr].position.y) - layoutDef.offsetY;
@@ -906,9 +922,12 @@ void ParaEngine::CFontRendererOpenGL::DoRender(CSpriteRenderer* pSprite, DWORD c
 			const float rx = snapScaled1To1 ? std::floor(penLayoutX * fLayoutToRender + 0.5f) : (penLayoutX * fLayoutToRender);
 			const float ry = snapScaled1To1 ? std::floor(lineTopLayoutY * fLayoutToRender + 0.5f) : (lineTopLayoutY * fLayoutToRender);
 			Vector3 vPos(rx + renderDef.offsetX, ry + renderDef.offsetY, 0.f);
-			drawGlyph(texIt->second, rect, vPos);
+			drawGlyph(texIt->second, rect, vPos, renderDef.isColor);
+			if (consumed == 2) ++ctr;
 		}
 
+		if (inColorSpriteMode && !m_bUseCustomShader)
+			pSprite->SetTextMode(true);
 		pSprite->SetTransform(matOld);
 		return;
 	}
@@ -945,7 +964,7 @@ void ParaEngine::CFontRendererOpenGL::DoRender(CSpriteRenderer* pSprite, DWORD c
 				const float localX = isPixelAligned1To1 ? std::floor(_lettersInfo[ctr].position.x + 0.5f) : _lettersInfo[ctr].position.x;
 				const float localY = isPixelAligned1To1 ? std::floor((getHeight() - _lettersInfo[ctr].position.y) + 0.5f) : (getHeight() - _lettersInfo[ctr].position.y);
 				Vector3 vPos(localX + baseX, localY + baseY, 0);
-				drawGlyph(texIt->second, rect, vPos);
+				drawGlyph(texIt->second, rect, vPos, letterDef.isColor);
 			}
 		}
 	}
@@ -974,11 +993,13 @@ void ParaEngine::CFontRendererOpenGL::DoRender(CSpriteRenderer* pSprite, DWORD c
 				rect.bottom = rect.top + letterDef.height;
 				// directX and opengGL screen space y differs by 1-y, so we need to set to getHeight() - y.
 				Vector3 vPos(_lettersInfo[ctr].position.x, (getHeight() - _lettersInfo[ctr].position.y), 0);
-				drawGlyph(texIt->second, rect, vPos);
+				drawGlyph(texIt->second, rect, vPos, letterDef.isColor);
 			}
 		}
 		pSprite->SetTransform(matOld);
 	}
+	if (inColorSpriteMode && !m_bUseCustomShader)
+		pSprite->SetTextMode(true);
 }
 
 #endif

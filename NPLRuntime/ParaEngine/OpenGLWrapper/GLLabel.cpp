@@ -305,7 +305,9 @@ bool LabelTextFormatter::createStringSprites(GLLabel *theLabel)
 	for (unsigned int i = 0; i < stringLen; i++)
 	{
 		char16_t c = strWhole[i];
-		if (fontAtlas->getLetterDefinitionForChar(c, tempDefinition))
+		size_t unitsConsumed = 1;
+		const char32_t cpKey = decodeUTF16CodePointWithVS(strWhole, i, unitsConsumed);
+		if (fontAtlas->getLetterDefinitionForChar(cpKey, tempDefinition))
 		{
 			charXOffset = tempDefinition.offsetX;
 			charYOffset = tempDefinition.offsetY;
@@ -313,9 +315,10 @@ bool LabelTextFormatter::createStringSprites(GLLabel *theLabel)
 		}
 		else
 		{
-			charXOffset = -1;
-			charYOffset = -1;
-			charAdvance = -1;
+			charXOffset = 0;
+			charYOffset = 0;
+			charAdvance = 0;
+			tempDefinition = FontLetterDefinition{};
 		}
 
 		if (c == '\n')
@@ -325,11 +328,6 @@ bool LabelTextFormatter::createStringSprites(GLLabel *theLabel)
 			nextFontPositionY -= theLabel->_commonLineHeight;
 
 			theLabel->recordPlaceholderInfo(i);
-			
-			// LiXizhi 2018.4.15: why we break here? it will not render multiple lines this way
-			//if (nextFontPositionY < theLabel->_commonLineHeight)
-			//	break;
-			
 			lineStart = true;
 			continue;
 		}
@@ -364,6 +362,19 @@ bool LabelTextFormatter::createStringSprites(GLLabel *theLabel)
 		}
 
 		nextFontPositionX += charAdvance + kernings[i] + theLabel->_additionalKerning;
+
+		// Keep `_lettersInfo` 1:1 with UTF-16 code units by recording a zero-advance placeholder for trail surrogates!
+		if (unitsConsumed == 2 && (i + 1) < stringLen)
+		{
+			FontLetterDefinition trailDef{};
+			trailDef.validDefinition = true;
+			trailDef.width = 0;
+			trailDef.height = 0;
+			trailDef.xAdvance = 0;
+			Vector2 trailPos(nextFontPositionX / contentScaleFactor, (nextFontPositionY) / contentScaleFactor);
+			theLabel->recordLetterInfo(trailPos, trailDef, i + 1);
+			++i;
+		}
 
 		if (longestLine < nextFontPositionX)
 		{

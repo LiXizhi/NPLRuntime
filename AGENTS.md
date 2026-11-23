@@ -10,6 +10,10 @@ Guidance for AI coding agents working in `NPLRuntimeUnified` (`unified-crossplat
 - **Web (WebAssembly):** `ParaCraftSingleThread.{js,wasm}` built with **Emscripten 7.0+** (WebGL2 + SDL2 + MuJoCo + ONNX Runtime 1.27.1), mounting local Paracraft files directly from disk without `.data` bundles or external `webparacraft` repo clones.
 - **Mobile:** Android, iOS, HarmonyOS
 
+## MCML2 pages and CSS
+
+For pages opened by `System.Windows.Window` or CodeBlock `window()`, see [Writing MCML2 pages with CSS](../ParaEngine/paraworld/docs/mcml-ui.md#writing-mcml2-pages-with-css) and [Vector icons and SVG animations](../ParaEngine/paraworld/docs/mcml-ui.md#vector-icons-and-svg-animations) in the sibling ParaWorld script checkout. They cover responsive Flexbox/Grid layout, state selectors, CSS & SMIL animations, inline/external `<svg>` vector rendering with GPU `CRenderTarget` atlas caching, 2D `<canvas>`, and native testing. The matching interactive showcase is `script/test/MCMLV2/h5_css_testsuite.html` in that checkout.
+
 ## Haqi / 魔法哈奇
 
 夜间维护无法登录时，运行 `python3 tests/haqi/launch_offline.py` 进入本地测试服。首次准备资源用 `--prepare`，自动回归用 `--check`。它从配置出生点加载哈奇镇、任务 NPC、商店与背包，附带 36 个陪测角色和火系训练技能。[离线测试服的准备、复测与覆盖范围](docs/haqi-testing.md#offline-town-during-maintenance)
