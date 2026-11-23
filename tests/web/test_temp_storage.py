@@ -28,21 +28,22 @@ var Module = {
     window.loaded = sync(true);
   }
 };
-</script><script src="/ParaCraftSingleThread.js"></script>"""
+</script><script src="/ENGINE.js"></script>"""
 
 
-def regression(engine):
+def regression(engine, threaded=False):
+    target = "ParaCraft" if threaded else "ParaCraftSingleThread"
     requests = []
 
     class Handler(BaseHTTPRequestHandler):
         def do_GET(self):
             path = urlsplit(self.path).path
             if path == "/":
-                data, mime, cache = HTML, "text/html", "no-store"
+                data, mime, cache = HTML.replace(b"/ENGINE.js", f"/{target}.js".encode()), "text/html", "no-store"
             elif path == "/art":
                 requests.append(path)
                 data, mime, cache = ASSET, "application/octet-stream", "public, max-age=86400"
-            elif path in ("/ParaCraftSingleThread.js", "/ParaCraftSingleThread.wasm"):
+            elif path in (f"/{target}.js", f"/{target}.wasm", f"/{target}.worker.js"):
                 data = (engine / path[1:]).read_bytes()
                 mime = "application/wasm" if path.endswith(".wasm") else "application/javascript"
                 cache = "public, max-age=86400"
@@ -51,6 +52,8 @@ def regression(engine):
                 return
             self.send_response(200)
             self.send_header("Content-Type", mime)
+            self.send_header("Cross-Origin-Opener-Policy", "same-origin")
+            self.send_header("Cross-Origin-Embedder-Policy", "require-corp")
             self.send_header("Content-Length", str(len(data)))
             self.send_header("Cache-Control", cache)
             self.end_headers()
@@ -143,5 +146,7 @@ def regression(engine):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--engine-dir", type=Path, default=ROOT / "web/auto_generate_files")
-    regression(parser.parse_args().engine_dir)
+    parser.add_argument("--threaded", action="store_true", help="exercise the ParaCraft pthread build")
+    args = parser.parse_args()
+    regression(args.engine_dir, args.threaded)
     print("PASS: Web /temp persistence, packaged defaults, nested mount, concurrent tabs and HTTP cache reuse")

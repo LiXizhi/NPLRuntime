@@ -2,7 +2,15 @@
 // user changes over those defaults in the same FS.syncfs(true) as worlds and apps.
 addToLibrary({
   $NPLTempFS__deps: ['$FS', '$MEMFS', '$IDBFS'],
-  $NPLTempFS__postset: "if (typeof ENVIRONMENT_IS_PTHREAD === 'undefined' || !ENVIRONMENT_IS_PTHREAD) { FS.mkdirTree('/temp'); FS.mount(NPLTempFS, {}, '/temp'); }",
+  // The pthread linker can emit this postset before FS.staticInit(). preInit
+  // runs after all postsets and before the packager's preRun callbacks.
+  $NPLTempFS__postset: `
+    if (typeof ENVIRONMENT_IS_PTHREAD === 'undefined' || !ENVIRONMENT_IS_PTHREAD) {
+      Module['preInit'] = [() => {
+        FS.mkdirTree('/temp');
+        FS.mount(NPLTempFS, {}, '/temp');
+      }].concat(Module['preInit'] || []);
+    }`,
   $NPLTempFS: {
     // CAssetManifest registers only payloads it actually uses. A caller can
     // write its own hash-named files alongside them with ordinary ParaIO.
@@ -209,5 +217,7 @@ addToLibrary({
   },
   npl_exclude_manifest_file__deps: ['$NPLTempFS', '$UTF8ToString'],
   npl_exclude_manifest_file__proxy: 'sync',
-  npl_exclude_manifest_file: path => NPLTempFS.excludeAsset('/' + UTF8ToString(path)),
+  npl_exclude_manifest_file: function(path) {
+    NPLTempFS.excludeAsset('/' + UTF8ToString(path));
+  },
 });
