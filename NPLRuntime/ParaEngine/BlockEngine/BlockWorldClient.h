@@ -2,6 +2,7 @@
 #include "BlockWorld.h"
 #include "Framework/Interface/Render/IBlockSkyRayTracer.h"
 #include <chrono>
+#include <unordered_map>
 #include "effect_file.h"
 #include "3dengine/SoftwareOcclusionBuffer.h"
 
@@ -215,10 +216,16 @@ namespace ParaEngine
 		bool CanUseAdvancedShading();
 		bool CanTraceBlockSky();
 		Vector4 UpdateRayTracedSky();
+		Vector4 GetNearBlockGridOrigin();
+		Vector4 UpdateTerrainZigZagVolume();
 		bool UpdateRayTracedReflections();
+		uint8_t ComputeTerrainZigZagBlendCode(BlockTemplate* pTemplate, int32_t materialId, uint32_t userData = 0) const;
+		uint8_t EnsureTerrainZigZagTileSlot(BlockTemplate* pTemplate, uint32_t userData, bool isSide, bool& outAtlasDirty);
 		ATTRIBUTE_METHOD1(BlockWorldClient, UpdateRayTracedReflections_s, bool*) { *p1 = cls->UpdateRayTracedReflections(); return S_OK; }
 		ATTRIBUTE_METHOD1(BlockWorldClient, CanTraceBlockSky_s, bool*) { *p1 = cls->CanTraceBlockSky(); return S_OK; }
 		ATTRIBUTE_METHOD1(BlockWorldClient, UpdateRayTracedSky_s, Vector4*) { *p1 = cls->UpdateRayTracedSky(); return S_OK; }
+		ATTRIBUTE_METHOD1(BlockWorldClient, GetNearBlockGridOrigin_s, Vector4*) { *p1 = cls->GetNearBlockGridOrigin(); return S_OK; }
+		ATTRIBUTE_METHOD1(BlockWorldClient, UpdateTerrainZigZagVolume_s, Vector4*) { *p1 = cls->UpdateTerrainZigZagVolume(); return S_OK; }
 
 		/** whether to use sun light shadow map */
 		void SetUseSunlightShadowMap(bool bEnable);
@@ -362,6 +369,13 @@ namespace ParaEngine
 		IRHITexture* m_lastSkyTexture = nullptr;
 		Uint16x3 m_skyOrigin;
 		std::vector<BlockSkySpan> m_skySpans;
+		asset_ptr<TextureEntity> m_terrainZigZagTex;
+		std::vector<uint8_t> m_terrainZigZagPixels;
+		std::unordered_map<uint32_t, uint8_t> m_zigzagTileSlotCache;
+		uint8_t m_zigzagNextSlot = 1;
+		bool m_bHasZigZagOrigin = false;
+		Uint16x3 m_zigzagOrigin;
+		std::chrono::steady_clock::time_point m_nextZigZagScan;
 		std::vector<Uint16x3> m_renderCandidates;
 		std::vector<std::vector<Uint16x3>> m_sectionsByDistance;
 		std::chrono::steady_clock::time_point m_nextSkyScan;

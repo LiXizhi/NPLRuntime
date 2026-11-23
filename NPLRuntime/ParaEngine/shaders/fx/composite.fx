@@ -54,6 +54,8 @@ float BlockReflectionEnabled = 0;
 float QualityLevel = 4.0f;
 float SkyVisibilityView = 0.0f;
 float BevelEnabled = 0.0f;
+float ZigZagEnabled = 0.0f;
+float4 BlockGridOrigin = float4(0.0f, 0.0f, 0.0f, 0.0f);
 float BounceEnabled = 0.0f;
 float MaxDOFBlur = 0.00045f;
 float ViewAspect;
@@ -612,36 +614,591 @@ float2 ClampViewUV(float2 coord)
 
 float3 ViewPosition(float2 coord, float depth)
 {
-	float2 ndc = (coord - viewportOffset) / viewportScale * 2.0 - 1.0;
-	return float3(ndc.x * TanHalfFOV * ViewAspect, -ndc.y * TanHalfFOV, 1.0) * depth;
+	float2 ndc = (coord - viewportOffset) / viewportScale * 2.0f - 1.0f;
+	float invP11 = (abs(matProjection._11) > 1e-5f) ? (1.0f / matProjection._11) : (TanHalfFOV * ViewAspect);
+	float invP22 = (abs(matProjection._22) > 1e-5f) ? (1.0f / abs(matProjection._22)) : TanHalfFOV;
+	return float3((ndc.x - matProjection._31) * invP11, (-ndc.y - abs(matProjection._32)) * invP22, 1.0f) * depth;
 }
 
-// Blend the two visible face normals over a narrow strip along a convex edge.
-float3 BevelNormal(SurfaceStruct surface)
+float3 DecodeSurfaceAlbedo(float3 rawLinear)
 {
-	float3 face = surface.normal;
-	float major = max(abs(face.x), max(abs(face.y), abs(face.z)));
-	if (BevelEnabled < 0.5 || surface.depth >= 12.0 || surface.mask_sky || surface.mask_water ||
-		surface.category_id == 255 || surface.category_id == 18 || surface.category_id == 31 || major < 0.99)
-		return face;
-	float3 faceVS = mul(face, (float3x3)matView);
-	float width = 0.045 * (1.0 - smoothstep(6.0, 12.0, surface.depth));
-	float2 radius = min(12.0 / screenParam, viewportScale * float2(1.0 / ViewAspect, 1.0)
-		* width / max(2.0 * surface.depth * TanHalfFOV, 0.01));
-	float3 bend = 0;
-	[loop] for (int i = 0; i < 4; ++i)
+	float3 a = pow(max(rawLinear, 0.0f), 1.4f);
+	return lerp(a, dot(a, float1(0.3333f).xxx), 0.035f);
+}
+
+float2 SnapTexelUV(float2 coord, float2 pixelPhase)
+{
+	float2 clamped = ClampViewUV(coord);
+	return ClampViewUV((floor(clamped * screenParam - pixelPhase + 0.5f) + pixelPhase) / screenParam);
+}
+
+void GetVoxelFaceBasis(float3 face, out float3 axisU, out float3 axisV)
+{
+	if (abs(face.y) > 0.5f)
 	{
-		float2 axis = i < 2 ? float2(1, 0) : float2(0, 1);
-		float2 uv = ClampViewUV(surface.texCoord + axis * ((i == 0 || i == 2) ? radius : -radius));
-		float depth = tex2Dlod(depthSampler, float4(uv, 0, 0)).r;
-		float3 other = tex2Dlod(normalSampler, float4(uv, 0, 0)).rgb * 2.0 - 1.0;
-		float3 delta = ViewPosition(uv, depth) - surface.cameraSpacePos;
-		float across = dot(mul(other, (float3x3)matView), delta);
-		if (depth > 0.01 && dot(delta, delta) < 0.04 && dot(delta, faceVS) < 0 && across > 0 &&
-			abs(dot(face, other)) < 0.12)
-			bend += other * saturate(1.0 - across / max(width, 0.001));
+		axisU = float3(1.0f, 0.0f, 0.0f);
+		axisV = float3(0.0f, 0.0f, 1.0f);
 	}
-	return normalize(face + bend);
+	else if (abs(face.x) > 0.5f)
+	{
+		axisU = float3(0.0f, 0.0f, 1.0f);
+		axisV = float3(0.0f, 1.0f, 0.0f);
+	}
+	else
+	{
+		axisU = float3(1.0f, 0.0f, 0.0f);
+		axisV = float3(0.0f, 1.0f, 0.0f);
+	}
+}
+
+float3 GetCardinalFaceNormal(float3 n)
+{
+	float3 an = abs(n);
+	if (an.y >= an.x && an.y >= an.z)
+		return float3(0.0f, (n.y >= 0.0f) ? 1.0f : -1.0f, 0.0f);
+	if (an.x >= an.z)
+		return float3((n.x >= 0.0f) ? 1.0f : -1.0f, 0.0f, 0.0f);
+	return float3(0.0f, 0.0f, (n.z >= 0.0f) ? 1.0f : -1.0f);
+}
+
+// 8-block periodic scalloped/tufted contour in [0, 1] matching 8-block snapped volume origins so walking never pops.
+float ZigZagTuftProfile(float alongCoord, float seamLine, float axisSeed)
+{
+	float alongMod = alongCoord - floor(alongCoord / 8.0f) * 8.0f;
+	float lineMod = seamLine - floor(seamLine / 8.0f) * 8.0f;
+	float seed = frac(sin(lineMod * 37.17f + axisSeed * 91.73f) * 43758.5453f);
+	float triPrimary = 1.0f - abs(frac(alongMod * 3.0f + seed) * 2.0f - 1.0f);
+	float triDetail = 1.0f - abs(frac(alongMod * 5.0f + seed * 2.71f) * 2.0f - 1.0f);
+	float sway = 0.5f + 0.5f * sin(alongMod * 6.2831853f + seed * 6.2831853f);
+	float raw = saturate(triPrimary * 0.58f + triDetail * 0.27f + sway * 0.20f);
+	return 0.16f + 0.84f * smoothstep(0.08f, 0.92f, raw);
+}
+
+float4 SampleZigZagVoxel(float3 voxIdx)
+{
+	float3 idx = floor(voxIdx + 0.5f);
+	if (any(idx < 0.0f) || any(idx > 31.0f))
+		return float4(0.0f, 0.0f, 0.0f, 0.0f);
+	float tileX = fmod(idx.y, 8.0f) * 32.0f;
+	float tileY = floor(idx.y / 8.0f + 0.001f) * 32.0f;
+	float2 uv = float2(tileX + idx.x + 0.5f, tileY + idx.z + 0.5f) / 256.0f;
+	return tex2Dlod(blockReflectionSampler, float4(uv, 0.0f, 0.0f));
+}
+
+float3 SampleZigZagAtlasSRGB(float slotIdx, float fu, float fv)
+{
+	float s = clamp(floor(slotIdx + 0.5f), 1.0f, 31.0f);
+	float slotX = fmod(s, 8.0f) * 32.0f;
+	float slotY = 128.0f + floor(s / 8.0f + 0.001f) * 32.0f;
+	float2 tilePx = clamp(floor(float2(fu, fv) * 32.0f) + 0.5f, 0.5f, 31.5f);
+	float2 uv = (float2(slotX, slotY) + tilePx) / 256.0f;
+	return tex2Dlod(blockReflectionSampler, float4(uv, 0.0f, 0.0f)).rgb;
+}
+
+bool IsVoxelFaceExposed(float maskByte, float faceBitVal)
+{
+	return fmod(floor(maskByte / faceBitVal + 0.01f), 2.0f) >= 0.9f;
+}
+
+// World-space voxel + block-atlas zig-zag seam blending on upward-facing terrain surfaces (100% stable under camera rotation).
+void ApplyTerrainZigZagBlend(inout SurfaceStruct surface, float3 rawColorSRGB, float selfCode)
+{
+	float3 rawFace = surface.normal;
+	[branch] if (ZigZagEnabled < 0.5f || BlockGridOrigin.w <= 0.0f || surface.depth <= 0.01f || surface.depth >= 15.5f ||
+		surface.mask_sky || surface.mask_water || surface.category_id != 0 || selfCode < 0.5f || selfCode > 254.5f || rawFace.y < 0.95f)
+		return;
+
+	// Snap 8-bit UNORM normal (where 0 decodes to +/-0.00392) to exact cardinal unit axis so floor(voxelPos) never shifts by 2mm
+	float3 face = GetCardinalFaceNormal(rawFace);
+	float3 axisU, axisV;
+	GetVoxelFaceBasis(face, axisU, axisV);
+	float3 axisW = abs(face);
+
+	float3 exactPosVS = ViewPosition(surface.texCoord, surface.depth);
+	float3 worldRel = mul(float4(exactPosVS, 1.0f), matViewInverse).xyz;
+	float3 voxelPos = (worldRel - BlockGridOrigin.xyz) * BlockGridOrigin.w;
+
+	float u = dot(voxelPos, axisU);
+	float v = dot(voxelPos, axisV);
+	float w = dot(voxelPos, axisW) - ((dot(face, axisW) > 0.0f) ? 0.5f : -0.5f);
+	float iu = floor(u);
+	float iv = floor(v);
+	float iw = floor(w);
+	float fu = u - iu;
+	float fv = v - iv;
+	float du = (fu < 0.5f) ? fu : (1.0f - fu);
+	float dv = (fv < 0.5f) ? fv : (1.0f - fv);
+	float su = (fu < 0.5f) ? -1.0f : 1.0f;
+	float sv = (fv < 0.5f) ? -1.0f : 1.0f;
+	float3 selfVoxel = axisU * iu + axisV * iv + axisW * iw;
+
+	// Smoothly fade inside the [1..30]^3 interior of the 32^3 near-camera volume
+	float3 edgeMargin = min(selfVoxel - 0.5f, 30.5f - selfVoxel);
+	float volFade = saturate(min(edgeMargin.x, min(edgeMargin.y, edgeMargin.z)) * 0.5f);
+	float fade = (1.0f - smoothstep(9.5f, 15.0f, surface.depth)) * volFade;
+	if (fade <= 0.001f)
+		return;
+
+	float maxAmp = 0.16f * fade;
+	if (min(du, dv) >= maxAmp + 0.06f)
+		return;
+
+	float isSideFace = (abs(face.y) < 0.5f) ? 1.0f : 0.0f;
+	float faceBitVal = (face.y > 0.5f) ? 1.0f : ((face.y < -0.5f) ? 2.0f :
+		((face.x > 0.5f) ? 4.0f : ((face.x < -0.5f) ? 8.0f : ((face.z > 0.5f) ? 16.0f : 32.0f))));
+
+	float4 selfVox = SampleZigZagVoxel(selfVoxel);
+	float selfVoxCode = floor(selfVox.r * 255.0f + 0.5f);
+
+	// Resolve sub-millimeter depth-vs-rasterizer ties right on block seams so pixel ownership always matches _BlockInfoRT
+	if (abs(selfVoxCode - selfCode) > 0.5f)
+	{
+		if (du < 0.03f)
+		{
+			float4 candU = SampleZigZagVoxel(selfVoxel + axisU * su);
+			if (abs(floor(candU.r * 255.0f + 0.5f) - selfCode) < 0.5f)
+			{
+				iu += su;
+				fu = (su > 0.0f) ? 0.0001f : 0.9999f;
+				du = 0.0001f;
+				su = -su;
+				selfVoxel = axisU * iu + axisV * iv + axisW * iw;
+				selfVox = candU;
+				selfVoxCode = selfCode;
+			}
+		}
+		if (abs(selfVoxCode - selfCode) > 0.5f && dv < 0.03f)
+		{
+			float4 candV = SampleZigZagVoxel(selfVoxel + axisV * sv);
+			if (abs(floor(candV.r * 255.0f + 0.5f) - selfCode) < 0.5f)
+			{
+				iv += sv;
+				fv = (sv > 0.0f) ? 0.0001f : 0.9999f;
+				dv = 0.0001f;
+				sv = -sv;
+				selfVoxel = axisU * iu + axisV * iv + axisW * iw;
+				selfVox = candV;
+				selfVoxCode = selfCode;
+			}
+		}
+	}
+
+	float selfMask = floor(selfVox.b * 255.0f + 0.5f);
+	if (!IsVoxelFaceExposed(selfMask, faceBitVal))
+		return;
+
+	// Preserve smooth vertex AO baked into _ColorRT when replacing albedo with un-shaded block atlas texels
+	float selfSlot = floor((isSideFace > 0.5f ? selfVox.a : selfVox.g) * 255.0f + 0.5f);
+	float vertexAO = 1.0f;
+	if (selfSlot > 0.5f)
+	{
+		float3 selfTexSRGB = SampleZigZagAtlasSRGB(selfSlot, fu, fv);
+		float selfLum = dot(selfTexSRGB, float3(0.299f, 0.587f, 0.114f));
+		float rtLum = dot(rawColorSRGB, float3(0.299f, 0.587f, 0.114f));
+		if (selfLum > 0.04f)
+			vertexAO = clamp(rtLum / selfLum, 0.45f, 1.0f);
+	}
+
+	// Exact analytical perspective-foreshortened pixel footprint on the block plane (no ddx/ddy in branches)
+	float3 eyeToHit = worldRel - matViewInverse[3].xyz;
+	float rayDist = max(length(eyeToHit), 0.1f);
+	float3 rayDirWS = eyeToHit / rayDist;
+	float pixelAngle = (2.0f * TanHalfFOV) / max(screenParam.y, 1.0f);
+	float denom = dot(rayDirWS, face);
+	float safeDenom = (abs(denom) > 0.10f) ? denom : ((denom >= 0.0f) ? 0.10f : -0.10f);
+
+	float selfTier = floor(selfCode / 16.0f + 0.001f);
+
+	float blendU = 0.0f, codeU = 0.0f, tierU = 0.0f, slotU = 0.0f, lipU = 0.0f;
+	float maskU = 0.0f;
+	if (du < maxAmp + 0.06f)
+	{
+		float3 dirU = axisU * su;
+		float4 voxU = SampleZigZagVoxel(selfVoxel + dirU);
+		codeU = floor(voxU.r * 255.0f + 0.5f);
+		maskU = floor(voxU.b * 255.0f + 0.5f);
+		slotU = floor((isSideFace > 0.5f ? voxU.a : voxU.g) * 255.0f + 0.5f);
+		if (codeU > 0.5f && abs(codeU - selfCode) > 0.5f && slotU > 0.5f && IsVoxelFaceExposed(maskU, faceBitVal))
+		{
+			tierU = floor(codeU / 16.0f + 0.001f);
+			float toothU = ZigZagTuftProfile(v, floor(u + 0.5f), 1.0f);
+			float reachU = (tierU > selfTier + 0.5f) ? (toothU * maxAmp)
+				: ((abs(tierU - selfTier) < 0.5f) ? max(0.0f, ((codeU > selfCode) ? (toothU - 0.54f) : (0.62f - toothU)) * 1.35f * maxAmp) : 0.0f);
+			if (reachU > 0.001f)
+			{
+				float3 gradU = dirU - face * (dot(rayDirWS, dirU) / safeDenom);
+				gradU -= rayDirWS * dot(gradU, rayDirWS);
+				float pxU = clamp(length(gradU) * rayDist * pixelAngle * BlockGridOrigin.w, 0.004f, 0.075f);
+				blendU = saturate((reachU - du) / pxU + 0.5f);
+				if (tierU > selfTier + 0.5f && du > reachU && du < reachU + 0.025f)
+					lipU = saturate(1.0f - (du - reachU) / 0.025f) * (1.0f - blendU);
+			}
+		}
+	}
+
+	float blendV = 0.0f, codeV = 0.0f, tierV = 0.0f, slotV = 0.0f, lipV = 0.0f;
+	float maskV = 0.0f;
+	if (dv < maxAmp + 0.06f)
+	{
+		float3 dirV = axisV * sv;
+		float4 voxV = SampleZigZagVoxel(selfVoxel + dirV);
+		codeV = floor(voxV.r * 255.0f + 0.5f);
+		maskV = floor(voxV.b * 255.0f + 0.5f);
+		slotV = floor((isSideFace > 0.5f ? voxV.a : voxV.g) * 255.0f + 0.5f);
+		if (codeV > 0.5f && abs(codeV - selfCode) > 0.5f && slotV > 0.5f && IsVoxelFaceExposed(maskV, faceBitVal))
+		{
+			tierV = floor(codeV / 16.0f + 0.001f);
+			float toothV = ZigZagTuftProfile(u, floor(v + 0.5f), 2.0f);
+			float reachV = (tierV > selfTier + 0.5f) ? (toothV * maxAmp)
+				: ((abs(tierV - selfTier) < 0.5f) ? max(0.0f, ((codeV > selfCode) ? (toothV - 0.54f) : (0.62f - toothV)) * 1.35f * maxAmp) : 0.0f);
+			if (reachV > 0.001f)
+			{
+				float3 gradV = dirV - face * (dot(rayDirWS, dirV) / safeDenom);
+				gradV -= rayDirWS * dot(gradV, rayDirWS);
+				float pxV = clamp(length(gradV) * rayDist * pixelAngle * BlockGridOrigin.w, 0.004f, 0.075f);
+				blendV = saturate((reachV - dv) / pxV + 0.5f);
+				if (tierV > selfTier + 0.5f && dv > reachV && dv < reachV + 0.025f)
+					lipV = saturate(1.0f - (dv - reachV) / 0.025f) * (1.0f - blendV);
+			}
+		}
+	}
+
+	if (blendU > 0.005f || blendV > 0.005f)
+	{
+		if (blendU > 0.005f && blendV > 0.005f && abs(codeU - codeV) < 0.5f)
+		{
+			float unionBlend = 1.0f - (1.0f - blendU) * (1.0f - blendV);
+			float3 donorSRGB = SampleZigZagAtlasSRGB(slotU, fu, fv) * vertexAO;
+			surface.albedo = lerp(surface.albedo, DecodeSurfaceAlbedo(pow(max(donorSRGB, 0.0f), 2.2f)), unionBlend);
+		}
+		else if (tierU <= tierV)
+		{
+			if (blendU > 0.005f)
+			{
+				float3 srgbU = SampleZigZagAtlasSRGB(slotU, fu, fv) * vertexAO;
+				surface.albedo = lerp(surface.albedo, DecodeSurfaceAlbedo(pow(max(srgbU, 0.0f), 2.2f)), blendU);
+			}
+			if (blendV > 0.005f)
+			{
+				float3 srgbV = SampleZigZagAtlasSRGB(slotV, fu, fv) * vertexAO;
+				surface.albedo = lerp(surface.albedo, DecodeSurfaceAlbedo(pow(max(srgbV, 0.0f), 2.2f)), blendV);
+			}
+		}
+		else
+		{
+			if (blendV > 0.005f)
+			{
+				float3 srgbV = SampleZigZagAtlasSRGB(slotV, fu, fv) * vertexAO;
+				surface.albedo = lerp(surface.albedo, DecodeSurfaceAlbedo(pow(max(srgbV, 0.0f), 2.2f)), blendV);
+			}
+			if (blendU > 0.005f)
+			{
+				float3 srgbU = SampleZigZagAtlasSRGB(slotU, fu, fv) * vertexAO;
+				surface.albedo = lerp(surface.albedo, DecodeSurfaceAlbedo(pow(max(srgbU, 0.0f), 2.2f)), blendU);
+			}
+		}
+		return;
+	}
+
+	// Diagonal outer-corner tuft (only at true outer corners like T-junctions/crossroads where neither U nor V is already higher-tier)
+	if (tierU <= selfTier + 0.5f && tierV <= selfTier + 0.5f &&
+		du < maxAmp * 0.75f && dv < maxAmp * 0.75f && IsVoxelFaceExposed(maskU, faceBitVal) && IsVoxelFaceExposed(maskV, faceBitVal))
+	{
+		float3 dirDiag = axisU * su + axisV * sv;
+		float4 voxD = SampleZigZagVoxel(selfVoxel + dirDiag);
+		float codeD = floor(voxD.r * 255.0f + 0.5f);
+		float maskD = floor(voxD.b * 255.0f + 0.5f);
+		float slotD = floor((isSideFace > 0.5f ? voxD.a : voxD.g) * 255.0f + 0.5f);
+		float tierD = floor(codeD / 16.0f + 0.001f);
+		if (codeD > 0.5f && tierD > selfTier + 0.5f && slotD > 0.5f && IsVoxelFaceExposed(maskD, faceBitVal))
+		{
+			float cLineU = floor(u + 0.5f) - floor(floor(u + 0.5f) / 8.0f) * 8.0f;
+			float cLineV = floor(v + 0.5f) - floor(floor(v + 0.5f) / 8.0f) * 8.0f;
+			float cSeed = frac(sin(cLineU * 23.17f + cLineV * 59.41f) * 43758.5453f);
+			float reachD = maxAmp * (0.44f + 0.22f * cSeed);
+			float radialDist = length(float2(du, dv));
+			float3 dirNorm = normalize(dirDiag);
+			float3 gradD = dirNorm - face * (dot(rayDirWS, dirNorm) / safeDenom);
+			gradD -= rayDirWS * dot(gradD, rayDirWS);
+			float pxD = clamp(length(gradD) * rayDist * pixelAngle * BlockGridOrigin.w, 0.004f, 0.075f);
+			float blendD = saturate((reachD - radialDist) / pxD + 0.5f);
+			if (blendD > 0.005f)
+			{
+				float3 srgbD = SampleZigZagAtlasSRGB(slotD, fu, fv) * vertexAO;
+				surface.albedo = lerp(surface.albedo, DecodeSurfaceAlbedo(pow(max(srgbD, 0.0f), 2.2f)), blendD);
+				return;
+			}
+		}
+	}
+
+	float lip = max(lipU, lipV);
+	if (lip > 0.001f)
+		surface.albedo *= (1.0f - 0.075f * fade * lip);
+}
+
+// Round convex 2-face edges, 3-face corners, cliff silhouettes, and protruding corner tips near the camera.
+float ApplyRoundedBlockBorders(inout SurfaceStruct surface, inout float sun_light_strength, inout float torch_light_strength, float2 pixelPhase)
+{
+	float3 rawFace = surface.normal;
+	float major = max(abs(rawFace.x), max(abs(rawFace.y), abs(rawFace.z)));
+	[branch] if (BevelEnabled < 0.5f || surface.depth <= 0.01f || surface.depth >= 16.0f || surface.mask_sky || surface.mask_water ||
+		surface.category_id == 255 || surface.category_id == 18 || surface.category_id == 31 || major < 0.99f)
+		return 1.0f;
+
+	float3 face = GetCardinalFaceNormal(rawFace);
+	float fade = 1.0f - smoothstep(9.0f, 16.0f, surface.depth);
+	float width = 0.21f * fade;
+	float3 faceVS = mul(face, (float3x3)matView);
+	float3 bend = 0.0f;
+	float creaseAO = 1.0f;
+	float convexRim = 0.0f;
+	bool cornerTrimmed = false;
+
+	[branch] if (BlockGridOrigin.w > 0.0f)
+	{
+		float blockSize = 1.0f / BlockGridOrigin.w;
+		float3 exactPosVS = ViewPosition(surface.texCoord, surface.depth);
+		float3 worldRel = mul(float4(exactPosVS, 1.0f), matViewInverse).xyz;
+		float3 voxelPos = (worldRel - BlockGridOrigin.xyz) * BlockGridOrigin.w;
+		float3 axisU, axisV;
+		GetVoxelFaceBasis(face, axisU, axisV);
+		float u = dot(voxelPos, axisU);
+		float v = dot(voxelPos, axisV);
+		float fu = u - floor(u);
+		float fv = v - floor(v);
+		float du = (fu < 0.5f) ? fu : (1.0f - fu);
+		float dv = (fv < 0.5f) ? fv : (1.0f - fv);
+		float su = (fu < 0.5f) ? -1.0f : 1.0f;
+		float sv = (fv < 0.5f) ? -1.0f : 1.0f;
+
+		bool convexU = false;
+		bool convexV = false;
+		bool silU = false;
+		bool silV = false;
+		bool concaveFloorV = false;
+
+		if (min(du, dv) < width)
+		{
+			[loop] for (int a = 0; a < 2; ++a)
+			{
+				float dist = (a == 0) ? du : dv;
+				if (dist < width)
+				{
+					float3 edgeDirWS = (a == 0) ? (axisU * su) : (axisV * sv);
+					float3 seamWS = worldRel + edgeDirWS * (dist * blockSize);
+
+					// 1) Check upward step for concave inner crease (wall rising above current face, or floor beneath vertical face)
+					float3 upWS = seamWS + face * (0.055f * blockSize);
+					float3 upVS = mul(float4(upWS, 1.0f), matView).xyz;
+					bool isConcave = false;
+					if (upVS.z > 0.05f)
+					{
+						float2 upUV = SnapTexelUV(convertCameraSpaceToScreenSpace(upVS), pixelPhase);
+						float upDepth = tex2Dlod(depthSampler, float4(upUV, 0, 0)).r;
+						float3 upNorm = tex2Dlod(normalSampler, float4(upUV, 0, 0)).rgb * 2.0f - 1.0f;
+						if (upDepth > 0.01f && abs(upDepth - upVS.z) < 0.10f && dot(upNorm, -edgeDirWS) > 0.80f)
+						{
+							isConcave = true;
+							float cw = saturate(1.0f - dist / max(width * 0.68f, 0.001f));
+							creaseAO = min(creaseAO, 1.0f - 0.11f * cw * cw);
+							if (a == 1 && sv < 0.0f && abs(face.y) < 0.1f)
+								concaveFloorV = true;
+						}
+					}
+
+					if (!isConcave)
+					{
+						// 2) Check coplanar neighbor vs cliff drop-off / visible orthogonal side face
+						float3 acrossWS = seamWS + edgeDirWS * (0.055f * blockSize);
+						float3 acrossVS = mul(float4(acrossWS, 1.0f), matView).xyz;
+						bool isFlush = false;
+						bool isSil = false;
+						if (acrossVS.z > 0.05f)
+						{
+							float2 acrossUV = SnapTexelUV(convertCameraSpaceToScreenSpace(acrossVS), pixelPhase);
+							float acrossDepth = tex2Dlod(depthSampler, float4(acrossUV, 0, 0)).r;
+							float3 acrossNorm = tex2Dlod(normalSampler, float4(acrossUV, 0, 0)).rgb * 2.0f - 1.0f;
+							float3 acrossActualWS = mul(float4(ViewPosition(acrossUV, acrossDepth), 1.0f), matViewInverse).xyz;
+							if (acrossDepth > 0.01f && abs(dot(face, acrossActualWS - worldRel)) < 0.04f && dot(face, acrossNorm) > 0.90f)
+							{
+								isFlush = true;
+							}
+							else if (acrossDepth < 0.01f || acrossDepth > acrossVS.z + max(0.20f, surface.depth * 0.025f))
+							{
+								isSil = true;
+							}
+						}
+
+						bool isVisSide = false;
+						if (!isFlush && !isSil)
+						{
+							float3 sideWS = seamWS - face * (0.055f * blockSize);
+							float3 sideVS = mul(float4(sideWS, 1.0f), matView).xyz;
+							if (sideVS.z > 0.05f)
+							{
+								float2 sideUV = SnapTexelUV(convertCameraSpaceToScreenSpace(sideVS), pixelPhase);
+								float sideDepth = tex2Dlod(depthSampler, float4(sideUV, 0, 0)).r;
+								float3 sideNorm = tex2Dlod(normalSampler, float4(sideUV, 0, 0)).rgb * 2.0f - 1.0f;
+								if (sideDepth > 0.01f && abs(sideDepth - sideVS.z) < 0.14f && dot(sideNorm, edgeDirWS) > 0.80f)
+									isVisSide = true;
+							}
+						}
+
+						if (isSil || isVisSide)
+						{
+							float t = saturate(1.0f - dist / max(width, 0.001f));
+							// Exact 1.0 limit on shared visible seams so orthogonal faces meet continuously at 45 deg (and (1,1,1)/sqrt(3) at 3-face corners)
+							float filletW = isSil ? (t * t * (3.0f - 2.0f * t) * 1.25f) : (t * (0.72f + 0.28f * t));
+							bend += edgeDirWS * filletW;
+							convexRim = max(convexRim, t * t * (3.0f - 2.0f * t));
+							if (a == 0) { convexU = true; silU = isSil; }
+							else        { convexV = true; silV = isSil; }
+						}
+					}
+				}
+			}
+
+			if (convexU && convexV)
+			{
+				float2 c2 = max(float2(width - du, width - dv), 0.0f) / max(width, 0.001f);
+				convexRim = saturate(length(c2));
+			}
+
+			float pxBlock = clamp(surface.depth * TanHalfFOV * 2.0f / max(screenParam.y, 1.0f), 0.003f, 0.022f);
+
+			// 3) Quarter-cylinder base rounding where a protruding 2-face vertical corner meets a flat floor
+			float rBase = 0.21f * fade;
+			if (convexU && !silU && concaveFloorV && du < rBase && dv < rBase)
+			{
+				float R = rBase * blockSize;
+				float3 edgeU = axisU * su;
+				float3 rayDirWS = normalize(worldRel - matViewInverse[3].xyz);
+				float2 q = float2(R, R - du * blockSize);
+				float2 d2 = float2(dot(rayDirWS, face), dot(rayDirWS, edgeU));
+				if (d2.x < -0.05f && d2.y < -0.05f)
+				{
+					float a2 = max(dot(d2, d2), 1e-4f);
+					float b2 = dot(q, d2);
+					float c2 = q.y * q.y;
+					float disc = b2 * b2 - a2 * c2;
+					if (disc > 0.0f)
+					{
+						float tCyl = max(0.0f, (-b2 - sqrt(disc)) / a2);
+						float hitCylY = dv * blockSize + rayDirWS.y * tCyl;
+						if (hitCylY < pxBlock * blockSize)
+						{
+							float3 floorWS = worldRel - float3(0.0f, dv * blockSize, 0.0f) + face * (0.065f * blockSize);
+							float3 floorVS = mul(float4(floorWS, 1.0f), matView).xyz;
+							if (floorVS.z > 0.05f)
+							{
+								float2 rawFloorUV = convertCameraSpaceToScreenSpace(floorVS);
+								if (all(rawFloorUV > viewportOffset) && all(rawFloorUV < viewportOffset + viewportScale))
+								{
+									float2 floorUV = SnapTexelUV(rawFloorUV, pixelPhase);
+									float floorDepth = tex2Dlod(depthSampler, float4(floorUV, 0, 0)).r;
+									if (floorDepth > 0.01f && abs(floorDepth - floorVS.z) < 0.14f)
+									{
+										float baseTrim = saturate((-hitCylY / blockSize) / pxBlock + 0.5f);
+										float3 floorRaw = pow(max(tex2Dlod(colorSampler, float4(floorUV, 0, 0)).rgb, 0.0f), 2.2f);
+										surface.albedo = lerp(surface.albedo, DecodeSurfaceAlbedo(floorRaw), baseTrim);
+										if (baseTrim > 0.5f)
+										{
+											float4 floorInfo = tex2Dlod(matInfoSampler, float4(floorUV, 0, 0));
+											surface.depth = floorDepth;
+											surface.cameraSpacePos = ViewPosition(floorUV, floorDepth);
+											surface.normal = tex2Dlod(normalSampler, float4(floorUV, 0, 0)).rgb * 2.0f - 1.0f;
+											surface.category_id = (int)(floorInfo.r * 255.0f + 0.4f);
+											sun_light_strength = floorInfo.g;
+											torch_light_strength = floorInfo.b;
+											cornerTrimmed = true;
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+
+			// 4) Round-Box SDF protruding silhouette corner rounding against background
+			float rCorner = 0.18f * fade;
+			if (!cornerTrimmed && convexU && convexV && (silU || silV) && du < rCorner && dv < rCorner)
+			{
+				float2 cVec = max(float2(rCorner - du, rCorner - dv), 0.0f);
+				float cornerOut = length(cVec) - rCorner;
+				if (cornerOut > -pxBlock)
+				{
+					float3 cornerSeamWS = worldRel + (axisU * (su * du) + axisV * (sv * dv)) * blockSize;
+					float3 diagWS = cornerSeamWS + normalize(axisU * su + axisV * sv) * (0.065f * blockSize);
+					float3 diagVS = mul(float4(diagWS, 1.0f), matView).xyz;
+					if (diagVS.z > 0.05f)
+					{
+						float2 rawBgUV = convertCameraSpaceToScreenSpace(diagVS);
+						if (all(rawBgUV > viewportOffset) && all(rawBgUV < viewportOffset + viewportScale))
+						{
+							float2 bgUV = SnapTexelUV(rawBgUV, pixelPhase);
+							float bgDepth = tex2Dlod(depthSampler, float4(bgUV, 0, 0)).r;
+							if (bgDepth < 0.01f || bgDepth > diagVS.z + max(0.24f, surface.depth * 0.025f))
+							{
+								float trim = saturate(cornerOut / pxBlock + 0.5f);
+								float3 bgRaw = pow(max(tex2Dlod(colorSampler, float4(bgUV, 0, 0)).rgb, 0.0f), 2.2f);
+								bool bgSky = bgDepth < 0.01f;
+								float3 bgSurfAlbedo = bgSky ? float3(0.0f, 0.0f, 0.0f) : DecodeSurfaceAlbedo(bgRaw);
+								float3 bgSkyAlbedo = bgSky ? bgRaw : float3(0.0f, 0.0f, 0.0f);
+								surface.albedo = lerp(surface.albedo, bgSurfAlbedo, trim);
+								surface.sky.albedo = lerp(surface.sky.albedo, bgSkyAlbedo, trim);
+								if (trim > 0.5f)
+								{
+									float4 bgInfo = tex2Dlod(matInfoSampler, float4(bgUV, 0, 0));
+									surface.depth = bgDepth;
+									surface.cameraSpacePos = ViewPosition(bgUV, bgDepth);
+									surface.normal = tex2Dlod(normalSampler, float4(bgUV, 0, 0)).rgb * 2.0f - 1.0f;
+									surface.category_id = (int)(bgInfo.r * 255.0f + 0.4f);
+									sun_light_strength = bgInfo.g;
+									torch_light_strength = bgInfo.b;
+									cornerTrimmed = true;
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	// Screen-space fallback for non-grid convex steps (e.g. stairs/slabs at half-block offsets)
+	if (!cornerTrimmed && dot(bend, bend) < 0.0001f)
+	{
+		float subWidth = 0.07f * fade;
+		float2 radius = min(12.0f / screenParam, viewportScale * float2(1.0f / ViewAspect, 1.0f)
+			* subWidth / max(2.0f * surface.depth * TanHalfFOV, 0.01f));
+		[loop] for (int i = 0; i < 4; ++i)
+		{
+			float2 axis = i < 2 ? float2(1, 0) : float2(0, 1);
+			float2 uv = ClampViewUV(surface.texCoord + axis * ((i == 0 || i == 2) ? radius : -radius));
+			float depth = tex2Dlod(depthSampler, float4(uv, 0, 0)).r;
+			float3 other = tex2Dlod(normalSampler, float4(uv, 0, 0)).rgb * 2.0f - 1.0f;
+			float3 delta = ViewPosition(uv, depth) - surface.cameraSpacePos;
+			float across = dot(mul(other, (float3x3)matView), delta);
+			if (depth > 0.01f && dot(delta, delta) < 0.04f && dot(delta, faceVS) < 0.0f && across > 0.0f &&
+				abs(dot(face, other)) < 0.12f)
+			{
+				float sw = saturate(1.0f - across / max(subWidth, 0.001f));
+				bend += other * sw;
+				convexRim = max(convexRim, sw * 0.6f);
+			}
+		}
+	}
+
+	if (!cornerTrimmed)
+	{
+		surface.normal = normalize(face + bend);
+		// Soft molded bevel highlight on sunlit/sky-exposed convex block lips & vertical corners
+		float upBias = saturate(surface.normal.y * 0.5f + 0.5f);
+		float bevelSheen = 1.0f + convexRim * fade * (0.09f + 0.08f * upBias);
+		return creaseAO * bevelSheen;
+	}
+	return 1.0f;
 }
 
 float AmbientVisibility(SurfaceStruct surface)
@@ -720,22 +1277,27 @@ PSOut CompositePS0(VSOutput input)
 	SurfaceStruct surface = (SurfaceStruct)0;
 	float2 texCoord = input.texCoord;
 	surface.texCoord = texCoord;
-	surface.albedo = GetAlbedoLinear(texCoord);
+	float3 rawColorSRGB = tex2D(colorSampler, texCoord).rgb;
+	surface.albedo = pow(max(rawColorSRGB, 0.0f), 2.2f);
 	surface.sky.albedo = surface.albedo;
-	surface.albedo = pow(surface.albedo, 1.4f);
-	surface.albedo = lerp(surface.albedo, dot(surface.albedo, float1(0.3333f).xxx), 0.035f);
-	surface.normal = GetNormal(texCoord);
+	surface.albedo = DecodeSurfaceAlbedo(surface.albedo);
+	surface.normal = GetNormal(texCoord).xyz;
 	surface.depth = GetDepth(texCoord);
 	surface.CameraEye = input.CameraEye;
 	surface.cameraSpacePos = input.CameraEye * surface.depth;
-	// r:category id,  g: sun light value, b: torch light value
+	// r:category id,  g: sun light value, b: torch light value, a: natural terrain zig-zag blend code
 	float4 block_info = tex2D(matInfoSampler, texCoord);
 	surface.category_id = (int)(block_info.r * 255.0 + 0.4);
 	float sun_light_strength = block_info.g;
 	float torch_light_strength = block_info.b;
+	float selfBlendCode = floor(block_info.a * 255.0 + 0.5);
+	float2 pixelPhase = frac(texCoord * screenParam);
 
 	CalculateMasks(surface);
-	surface.normal = BevelNormal(surface);
+	ApplyTerrainZigZagBlend(surface, rawColorSRGB, selfBlendCode);
+	float borderCreaseAO = ApplyRoundedBlockBorders(surface, sun_light_strength, torch_light_strength, pixelPhase);
+	CalculateMasks(surface);
+	surface.albedo *= borderCreaseAO;
 	float skyOpenness = BlockSkyOpenness(surface);
 	if (SkyVisibilityView > 0.5f)
 	{

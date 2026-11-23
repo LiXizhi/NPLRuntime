@@ -18,6 +18,7 @@
 #include "SunLight.h"
 #include "BaseCamera.h"
 #include "ParaWorldAsset.h"
+#include "ParaImage.h"
 #include "terrain/GlobalTerrain.h"
 #include "WorldInfo.h"
 #include "BlockCommon.h"
@@ -205,6 +206,11 @@ namespace ParaEngine
 		m_skyAtlas.reset();
 		m_reflectionTexture.reset();
 		m_skySpans.clear();
+		m_terrainZigZagTex.reset();
+		m_terrainZigZagPixels.clear();
+		m_zigzagTileSlotCache.clear();
+		m_zigzagNextSlot = 1;
+		m_bHasZigZagOrigin = false;
 		m_render_target_color_hdr.reset();
 		m_render_target_color.reset();
 		m_render_target_scene_color.reset();
@@ -637,6 +643,7 @@ namespace ParaEngine
 				time = (int)(time * 1000) % 1000000;
 				Vector4 v4((float)time, 0.f, 0.f, 0.f);
 				pEffect->setParameter(CEffectFile::k_ConstVector1, v4.ptr());
+				int32_t curZigZagBlendCode = 0;
 
 				if (dwRenderMethod == BLOCK_RENDER_FANCY_SHADER)
 				{
@@ -664,12 +671,13 @@ namespace ParaEngine
 				EffectManager* pEffectManager = CGlobals::GetEffectManager();
 				IScene* pScene = pEffectManager->GetScene();
 				CBaseCamera* pCamera = pScene->GetCurrentCamera();
-				Matrix4 matViewProj;
+				Matrix4 matView(Matrix4::IDENTITY);
+				Matrix4 matViewProj(Matrix4::IDENTITY);
 				if (pCamera)
 				{
-					const Matrix4& pView = (pEffectManager->GetViewTransform());
-					const Matrix4& pProj = (pEffectManager->GetProjTransform());
-					matViewProj = (pView) * (pProj);
+					matView = pEffectManager->GetViewTransform();
+					const Matrix4& pProj = pEffectManager->GetProjTransform();
+					matViewProj = matView * pProj;
 				}
 
 				/** block light params and sun intensity*/
@@ -735,6 +743,7 @@ namespace ParaEngine
 							{
 								curPass = passId;
 								bHasLastMinPos = false;
+								curZigZagBlendCode = -1;
 
 								pCurTex0 = 0;
 								pCurTex1 = 0;
@@ -1003,7 +1012,7 @@ namespace ParaEngine
 						if (pEffect->isMatrixUsed(CEffectFile::k_worldViewMatrix))
 						{
 							Matrix4 mWorldView;
-							ParaMatrixMultiply(&mWorldView, &vWorldMatrix, &matViewProj);
+							ParaMatrixMultiply(&mWorldView, &vWorldMatrix, &matView);
 							pEffect->setMatrix(CEffectFile::k_worldViewMatrix, &mWorldView);
 						}
 						if (pTexViewProj && pEffect->isMatrixUsed(CEffectFile::k_TexWorldViewProjMatrix))
@@ -1018,6 +1027,17 @@ namespace ParaEngine
 							renderOfs.z + vWorldMatrix._43,
 							1.f);
 						pEffect->setParameter(CEffectFile::k_worldPos, &vWorldPos);
+					}
+
+					if (dwRenderMethod == BLOCK_RENDER_FANCY_SHADER && nRenderPass == BlockRenderPass_Opaque)
+					{
+						const int32_t blendCode = (int32_t)ComputeTerrainZigZagBlendCode(pTemplate, curMaterialId, pRenderTask->GetUserData());
+						if (blendCode != curZigZagBlendCode)
+						{
+							curZigZagBlendCode = blendCode;
+							v4.z = (float)blendCode / 255.0f;
+							pEffect->setParameter(CEffectFile::k_ConstVector1, v4.ptr());
+						}
 					}
 
 					pEffect->CommitChanges();
@@ -2210,6 +2230,8 @@ namespace ParaEngine
 		m_lastSkyTexture = nullptr;
 		m_skyAtlas.reset();
 		m_reflectionTexture.reset();
+		m_terrainZigZagTex.reset();
+		m_bHasZigZagOrigin = false;
 		m_bAutoBoundColorRT0 = false;
 		m_render_target_color_hdr.reset();
 		m_render_target_color.reset();
@@ -2617,6 +2639,416 @@ namespace ParaEngine
 		Vector3 corner = BlockCommon::ConvertToRealPosition(origin.x, origin.y, origin.z)
 			- Vector3(size, size, size) * 0.5f - CGlobals::GetScene()->GetRenderOrigin();
 		return Vector4(corner.x, corner.y, corner.z, 1.f / size);
+	}
+
+	namespace
+	{
+		constexpr int kZigZagVolSide = 32;
+		constexpr int kZigZagTexSize = 256;
+
+		float SnapCleanBlockUV(float v)
+		{
+			const float grid[5] = { 0.0f, 0.25f, 0.5f, 0.75f, 1.0f };
+			for (float g : grid)
+			{
+				if (std::fabs(v - g) < 0.015f)
+					return g;
+			}
+			return v;
+		}
+
+		Uint16x3 ComputeNearCameraGridOrigin8(BlockWorldClient* world)
+		{
+			Uint16x3 refBlock = world->GetEyeBlockId();
+			if (IScene* scene = CGlobals::GetScene())
+			{
+				if (CBaseCamera* cam = scene->GetCurrentCamera())
+				{
+					const Vector3 eye = cam->GetRenderEyePosition();
+					const Vector3 lookAt = cam->GetLookAtPosition();
+					const float distSq = (lookAt - eye).squaredLength();
+					// In 3rd-person orbit mode, anchor on LookAt so 360-deg camera rotation keeps origin 100% stationary;
+					// in 1st-person / fly mode, anchor slightly ahead of Eye.
+					Vector3 focus = (distSq >= 2.25f && distSq <= 144.0f) ? lookAt : eye;
+					int16_t signedY = 0;
+					BlockCommon::ConvertToBlockIndex(focus.x, focus.y, focus.z, refBlock.x, signedY, refBlock.z);
+					refBlock.y = static_cast<uint16_t>(signedY);
+				}
+			}
+			auto anchor8 = [](int coord, int limit) -> int {
+				const int snapped = ((coord + 4) / 8) * 8 - (kZigZagVolSide / 2);
+				return (std::max)(0, (std::min)(limit - kZigZagVolSide, snapped));
+			};
+			const int ox = anchor8((int)refBlock.x, 65536);
+			const int oyRel = anchor8((int)(int16_t)refBlock.y - BlockConfig::MinBlockY, BlockConfig::MaxBlockY - BlockConfig::MinBlockY + 1);
+			const int oy = BlockConfig::MinBlockY + oyRel;
+			const int oz = anchor8((int)refBlock.z, 65536);
+			return Uint16x3((uint16_t)ox, (uint16_t)(int16_t)oy, (uint16_t)oz);
+		}
+
+		Vector4 BlockOriginToRenderSpaceVec4(const Uint16x3& origin, float verticalOffset)
+		{
+			const float fBlockSize = BlockConfig::g_blockSize;
+			const Vector3 renderOfs = CGlobals::GetScene()->GetRenderOrigin();
+			const uint16_t renderBlockOfsX = (uint16_t)(renderOfs.x / fBlockSize);
+			const uint16_t renderBlockOfsZ = (uint16_t)(renderOfs.z / fBlockSize);
+			const float remainX = renderOfs.x - renderBlockOfsX * fBlockSize;
+			const float remainZ = renderOfs.z - renderBlockOfsZ * fBlockSize;
+
+			const float cornerX = (float)((int32_t)origin.x - (int32_t)renderBlockOfsX) * fBlockSize - remainX;
+			const float cornerY = (float)(int32_t)(int16_t)origin.y * fBlockSize - renderOfs.y + verticalOffset;
+			const float cornerZ = (float)((int32_t)origin.z - (int32_t)renderBlockOfsZ) * fBlockSize - remainZ;
+			return Vector4(cornerX, cornerY, cornerZ, 1.0f / fBlockSize);
+		}
+	}
+
+	Vector4 BlockWorldClient::GetNearBlockGridOrigin()
+	{
+		const float fBlockSize = BlockConfig::g_blockSize;
+		if (!IsInBlockWorld() || !CGlobals::GetScene() || fBlockSize <= 0.f)
+			return Vector4(0.f, 0.f, 0.f, 0.f);
+		return BlockOriginToRenderSpaceVec4(ComputeNearCameraGridOrigin8(this), GetVerticalOffset());
+	}
+
+	uint8_t BlockWorldClient::EnsureTerrainZigZagTileSlot(BlockTemplate* pTemplate, uint32_t userData, bool isSide, bool& outAtlasDirty)
+	{
+		if (!pTemplate)
+			return 0;
+		const uint32_t key = ((uint32_t)pTemplate->GetID() << 5) | ((userData & 0x0fu) << 1) | (isSide ? 1u : 0u);
+		auto it = m_zigzagTileSlotCache.find(key);
+		if (it != m_zigzagTileSlotCache.end())
+			return it->second;
+
+		if (m_terrainZigZagPixels.size() != kZigZagTexSize * kZigZagTexSize * 4)
+			m_terrainZigZagPixels.assign(kZigZagTexSize * kZigZagTexSize * 4, 0);
+
+		const uint8_t slot = (m_zigzagNextSlot < 32) ? m_zigzagNextSlot++ : 31;
+		m_zigzagTileSlotCache[key] = slot;
+		outAtlasDirty = true;
+
+		const int tileOriginX = (slot & 7) * 32;
+		const int tileOriginY = 128 + (slot >> 3) * 32;
+
+		const Color mapCol = pTemplate->GetMapColor();
+		uint8_t fallbackR = (uint8_t)((mapCol >> 16) & 0xffu);
+		uint8_t fallbackG = (uint8_t)((mapCol >> 8) & 0xffu);
+		uint8_t fallbackB = (uint8_t)(mapCol & 0xffu);
+
+		std::vector<uint8_t> decodedRGBA;
+		int imgW = 0;
+		int imgH = 0;
+		if (TextureEntity* texEnt = pTemplate->GetTexture0(userData))
+		{
+			std::string texPath = texEnt->GetLocalFileName();
+			if (texPath.empty())
+				texPath = texEnt->GetKey();
+			if (!texPath.empty())
+			{
+				CParaFile file(texPath.c_str());
+				if (!file.isEof() && file.getSize() > 0)
+				{
+					ParaImage img;
+					if (img.initWithImageData(reinterpret_cast<const unsigned char*>(file.getBuffer()), static_cast<size_t>(file.getSize())))
+					{
+						imgW = static_cast<int>(img.getWidth());
+						imgH = static_cast<int>(img.getHeight());
+						if (imgW > 0 && imgH > 0)
+						{
+							if (img.getRenderFormat() == PixelFormat::A8R8G8B8 && img.getData())
+							{
+								decodedRGBA.assign(img.getData(), img.getData() + (size_t)imgW * (size_t)imgH * 4);
+							}
+							else if (img.getData())
+							{
+								unsigned char* conv = nullptr;
+								size_t convLen = 0;
+								if (ParaImage::convertDataToFormat(img.getData(), static_cast<size_t>(img.getDataLen()), img.getRenderFormat(), PixelFormat::A8R8G8B8, &conv, &convLen) == PixelFormat::A8R8G8B8 && conv)
+								{
+									decodedRGBA.assign(conv, conv + (size_t)imgW * (size_t)imgH * 4);
+									free(conv);
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+
+		float u0 = 0.0f, v0 = 1.0f;
+		float u1 = 0.0f, v1 = 0.0f;
+		float u2 = 1.0f, v2 = 0.0f;
+		float u3 = 1.0f, v3 = 1.0f;
+		BlockModel& bm = pTemplate->GetBlockModel();
+		if (bm.GetVerticesCount() >= 8)
+		{
+			const BlockVertexCompressed* verts = bm.GetVerticesConst();
+			const int base = isSide ? BlockModel::g_frtLB : BlockModel::g_topLB;
+			u0 = SnapCleanBlockUV(verts[base + 0].texcoord[0]);
+			v0 = SnapCleanBlockUV(verts[base + 0].texcoord[1]);
+			u1 = SnapCleanBlockUV(verts[base + 1].texcoord[0]);
+			v1 = SnapCleanBlockUV(verts[base + 1].texcoord[1]);
+			u2 = SnapCleanBlockUV(verts[base + 2].texcoord[0]);
+			v2 = SnapCleanBlockUV(verts[base + 2].texcoord[1]);
+			u3 = SnapCleanBlockUV(verts[base + 3].texcoord[0]);
+			v3 = SnapCleanBlockUV(verts[base + 3].texcoord[1]);
+		}
+
+		for (int ty = 0; ty < 32; ++ty)
+		{
+			const float fv = (ty + 0.5f) / 32.0f;
+			for (int tx = 0; tx < 32; ++tx)
+			{
+				const float fu = (tx + 0.5f) / 32.0f;
+				uint8_t r = fallbackR, g = fallbackG, b = fallbackB;
+				if (!decodedRGBA.empty() && imgW > 0 && imgH > 0)
+				{
+					const float su = (u0 + (u3 - u0) * fu) + ((u1 + (u2 - u1) * fu) - (u0 + (u3 - u0) * fu)) * fv;
+					const float sv = (v0 + (v3 - v0) * fu) + ((v1 + (v2 - v1) * fu) - (v0 + (v3 - v0) * fu)) * fv;
+					const int sx = (std::max)(0, (std::min)(imgW - 1, (int)(su * (float)imgW)));
+					const int sy = (std::max)(0, (std::min)(imgH - 1, (int)(sv * (float)imgH)));
+					const size_t srcIdx = ((size_t)sy * (size_t)imgW + (size_t)sx) * 4;
+					r = decodedRGBA[srcIdx + 0];
+					g = decodedRGBA[srcIdx + 1];
+					b = decodedRGBA[srcIdx + 2];
+				}
+				const size_t dstIdx = ((size_t)(tileOriginY + ty) * kZigZagTexSize + (size_t)(tileOriginX + tx)) * 4;
+				m_terrainZigZagPixels[dstIdx + 0] = r;
+				m_terrainZigZagPixels[dstIdx + 1] = g;
+				m_terrainZigZagPixels[dstIdx + 2] = b;
+				m_terrainZigZagPixels[dstIdx + 3] = 255;
+			}
+		}
+		return slot;
+	}
+
+	Vector4 BlockWorldClient::UpdateTerrainZigZagVolume()
+	{
+		const float fBlockSize = BlockConfig::g_blockSize;
+		if (!IsInBlockWorld() || !CGlobals::GetScene() || !CGlobals::GetAssetManager() || fBlockSize <= 0.f)
+			return Vector4(0.f, 0.f, 0.f, 0.f);
+
+		if (!m_terrainZigZagTex)
+		{
+			m_terrainZigZagTex = CGlobals::GetAssetManager()->LoadTexture("_TerrainZigZag_32bits", "_TerrainZigZag_32bits", TextureEntity::StaticTexture);
+			if (!m_terrainZigZagTex)
+				return Vector4(0.f, 0.f, 0.f, 0.f);
+			m_terrainZigZagTex->SetState(AssetEntity::ASSET_STATE_CACHE);
+			m_terrainZigZagTex->SetLocalFileName("");
+		}
+
+		if (m_terrainZigZagPixels.size() != kZigZagTexSize * kZigZagTexSize * 4)
+			m_terrainZigZagPixels.assign(kZigZagTexSize * kZigZagTexSize * 4, 0);
+
+		const Uint16x3 origin = ComputeNearCameraGridOrigin8(this);
+		const auto now = std::chrono::steady_clock::now();
+		const bool needsUploadInit = !m_terrainZigZagTex->IsInitialized() || !m_bHasZigZagOrigin;
+
+		if (needsUploadInit || origin != m_zigzagOrigin || now >= m_nextZigZagScan)
+		{
+			bool atlasDirty = false;
+			bool volumeDirty = false;
+			constexpr int kPad = kZigZagVolSide + 2;
+			std::vector<uint8_t> solidPad((size_t)kPad * kPad * kPad, 0);
+			std::vector<uint8_t> codes((size_t)kZigZagVolSide * kZigZagVolSide * kZigZagVolSide, 0);
+			std::vector<uint8_t> topSlots((size_t)kZigZagVolSide * kZigZagVolSide * kZigZagVolSide, 0);
+			std::vector<uint8_t> sideSlots((size_t)kZigZagVolSide * kZigZagVolSide * kZigZagVolSide, 0);
+
+			const int baseX = (int)origin.x;
+			const int baseY = (int)(int16_t)origin.y;
+			const int baseZ = (int)origin.z;
+
+			{
+				Scoped_ReadLock<BlockReadWriteLock> lock(GetReadWriteLock());
+				for (int dy = -1; dy <= kZigZagVolSide; ++dy)
+				{
+					const int wy = baseY + dy;
+					if (wy < BlockConfig::MinBlockY || wy > BlockConfig::MaxBlockY)
+						continue;
+					for (int dz = -1; dz <= kZigZagVolSide; ++dz)
+					{
+						const int wz = baseZ + dz;
+						if (wz < 0 || wz >= 65536)
+							continue;
+						for (int dx = -1; dx <= kZigZagVolSide; ++dx)
+						{
+							const int wx = baseX + dx;
+							if (wx < 0 || wx >= 65536)
+								continue;
+
+							BlockTemplate* tpl = GetBlockTemplate((uint16_t)wx, (uint16_t)(int16_t)wy, (uint16_t)wz);
+							const bool solid = tpl && tpl->IsFullyOpaque() && tpl->IsMatchAttribute(BlockTemplate::batt_cubeModel)
+								&& !tpl->IsMatchAttribute(BlockTemplate::batt_customModel | BlockTemplate::batt_alphaTestTexture | BlockTemplate::batt_blendedTexture | BlockTemplate::batt_liquid);
+							if (!solid)
+								continue;
+
+							solidPad[((size_t)(dy + 1) * kPad + (size_t)(dz + 1)) * kPad + (size_t)(dx + 1)] = 1;
+
+							if (dx >= 0 && dx < kZigZagVolSide && dy >= 0 && dy < kZigZagVolSide && dz >= 0 && dz < kZigZagVolSide)
+							{
+								const uint8_t code = ComputeTerrainZigZagBlendCode(tpl, 0, 0);
+								if (code > 0)
+								{
+									const size_t idx = ((size_t)dy * kZigZagVolSide + (size_t)dz) * kZigZagVolSide + (size_t)dx;
+									codes[idx] = code;
+									const uint8_t tSlot = EnsureTerrainZigZagTileSlot(tpl, 0, false, atlasDirty);
+									const bool hasSeparateSide = tpl->IsMatchAttribute(BlockTemplate::batt_threeSideTex | BlockTemplate::batt_fourSideTex | BlockTemplate::batt_sixSideTex);
+									const uint8_t sSlot = hasSeparateSide ? EnsureTerrainZigZagTileSlot(tpl, 0, true, atlasDirty) : tSlot;
+									topSlots[idx] = tSlot;
+									sideSlots[idx] = sSlot;
+								}
+							}
+						}
+					}
+				}
+			}
+
+			for (int ly = 0; ly < kZigZagVolSide; ++ly)
+			{
+				const int tileX = (ly & 7) * kZigZagVolSide;
+				const int tileY = (ly >> 3) * kZigZagVolSide;
+				for (int lz = 0; lz < kZigZagVolSide; ++lz)
+				{
+					for (int lx = 0; lx < kZigZagVolSide; ++lx)
+					{
+						const size_t idx = ((size_t)ly * kZigZagVolSide + (size_t)lz) * kZigZagVolSide + (size_t)lx;
+						const size_t pIdx = ((size_t)(ly + 1) * kPad + (size_t)(lz + 1)) * kPad + (size_t)(lx + 1);
+						const bool isSolid = solidPad[pIdx] != 0;
+						uint8_t mask = 0;
+						if (isSolid)
+						{
+							mask |= 64u;
+							if (!solidPad[pIdx + (size_t)kPad * kPad]) mask |= 1u;  // +Y exposed
+							if (!solidPad[pIdx - (size_t)kPad * kPad]) mask |= 2u;  // -Y exposed
+							if (!solidPad[pIdx + 1])                   mask |= 4u;  // +X exposed
+							if (!solidPad[pIdx - 1])                   mask |= 8u;  // -X exposed
+							if (!solidPad[pIdx + kPad])                mask |= 16u; // +Z exposed
+							if (!solidPad[pIdx - kPad])                mask |= 32u; // -Z exposed
+						}
+						const uint8_t r = codes[idx];
+						const uint8_t g = topSlots[idx];
+						const uint8_t b = mask;
+						const uint8_t a = sideSlots[idx];
+
+						const size_t dst = ((size_t)(tileY + lz) * kZigZagTexSize + (size_t)(tileX + lx)) * 4;
+						if (m_terrainZigZagPixels[dst + 0] != r ||
+							m_terrainZigZagPixels[dst + 1] != g ||
+							m_terrainZigZagPixels[dst + 2] != b ||
+							m_terrainZigZagPixels[dst + 3] != a)
+						{
+							m_terrainZigZagPixels[dst + 0] = r;
+							m_terrainZigZagPixels[dst + 1] = g;
+							m_terrainZigZagPixels[dst + 2] = b;
+							m_terrainZigZagPixels[dst + 3] = a;
+							volumeDirty = true;
+						}
+					}
+				}
+			}
+
+			if (needsUploadInit || atlasDirty || volumeDirty)
+			{
+				ParaImage img;
+				bool uploaded = false;
+				if (img.initWithRawData(m_terrainZigZagPixels.data(), m_terrainZigZagPixels.size(), kZigZagTexSize, kZigZagTexSize, 32, false))
+				{
+					uploaded = m_terrainZigZagTex->LoadFromImage(&img, 1, PixelFormat::A8R8G8B8);
+				}
+				m_terrainZigZagTex->SetSamplerStateBlocky(true);
+				if (!uploaded)
+				{
+					const uint32_t pixelBytes = kZigZagTexSize * kZigZagTexSize * 4u;
+					std::vector<uint8_t> bmp(54u + pixelBytes, 0);
+					auto w16 = [&](size_t o, uint16_t v) { bmp[o] = (uint8_t)(v & 0xffu); bmp[o + 1] = (uint8_t)((v >> 8) & 0xffu); };
+					auto w32 = [&](size_t o, uint32_t v) { bmp[o] = (uint8_t)(v & 0xffu); bmp[o + 1] = (uint8_t)((v >> 8) & 0xffu); bmp[o + 2] = (uint8_t)((v >> 16) & 0xffu); bmp[o + 3] = (uint8_t)((v >> 24) & 0xffu); };
+					bmp[0] = 'B'; bmp[1] = 'M';
+					w32(2, 54u + pixelBytes); w32(10, 54u); w32(14, 40u);
+					w32(18, (uint32_t)kZigZagTexSize); w32(22, (uint32_t)(-kZigZagTexSize));
+					w16(26, 1u); w16(28, 32u); w32(34, pixelBytes);
+					uint8_t* dst = bmp.data() + 54;
+					for (size_t i = 0; i + 3 < m_terrainZigZagPixels.size(); i += 4)
+					{
+						dst[i + 0] = m_terrainZigZagPixels[i + 2];
+						dst[i + 1] = m_terrainZigZagPixels[i + 1];
+						dst[i + 2] = m_terrainZigZagPixels[i + 0];
+						dst[i + 3] = m_terrainZigZagPixels[i + 3];
+					}
+					m_terrainZigZagTex->UnloadAsset();
+					m_terrainZigZagTex->LoadFromMemory(reinterpret_cast<const char*>(bmp.data()), (DWORD)bmp.size(), 1, PixelFormat::A8R8G8B8);
+				}
+			}
+
+			m_zigzagOrigin = origin;
+			m_bHasZigZagOrigin = true;
+			m_nextZigZagScan = now + std::chrono::milliseconds(200);
+		}
+
+		return BlockOriginToRenderSpaceVec4(m_zigzagOrigin, GetVerticalOffset());
+	}
+
+	uint8_t BlockWorldClient::ComputeTerrainZigZagBlendCode(BlockTemplate* pTemplate, int32_t materialId, uint32_t userData) const
+	{
+		if (!pTemplate || materialId > 0 || pTemplate->GetCategoryID() != 0 || !pTemplate->IsFullyOpaque() ||
+			!pTemplate->IsMatchAttribute(BlockTemplate::batt_cubeModel) ||
+			pTemplate->IsMatchAttribute(BlockTemplate::batt_customModel | BlockTemplate::batt_alphaTestTexture |
+				BlockTemplate::batt_blendedTexture | BlockTemplate::batt_liquid | BlockTemplate::batt_color_data))
+		{
+			return 0;
+		}
+
+		// Encode (priorityTier << 4) | subTypeId in [1..254] (0 = straight/excluded, 255 = legacy uninitialized).
+		switch (pTemplate->GetID())
+		{
+		// Tier 7: Lush surface cover (grass, snow, mycelium)
+		case 62:  return (7 << 4) | 1;  // Grass
+		case 26:  return (7 << 4) | 2;  // Lawn / Caodi
+		case 52:  return (7 << 4) | 3;  // Snow
+		case 5:   return (7 << 4) | 4;  // Snow_Block
+		case 153: return (7 << 4) | 5;  // Mycelium
+		case 63:  return (7 << 4) | 6;  // Top_Ice
+
+		// Tier 5: Mossy / cultivated / organic earth
+		case 145: return (5 << 4) | 1;  // Moss_Stone
+		case 13:  return (5 << 4) | 2;  // Soil / Farmland
+		case 186: return (5 << 4) | 3;  // Hay_Block
+
+		// Tier 4: Loose soil, dirt, clay & sand
+		case 55:  return (4 << 4) | 1;  // Dirt
+		case 53:  return (4 << 4) | 2;  // Clay
+		case 51:  return (4 << 4) | 3;  // Sand
+		case 151: return (4 << 4) | 4;  // Soul_Sand
+		case 11:  return (4 << 4) | 5;  // Earth2
+		case 14:  return (4 << 4) | 6;  // Earth_Purple
+		case 15:  return (4 << 4) | 7;  // Earth
+
+		// Tier 3: Gravel & natural sandstone
+		case 12:  return (3 << 4) | 1;  // Gravel
+		case 4:   return (3 << 4) | 2;  // Sandstone
+		case 170: return (3 << 4) | 3;  // Chiseled_Sandstone
+		case 171: return (userData & 0xff00) == 0 ? ((3 << 4) | 4) : 0; // Unpainted Smooth_Sandstone
+
+		// Tier 2: Natural rock, cobblestone & ores
+		case 56:  return (2 << 4) | 1;  // Stone
+		case 58:  return (2 << 4) | 2;  // Cobblestone
+		case 123: return (2 << 4) | 3;  // Bedrock
+		case 150: return (2 << 4) | 4;  // Netherrack
+		case 155: return (2 << 4) | 5;  // EndStone
+		case 146: return (2 << 4) | 6;  // Obsidian
+		case 54:  return (2 << 4) | 7;  // BlueStone
+		case 57:  return (2 << 4) | 8;  // CyanStone
+		case 60:  return (2 << 4) | 9;  // YellowStone
+		case 72:  return (2 << 4) | 10; // White_Crackstone
+		case 2:
+		case 16:
+		case 18:
+		case 124:
+		case 125:
+		case 130:
+		case 147:
+		case 158:
+			return (uint8_t)((2 << 4) | (11 + (pTemplate->GetID() % 5)));
+		default:
+			return 0;
+		}
 	}
 
 	bool BlockWorldClient::UpdateRayTracedReflections()
@@ -3796,6 +4228,8 @@ namespace ParaEngine
 		pClass->AddField("CanTraceBlockSky", FieldType_Bool, NULL, (void*)CanTraceBlockSky_s, NULL, NULL, bOverride);
 		pClass->AddField("UpdateRayTracedReflections", FieldType_Bool, NULL, (void*)UpdateRayTracedReflections_s, NULL, NULL, bOverride);
 		pClass->AddField("UpdateRayTracedSky", FieldType_Vector4, NULL, (void*)UpdateRayTracedSky_s, NULL, NULL, bOverride);
+		pClass->AddField("NearBlockGridOrigin", FieldType_Vector4, NULL, (void*)GetNearBlockGridOrigin_s, NULL, NULL, bOverride);
+		pClass->AddField("UpdateTerrainZigZagVolume", FieldType_Vector4, NULL, (void*)UpdateTerrainZigZagVolume_s, NULL, NULL, bOverride);
 		pClass->AddField("CanUseAdvancedShading", FieldType_Bool, NULL, (void*)CanUseAdvancedShading_s, NULL, NULL, bOverride);
 		pClass->AddField("MovieOutputMode", FieldType_Bool, (void*)EnableMovieOutputMode_s, (void*)IsMovieOutputMode_s, NULL, NULL, bOverride);
 		pClass->AddField("AsyncChunkMode", FieldType_Bool, (void*)SetAsyncChunkMode_s, (void*)IsAsyncChunkMode_s, NULL, NULL, bOverride);

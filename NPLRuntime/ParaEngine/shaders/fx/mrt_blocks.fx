@@ -42,7 +42,7 @@ float4 light_params: ConstVector0;
 // world position
 float4 vWorldPos		: worldpos;
 
-// x for world time, y for rainStrength,
+// x for world time, y for rainStrength, z for natural terrain zig-zag blend code
 float4 g_parameter0		: ConstVector1; 
 
 // block material params
@@ -166,7 +166,7 @@ BlockPSOut BasicBlockPS(BasicBlockVSOut input)
 	BlockPSOut o;
 	float4 albedoColor = tex2D(tex0Sampler,input.texcoord);
 	o.Color = albedoColor * input.color;
-	o.BlockInfo = float4(input.depth.rgb, 1);
+	o.BlockInfo = float4(input.depth.rgb, g_parameter0.z);
 	o.Depth = float4(input.depth.a,0,0,1);
 	o.Normal = float4(input.normal.xyz, 1.0);
 	return o;
@@ -272,7 +272,7 @@ BlockPSOut TransparentEntityPS(BasicBlockVSOut input)
 	float4 albedoColor = tex2D(tex0Sampler,input.texcoord);
 	clip(albedoColor.w-ALPHA_TESTING_REF);
 	o.Color = albedoColor * input.color;
-	o.BlockInfo = float4(input.depth.rgb, 1);
+	o.BlockInfo = float4(input.depth.rgb, 0);
 	o.Depth = float4(input.depth.a,0,0,1);
 	o.Normal = float4(input.normal.xyz, 1);
 	return o;
@@ -401,7 +401,7 @@ BlockPSOut WaterPS(WaterBlockVSOut input)
 	BlockPSOut o;
 	float4 albedoColor = tex2D(tex0Sampler,input.texcoord.xy);
 	o.Color = albedoColor * input.color;
-	o.BlockInfo = float4(input.depth.rgb, 1);
+	o.BlockInfo = float4(input.depth.rgb, 0);
 	o.Depth = float4(input.depth.a,0,0,1);
 
 #ifdef WATER_USEBUMPMAP
@@ -510,7 +510,7 @@ BlockPSOut BumpBlockPS(BumpBlockVSOut input)
 	BlockPSOut o;
 	float4 albedoColor = tex2D(tex0Sampler, input.texcoord);
 	o.Color = albedoColor * input.color;
-	o.BlockInfo = float4(input.depth.rgb, 1);
+	o.BlockInfo = float4(input.depth.rgb, g_parameter0.z);
 	o.Depth = float4(input.depth.a, 0, 0, 1);
 
 	float3 normal = input.normal.xyz;
@@ -636,7 +636,7 @@ BlockPSOut MaterialMainPS(BumpBlockVSOut input)
 	albedoColor = albedoColor * materialBaseColor;
 	
 	o.Color = albedoColor * input.color;
-	o.BlockInfo = float4(input.depth.rgb, 1);
+	o.BlockInfo = float4(input.depth.rgb, g_parameter0.z);
 	o.Depth = float4(input.depth.a, 0, 0, 1);
 
 	if (materialEmissiveColor.a > 0)

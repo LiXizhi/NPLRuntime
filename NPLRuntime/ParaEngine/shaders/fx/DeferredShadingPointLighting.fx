@@ -178,7 +178,7 @@ PSOut MainPS(VSOut input)
 	 
 	// only add to block light value
 	output.color = float4(light_diffuse.rgb*lightValue, 1.0);
-    output.BlockInfo = float4(0, 0, lightValue, 1.0);
+    output.BlockInfo = float4(0, 0, lightValue, 0.0);
     return output;
 }
 
