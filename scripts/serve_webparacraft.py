@@ -430,6 +430,51 @@ def matches_searchpath(rel_posix: str, prefixes) -> bool:
     return False
 
 
+def cached_asset_entries(root_real: str):
+    """Expose desktop cache payloads referenced by this installation's asset manifest."""
+    cache = os.path.join(root_real, "temp", "cache")
+    if not os.path.isdir(cache):
+        return
+    manifest = resolve_path_case_insensitive(root_real, "assets_manifest.txt")
+    if not manifest:
+        return
+    available = set()
+    for bucket in "0123456789abcdef":
+        try:
+            with os.scandir(os.path.join(cache, bucket)) as files:
+                available.update(f.name for f in files if f.name.startswith(bucket)
+                                 and re.fullmatch(r"[0-9a-f]{32}[1-9][0-9]*", f.name)
+                                 and f.is_file(follow_symlinks=False))
+        except OSError:
+            continue
+    if not available:
+        return
+    try:
+        lines = open(manifest, encoding="utf-8", errors="replace")
+    except OSError:
+        return
+    with lines:
+        for line in lines:
+            fields = line.rstrip().rsplit(",", 2)
+            if len(fields) != 3 or len(fields[1]) != 32:
+                continue
+            name = fields[1] + fields[2]
+            if name not in available:
+                continue
+            available.remove(name)
+            rel = f"temp/cache/{name[0]}/{name}"
+            source = resolve_path_case_insensitive(root_real, rel)
+            if source:
+                try:
+                    st = os.stat(source)
+                except OSError:
+                    continue
+                if st.st_size:
+                    yield [rel, st.st_size, int(st.st_mtime * 1000)]
+            if not available:
+                break
+
+
 def build_disk_manifest(root_real: str, prefixes, fallback_font_path: str, latin_fonts: dict = None):
     entries = []
     seen_lower = set()
@@ -487,6 +532,7 @@ def build_disk_manifest(root_real: str, prefixes, fallback_font_path: str, latin
                     entries.append([rel_posix, st.st_size, int(st.st_mtime * 1000)])
 
     walk_dir(root_real, "", 0)
+    entries.extend(cached_asset_entries(root_real))
 
     virtual_fonts = []
     if fallback_font_path:

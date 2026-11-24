@@ -671,14 +671,14 @@ int CAsyncLoader::FileIOThreadProc_HandleRequest(ResourceRequest_ptr& ResourceRe
 		}
 
 		// Add it to the ProcessQueue
-		if (m_ProcessQueues[ResourceRequest->m_nProcessorQueueID].try_push(ResourceRequest) == CResourceRequestQueue::BufferOverFlow)
+		const int targetQueueID = ResourceRequest->m_nProcessorQueueID;
+		if (m_ProcessQueues[targetQueueID].try_push(ResourceRequest) == CResourceRequestQueue::BufferOverFlow)
 		{
 			OUTPUT_LOG("ERROR: AsyncLoader IO msg(to proc) failed push to m_ProcessQueues because queue is full\n");
 		}
 #ifdef EMSCRIPTEN_SINGLE_THREAD
 		else
 		{
-			const int targetQueueID = ResourceRequest->m_nProcessorQueueID;
 			for (auto* worker : m_workers)
 			{
 				if (worker && worker->GetProcessorQueueID() == targetQueueID && worker->m_thread)

@@ -857,6 +857,170 @@ class EmscriptenBlueTooth {
 
     static Init() {
         EmscriptenInstance.OnMsg("BlueTooth", EmscriptenBlueTooth.OnEmscriptenInstanceMsg);
+        EmscriptenInstance.OnMsg("BluetoothDiscovery", EmscriptenBlueTooth.Discover);
+        EmscriptenInstance.OnMsg("BluetoothGatt", msg => EmscriptenBlueTooth.HandleGatt(msg));
+    }
+
+    static selectedDevices = new Map();
+    static chooserGeneration = 0;
+    static gattSession = null;
+    static pendingGatt = new WeakMap();
+
+    static GattReply(session, status, fields = {}) {
+        setTimeout(() => EmscriptenInstance.SendMsg("BluetoothGatt", { request: session.request, status, ...fields }), 0);
+    }
+
+    static ReleaseGatt(session) {
+        if (this.gattSession !== session) return;
+        this.gattSession = null;
+        session.device.removeEventListener("gattserverdisconnected", session.onLost);
+        session.device.gatt.disconnect();
+    }
+
+    static async WriteGatt(current, { request, service, characteristic, operation, hex, allowWithoutResponse }) {
+        const target = current?.writable.get(service + "/" + characteristic);
+        let status = "writeFailed";
+        if (current && current.request === request && current.device.gatt.connected && target && !current.writing &&
+            (target.properties.write || (allowWithoutResponse === true && target.properties.writeWithoutResponse)) &&
+            typeof hex === "string" && hex.length <= 1024 && /^(?:[0-9a-f]{2})+$/i.test(hex)) {
+            current.writing = true;
+            try {
+                const bytes = Uint8Array.from(hex.match(/../g), pair => parseInt(pair, 16));
+                if (target.properties.write) await target.writeValueWithResponse(bytes);
+                else await target.writeValueWithoutResponse(bytes);
+                status = "written";
+            } catch {
+                // The caller keeps track of the last acknowledged packet.
+            } finally {
+                current.writing = false;
+            }
+        }
+        this.GattReply({ request }, status, { operation });
+    }
+
+    static HandleGatt(message) {
+        const { cmd, request, id } = message;
+        const current = this.gattSession;
+        if (cmd === "gattWrite") return this.WriteGatt(current, message);
+        if (cmd === "gattDisconnect") {
+            if (current && current.request === request) this.ReleaseGatt(current);
+            this.GattReply({ request }, "disconnected");
+            return;
+        }
+        if (cmd !== "gattConnect") return;
+        const device = this.selectedDevices.get(id);
+        if (!device?.gatt) return this.GattReply({ request }, "unavailable");
+        if (current) this.ReleaseGatt(current);
+        const session = { request, device, writable: new Map() };
+        session.onLost = () => {
+            if (this.gattSession !== session || device.gatt.connected) return;
+            this.ReleaseGatt(session);
+            this.GattReply(session, "disconnected");
+        };
+        this.gattSession = session;
+        // A cancelled attempt can still resolve on the same device.
+        const previous = this.pendingGatt.get(device) || Promise.resolve();
+        this.pendingGatt.set(device, previous.then(() => this.OpenGatt(session)));
+    }
+
+    static async OpenGatt(session) {
+        const { device } = session;
+        if (this.gattSession !== session) return;
+        try {
+            const server = await device.gatt.connect();
+            if (this.gattSession !== session) { server.disconnect(); return; }
+            device.addEventListener("gattserverdisconnected", session.onLost);
+            const services = [];
+            let limited = false;
+            try {
+                for (const service of await server.getPrimaryServices()) {
+                    if (this.gattSession !== session) return;
+                    const row = { uuid: service.uuid, characteristics: [] };
+                    services.push(row);
+                    try {
+                        for (const ch of await service.getCharacteristics()) {
+                            const p = ch.properties;
+                            if (p.write || p.writeWithoutResponse) session.writable.set(service.uuid + "/" + ch.uuid, ch);
+                            const flags = [p.broadcast, p.read, p.writeWithoutResponse, p.write, p.notify, p.indicate, p.authenticatedSignedWrites, p.reliableWrite || p.writableAuxiliaries];
+                            row.characteristics.push({ uuid: ch.uuid, properties: flags.reduce((bits, set, i) => set ? bits | (1 << i) : bits, 0) });
+                        }
+                    } catch { row.partial = true; }
+                }
+            } catch { limited = true; }
+            if (this.gattSession !== session) return;
+            if (!server.connected) return session.onLost();
+            this.GattReply(session, "connected", { services, limited });
+        } catch (error) {
+            if (this.gattSession !== session) return;
+            this.ReleaseGatt(session);
+            this.GattReply(session, error.name === "SecurityError" || error.name === "NotAllowedError" ? "denied" : "unavailable");
+        }
+    }
+
+    static async ReadAdvertisementRssi(device) {
+        if (typeof device.watchAdvertisements !== "function" || typeof AbortController === "undefined") return;
+        const controller = new AbortController();
+        this.rssiWatch = controller;
+        let listener, timer;
+        try {
+            return await new Promise(resolve => {
+                listener = ({ rssi }) => {
+                    if (Number.isInteger(rssi) && rssi >= -127 && rssi <= 20) resolve(rssi);
+                };
+                device.addEventListener("advertisementreceived", listener);
+                controller.signal.addEventListener("abort", () => resolve(), { once: true });
+                timer = setTimeout(resolve, 1500);
+                device.watchAdvertisements({ signal: controller.signal }).catch(() => resolve());
+            });
+        } catch {
+            // The chooser can succeed even when advertisement access is unavailable.
+        } finally {
+            clearTimeout(timer);
+            device.removeEventListener("advertisementreceived", listener);
+            controller.abort();
+            if (this.rssiWatch === controller) this.rssiWatch = null;
+        }
+    }
+
+    static async Discover({ request, serviceUuids, clear }) {
+        const owner = EmscriptenBlueTooth;
+        owner.rssiWatch?.abort();
+        if (clear) {
+            owner.chooserGeneration++;
+            owner.selectedDevices.clear();
+            return;
+        }
+        const generation = ++owner.chooserGeneration;
+        // Deliver results after the Lua-to-JS call has unwound.
+        const reply = (status, devices) => setTimeout(() => {
+            EmscriptenInstance.SendMsg("BluetoothDiscovery", { request, status, devices });
+        }, 0);
+        if (!window.isSecureContext) return reply("insecure");
+        if (!navigator.bluetooth?.requestDevice) return reply("unsupported");
+        try {
+            // Invoke the chooser while the panel click still provides user activation.
+            const optionalServices = ["device_information", "battery_service"];
+            for (let uuid of (serviceUuids || "").toLowerCase().split(/[\s,;，；]+/).filter(Boolean)) {
+                if (/^(?:[0-9a-f]{4}|[0-9a-f]{8})$/.test(uuid))
+                    uuid = uuid.padStart(8, "0") + "-0000-1000-8000-00805f9b34fb";
+                if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(uuid))
+                    return reply("invalidService");
+                optionalServices.push(uuid);
+            }
+            const choice = navigator.bluetooth.requestDevice({ acceptAllDevices: true, optionalServices });
+            reply("choosing");
+            const device = await choice;
+            if (generation !== owner.chooserGeneration) return;
+            owner.selectedDevices.set(device.id, device);
+            const row = { id: device.id, name: device.name || "" };
+            const rssi = await owner.ReadAdvertisementRssi(device);
+            if (generation !== owner.chooserGeneration) return;
+            if (rssi !== undefined) row.rssi = rssi;
+            reply("ok", [row]);
+        } catch (error) {
+            const status = { NotFoundError: "cancelled", NotAllowedError: "denied", SecurityError: "denied" };
+            reply(status[error.name] || "unavailable");
+        }
     }
 
     constructor(id) {
