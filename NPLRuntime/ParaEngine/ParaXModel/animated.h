@@ -120,7 +120,7 @@ namespace ParaEngine
 		/** this function will return the interpolated animation vector at the specified anim id and frame number*/
 		T getValue(int anim, int time)
 		{
-			if (type != INTERPOLATION_NONE || data.size() > 1) {
+			if (data.size() > 1) {
 				AnimRange range;
 
 				// obtain a time value and a data range
@@ -136,12 +136,19 @@ namespace ParaEngine
 				}
 				else if (seq == -2)
 				{
-					/// it is also a global animation, however, range[0] is used instead of globals
-					range = ranges[0];
-					if (range.second > range.first)
-						time = times[range.first] + globalTime % (times[range.second] - times[range.first]);
-					else
-						time = 0;
+					// Legacy local loops can omit the range table. A one-key track
+					// is constant even when the file supplies no timestamps.
+					const size_t keyCount = std::min(data.size(), times.size());
+					if (keyCount < 2)
+						return getDefaultValue();
+					range = ranges.empty() ? AnimRange(0, static_cast<uint32>(keyCount - 1)) : ranges.front();
+					if (range.first > range.second || range.second >= keyCount)
+						return getDefaultValue();
+					const int64_t start = times[range.first];
+					const int64_t duration = static_cast<int64_t>(times[range.second]) - start;
+					if (duration <= 0)
+						return data[range.first];
+					time = static_cast<int>(start + globalTime % duration);
 				}
 				else if (seq == -1) {
 					/// get the range according to the current animation.
@@ -209,15 +216,15 @@ namespace ParaEngine
 				}
 			}
 			else {
-				// default value
-				return data[0];
+				// Constant and empty tracks need neither a range nor timestamps.
+				return getDefaultValue();
 			}
 		}
 
 		// default value
 		T getDefaultValue()
 		{
-			return data[0];
+			return data.empty() ? T(0.0f) : data.front();
 		}
 
 		/**

@@ -141,6 +141,25 @@ namespace
 		TEST_CHECK(tex1 && tex1->GetRawData() != nullptr && tex1->GetRawDataSize() > 64);
 	}
 
+	void TestLocalParticleTrackWithoutRanges()
+	{
+		Animated<float> spread;
+		spread.seq = -2;
+		TEST_CHECK(spread.getValue(0, 100) == 0.0f);
+		spread.data.push_back(0.25f);
+		TEST_CHECK(spread.getValue(0, 100) == 0.25f);
+
+		spread.times.push_back(100);
+		spread.AppendKey(300, 0.75f);
+		const auto savedTime = globalTime;
+		globalTime = 300;
+		TEST_CHECK(spread.getValue(0, 0) == 0.5f);
+		globalTime = savedTime;
+
+		spread.times[1] = 100;
+		TEST_CHECK(spread.getValue(0, 0) == 0.25f);
+	}
+
 	void TestZeroRateSilenceAndEmitterShapes()
 	{
 		SceneState sceneState;
@@ -624,6 +643,7 @@ int main(int argc, char** argv)
 	}
 
 	TestProceduralBuiltinTextures();
+	TestLocalParticleTrackWithoutRanges();
 	TestZeroRateSilenceAndEmitterShapes();
 	TestFireworkCascadeAndRibbonSimulation();
 	TestParaxAndGlbRoundTrip();
