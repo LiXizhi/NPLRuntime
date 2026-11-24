@@ -379,13 +379,15 @@ namespace ParaEngine {
 			window->CheckFocus();
 			break;
 		case WM_MOUSEWHEEL:
+		case WM_MOUSEHWHEEL:
 		{
 			int zDelta = GET_WHEEL_DELTA_WPARAM(wParam);
 			POINT ptWheel = { GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
 			::ScreenToClient(hWnd, &ptWheel);
 			if (CGlobals::GetApp())
 				CGlobals::GetApp()->ClientToGame(reinterpret_cast<int&>(ptWheel.x), reinterpret_cast<int&>(ptWheel.y), true);
-			window->OnMouseWheel((float)ptWheel.x, (float)ptWheel.y, (float)zDelta);
+			const bool horizontal = message == WM_MOUSEHWHEEL;
+			window->OnMouseWheel((float)ptWheel.x, (float)ptWheel.y, horizontal ? -zDelta : zDelta, horizontal);
 		}
 		break;
 

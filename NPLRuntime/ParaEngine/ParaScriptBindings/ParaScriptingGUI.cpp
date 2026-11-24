@@ -1256,6 +1256,16 @@ namespace ParaScripting
 		const char* strScriptName = NPL::NPLHelper::LuaObjectToString(objScriptName);
 		SetEventScript(EM_MOUSE_UP, strScriptName);
 	}
+	void ParaUIObject::OnMouseHWheel(const object& script)
+	{
+		SetEventScript(EM_MOUSE_HWHEEL, NPL::NPLHelper::LuaObjectToString(script));
+	}
+
+	string ParaUIObject::GetOnMouseHWheel() const
+	{
+		string code; GetEventScript(EM_MOUSE_HWHEEL, code); return code;
+	}
+
 	void ParaUIObject::OnMouseWheel(const object& objScriptName)
 	{
 		const char* strScriptName = NPL::NPLHelper::LuaObjectToString(objScriptName);
@@ -2033,6 +2043,9 @@ namespace ParaScripting
 		}
 		else if (strcmp(scripttype, "onmouseup") == 0) {
 			m_pObj->ActivateScript("", EM_MOUSE_UP);
+		}
+		else if (strcmp(scripttype, "onmousehwheel") == 0) {
+			m_pObj->ActivateScript("mouse_wheel_x=0;", EM_MOUSE_HWHEEL);
 		}
 		else if (strcmp(scripttype, "onmousewheel") == 0) {
 			m_pObj->ActivateScript("", EM_MOUSE_WHEEL);

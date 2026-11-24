@@ -23,7 +23,7 @@ namespace ParaEngine {
 
         static ParaEngineWebView *createWebView(int x, int y, int w, int h);
         static ParaEngineWebView *createSubWebView(int x, int y, int w, int h);
-        static void openWebView(const std::string &url);
+        static void openWebView(const std::string &url, bool hideReturnButton = false);
         static ParaEngineWebView *getWebViewByIndex(int viewTag);
 
         virtual void loadUrl(const std::string &url, bool cleanCachedData = false) override;

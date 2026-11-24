@@ -23,7 +23,8 @@ namespace ParaEngine
 {
 	void dosdatetime2filetime(WORD dosdate, WORD dostime, time_t* ft)
 	{
-		tm st;
+		tm st = {};
+		st.tm_isdst = -1;
 		st.tm_year = (WORD)((dosdate >> 9) + 1980 - 1900);
 		st.tm_mon = (WORD)(((dosdate >> 5) & 0xf) - 1);
 		st.tm_mday = (WORD)(dosdate & 0x1f);

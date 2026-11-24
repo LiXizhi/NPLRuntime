@@ -559,7 +559,10 @@ namespace ParaEngine
 			}
 			else if (sdl_event.type == SDL_MOUSEWHEEL)
 			{
-				OnMouseWheel(m_mouse_x, m_mouse_y, sdl_event.wheel.preciseY * 120);
+				if (int dx = static_cast<int>(sdl_event.wheel.preciseX * 120))
+					OnMouseWheel(m_mouse_x, m_mouse_y, -dx, true);
+				if (sdl_event.wheel.preciseY != 0)
+					OnMouseWheel(m_mouse_x, m_mouse_y, sdl_event.wheel.preciseY * 120);
 			}
 			else if (sdl_event.type == SDL_KEYDOWN && !is_wps_office_app)
 			{

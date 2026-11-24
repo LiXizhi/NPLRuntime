@@ -550,6 +550,8 @@ void CEventBinding::StaticInit()
 	StringToEventTable["EM_MOUSE_MOVE"]=EM_MOUSE_MOVE;
 	EventToStringTable[EM_MOUSE_HOVER]="EM_MOUSE_HOVER";
 	StringToEventTable["EM_MOUSE_HOVER"]=EM_MOUSE_HOVER;
+	EventToStringTable[EM_MOUSE_HWHEEL]="EM_MOUSE_HWHEEL";
+	StringToEventTable["EM_MOUSE_HWHEEL"]=EM_MOUSE_HWHEEL;
 	EventToStringTable[EM_MOUSE_WHEEL]="EM_MOUSE_WHEEL";
 	StringToEventTable["EM_MOUSE_WHEEL"]=EM_MOUSE_WHEEL;
 	EventToStringTable[EM_MOUSE_ENTER]="EM_MOUSE_ENTER";
@@ -951,6 +953,7 @@ void CEventBinding::DefaultMap_Mouse()
 	for (a=EM_MOUSE_BEGIN;a<EM_MOUSE;a++) {
 		MapEvent(a,EM_MOUSE);
 	}
+	MapEvent(EM_MOUSE_HWHEEL, EM_MOUSE);
 	MapEvent(EM_MOUSE_LEFTDOWN,EM_MOUSE_DOWN);
 	MapEvent(EM_MOUSE_RIGHTDOWN,EM_MOUSE_DOWN);
 	MapEvent(EM_MOUSE_MIDDLEDOWN,EM_MOUSE_DOWN);
@@ -989,6 +992,7 @@ void CEventBinding::DefaultMap_Mouse()
 
 void CEventBinding::DisableMouse()
 {
+	DisableEvent(EM_MOUSE_HWHEEL);
 	int a;
 	for(a=EM_MOUSE_BEGIN;a<=EM_MOUSE;a++)
 		DisableEvent(a);
@@ -1003,6 +1007,7 @@ void CEventBinding::DisableKeyboard()
 
 void CEventBinding::EnableMouse()
 {
+	EnableEvent(EM_MOUSE_HWHEEL);
 	int a;
 	for(a=EM_MOUSE_BEGIN;a<=EM_MOUSE;a++)
 		EnableEvent(a);

@@ -47,7 +47,7 @@ namespace ParaEngine
 		virtual void OnTouch(int nType, TouchEvent::TouchEventMsgType nTouchType, int touch_id, float x, float y, int nTimeTick) {};
 		virtual void OnMouseButton(EMouseButton button, EKeyState state, uint32_t x, uint32_t y) {};
 		virtual void OnMouseMove(uint32_t x, uint32_t y) {};
-		virtual void OnMouseWheel(float x, float y, float delta) {};
+		virtual void OnMouseWheel(float x, float y, float delta, bool horizontal = false) {};
 		virtual void OnKey(EVirtualKey key, EKeyState state) {};
 		virtual void OnChar(unsigned int character) {};
 		virtual void OnChar(std::string text) {};

@@ -560,7 +560,8 @@ bool CDirectMouse::ReadBufferedData()
             case EMouseEventType::Wheel:
             {
                 const DeviceMouseWheelEvent* wheelEvent = (DeviceMouseWheelEvent*)(e.get());
-                m_curMouseState.z = wheelEvent->GetWheel();
+                if (!wheelEvent->IsHorizontal())
+                    m_curMouseState.z = wheelEvent->GetWheel();
                 break;
             }
             case EMouseEventType::Unknown:

@@ -1623,6 +1623,27 @@ bool CZipArchive::ReadEntries()
 	return true;
 }
 
+namespace ParaEngine
+{
+	void TimetToFileTime(const std::time_t& t, FILETIME* pft);
+}
+
+// ZIP central directories carry a modification time. Older PKG indexes and
+// inferred folders have no timestamp. Preserve the existing compressed size.
+static void AddArchiveSearchResult(CSearchResult& result, const char* name, const SZipFileEntry& entry)
+{
+	FILETIME modified = {};
+	if (entry.LastModifiedTime)
+	{
+		time_t stamp;
+		dosdatetime2filetime(static_cast<WORD>(entry.LastModifiedTime >> 16),
+			static_cast<WORD>(entry.LastModifiedTime), &stamp);
+		if (stamp != static_cast<time_t>(-1))
+			TimetToFileTime(stamp, &modified);
+	}
+	result.AddResult(name, entry.CompressedSize, 0, &modified);
+}
+
 void CZipArchive::FindFiles(CSearchResult &result, const string &sRootPath, const string &sPattern, int nSubLevel)
 {
 
@@ -1648,7 +1669,7 @@ void CZipArchive::FindFiles(CSearchResult &result, const string &sRootPath, cons
 			const SZipFileEntryPtr &entry = m_FileList[index];
 			if (regex_search(entry.m_pEntry->zipFileName, re))
 			{
-				result.AddResult(entry.m_pEntry->zipFileName, entry.m_pEntry->CompressedSize);
+				AddArchiveSearchResult(result, entry.m_pEntry->zipFileName, *entry.m_pEntry);
 			}
 		}
 	}
@@ -1820,10 +1841,10 @@ void CZipArchive::FindFiles(CSearchResult &result, const string &sRootPath, cons
 				{
 					// std::string filename = entry.m_pEntry->zipFileName.substr(remove_head_len);
 					const char *filename = entry.m_pEntry->zipFileName + remove_head_len;
-					result.AddResult(filename, entry.m_pEntry->CompressedSize);
+					AddArchiveSearchResult(result, filename, *entry.m_pEntry);
 				}
 				else
-					result.AddResult(entry.m_pEntry->zipFileName, entry.m_pEntry->CompressedSize);
+					AddArchiveSearchResult(result, entry.m_pEntry->zipFileName, *entry.m_pEntry);
 			}
 		}
 	}

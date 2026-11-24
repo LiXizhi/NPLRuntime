@@ -339,6 +339,7 @@ namespace ParaEngine
 		EM_WM_OWNER_DRAW,
 		EM_WM_INPUT_METHOD,
 
+		EM_MOUSE_HWHEEL, // appended to preserve existing event IDs
 		EM_UNKNOWN=0xffff
 	};
 	enum Editor_events

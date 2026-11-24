@@ -623,9 +623,11 @@ void RenderWindowOSX::OnScrollWheel(NSEvent* event)
         s_bMouseOverScrollableUI = CGUIRoot::GetInstance()->IsMouseOverScrollableUI();
     }
     
+    // Precise Cocoa deltas are in points; MCML uses 40 logical pixels per notch.
+    const float deltaX = [event hasPreciseScrollingDeltas] ? [event scrollingDeltaX] / 40.f : [event deltaX];
     if(phase == NSEventPhaseNone && momentumPhase == NSEventPhaseNone)
     {
-        OnMouseWhell([event deltaX], [event deltaY]);
+        OnMouseWhell(deltaX, [event deltaY]);
     }
     else if(phase != NSEventPhaseNone)
     {
@@ -636,7 +638,7 @@ void RenderWindowOSX::OnScrollWheel(NSEvent* event)
         {
             if(phase == NSEventPhaseChanged)
             {
-                OnMouseWhell([event deltaX], [event deltaY]);
+                OnMouseWhell(deltaX, [event deltaY]);
             }
         }
         else
@@ -852,6 +854,9 @@ void RenderWindowOSX::OnMouseWhell(float deltaX, float deltaY)
         return;
     }
     
+    if (int ticks = static_cast<int>(deltaX * 120))
+        CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(DeviceMouseEventPtr(new DeviceMouseWheelEvent(ticks, true)));
+
     if(deltaY != 0.f)
     {
         CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(DeviceMouseEventPtr(new DeviceMouseWheelEvent(deltaY * 120)));

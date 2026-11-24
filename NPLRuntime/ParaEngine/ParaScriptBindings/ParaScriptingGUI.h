@@ -552,6 +552,8 @@ namespace ParaScripting
 		string GetOnMouseUp()const;
 		void OnMouseWheel(const object& strScriptName);
 		string GetOnMouseWheel()const;
+		void OnMouseHWheel(const object& script);
+		string GetOnMouseHWheel() const;
 		void OnFrameMove(const object& strScriptName);
 		string GetOnFrameMove()const;
 		void OnTouch(const object& strScriptName);

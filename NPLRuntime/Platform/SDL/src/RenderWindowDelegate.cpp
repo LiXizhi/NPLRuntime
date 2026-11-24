@@ -95,13 +95,13 @@ namespace ParaEngine
 		CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(DeviceMouseEventPtr(new DeviceMouseMoveEvent(x, y)));
 	}
 
-	void RenderWindowDelegate::OnMouseWheel(float x, float y, float delta)
+	void RenderWindowDelegate::OnMouseWheel(float x, float y, float delta, bool horizontal)
 	{
 		if (CGlobals::GetApp()->GetAppState() != PEAppState_Ready)
 		{
 			return;
 		}
-		CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(DeviceMouseEventPtr(new DeviceMouseWheelEvent(delta)));
+		CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(DeviceMouseEventPtr(new DeviceMouseWheelEvent(delta, horizontal)));
 	}
 
 	void RenderWindowDelegate::PollEvents()

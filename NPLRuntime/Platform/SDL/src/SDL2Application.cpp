@@ -565,15 +565,17 @@ namespace ParaEngine
 			// Leave any pending canvas resize intact as well.
 			return;
 		}
+#elif defined(__linux__) && !defined(ANDROID)
+		// A programmatic desktop resize must also move the SDL window bounds.
+		// SetSDLWindowSize routes its result through the normal OnSize path.
+		if (m_cfg.isWindowed && m_pRenderWindow && m_pRenderWindow->GetNativeHandle() && vSize.x > 0 && vSize.y > 0)
+		{
+			static_cast<RenderWindowDelegate*>(m_pRenderWindow)->SetSDLWindowSize(static_cast<int>(vSize.x), static_cast<int>(vSize.y));
+			return;
+		}
 #endif
 		SetResolution(vSize.x, vSize.y);
 		UpdateScreenMode();
-
-		// if (m_cfg.isWindowed && m_pRenderWindow)
-		//{
-		//	auto pWinDelegate = (RenderWindowDelegate*)m_pRenderWindow;
-		//	pWinDelegate->SetSize((int)vSize.x, (int)vSize.y);
-		// }
 	}
 
 	void CSDL2Application::GetResolution(float *pX, float *pY)

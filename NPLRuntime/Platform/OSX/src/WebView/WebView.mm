@@ -16,6 +16,82 @@
 #include "RenderWindowOSX.h"
 #include "WebView.h"
 
+// A click returns to the game. Once the pointer moves past the drag threshold,
+// releasing it only places the button, even if it returns to the starting point.
+@interface WebViewReturnButton : NSButton
+{
+    NSPoint pressPoint;
+    NSPoint initialOrigin;
+    BOOL dragged;
+}
+@end
+
+@implementation WebViewReturnButton
+- (void)drawRect:(NSRect)dirtyRect
+{
+    NSRect circle = NSInsetRect(self.bounds, 1, 1);
+    NSBezierPath *background = [NSBezierPath bezierPathWithOvalInRect:circle];
+    [[NSColor colorWithWhite:0.12 alpha:self.highlighted ? 1.0 : 0.88] setFill];
+    [background fill];
+    [[NSColor colorWithWhite:1.0 alpha:0.85] setStroke];
+    [background stroke];
+
+    CGFloat x = NSMidX(circle);
+    CGFloat y = NSMidY(circle);
+    NSBezierPath *arrow = [NSBezierPath bezierPath];
+    [arrow moveToPoint:NSMakePoint(x + 3, y - 8)];
+    [arrow lineToPoint:NSMakePoint(x - 5, y)];
+    [arrow lineToPoint:NSMakePoint(x + 3, y + 8)];
+    arrow.lineWidth = 3;
+    arrow.lineCapStyle = NSLineCapStyleRound;
+    arrow.lineJoinStyle = NSLineJoinStyleRound;
+    [[NSColor whiteColor] setStroke];
+    [arrow stroke];
+}
+
+- (void)placeAt:(NSPoint)origin
+{
+    NSRect bounds = self.superview.bounds;
+    origin.x = MAX(NSMinX(bounds), MIN(origin.x, NSMaxX(bounds) - NSWidth(self.frame)));
+    origin.y = MAX(NSMinY(bounds), MIN(origin.y, NSMaxY(bounds) - NSHeight(self.frame)));
+    [self setFrameOrigin:origin];
+}
+
+- (void)resizeWithOldSuperviewSize:(NSSize)oldSize
+{
+    [self placeAt:self.frame.origin];
+}
+
+- (BOOL)mouseDownCanMoveWindow { return NO; }
+
+- (void)mouseDown:(NSEvent *)event
+{
+    pressPoint = [self.superview convertPoint:event.locationInWindow fromView:nil];
+    initialOrigin = self.frame.origin;
+    dragged = NO;
+    [self highlight:YES];
+}
+
+- (void)mouseDragged:(NSEvent *)event
+{
+    NSPoint point = [self.superview convertPoint:event.locationInWindow fromView:nil];
+    CGFloat dx = point.x - pressPoint.x;
+    CGFloat dy = point.y - pressPoint.y;
+    if (!dragged && dx * dx + dy * dy < 16)
+        return;
+    dragged = YES;
+    [self highlight:NO];
+    [self placeAt:NSMakePoint(initialOrigin.x + dx, initialOrigin.y + dy)];
+}
+
+- (void)mouseUp:(NSEvent *)event
+{
+    [self highlight:NO];
+    if (!dragged && NSPointInRect([self convertPoint:event.locationInWindow fromView:nil], self.bounds))
+        [self performClick:self];
+}
+@end
+
 @interface WebViewWindowController : NSWindowController
 {
     std::function<void()> _onCloseCallback;
@@ -29,7 +105,7 @@
 }
 @property(nonatomic, retain) WKWebView *webView;
 @property(nonatomic, retain) NSButton *uiCloseBtn;
-//@property (nonatomic) std::function<void()> onCloseCallback;
+@property(nonatomic) BOOL closeButtonHidden;
 
 - (void)setCloseCB:(const std::function<void()>&)cb;
 
@@ -42,27 +118,24 @@
     _onCloseCallback = cb;
 }
 
-- (void)autoResize {
-    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(windowDidResize:) name:NSWindowDidResizeNotification object:self.window];
-}
+- (void)installReturnButton
+{
+    NSView *content = webView.superview;
+    webView.frame = content.bounds;
+    webView.autoresizingMask = NSViewWidthSizable | NSViewHeightSizable;
 
-- (void)windowDidResize:(NSNotification*)aNotification {
-    NSWindow *renderWindow = (NSWindow *)ParaEngine::CGlobals::GetApp()->GetRenderWindow()->GetNativeHandle();
-
-    CGRect renderRect = [renderWindow frame];
-    CGRect webviewRect = [renderWindow contentRectForFrameRect: renderRect];
-    [webView setFrameSize:webviewRect.size];
-
-    float iconY = (renderRect.size.height - self.uiCloseBtn.frame.size.height) / 2;
-
-    CGRect uiCloseBtnRect = CGRectMake(
-        self.uiCloseBtn.frame.origin.x,
-        iconY,
-        self.uiCloseBtn.frame.size.width,
-        self.uiCloseBtn.frame.size.height
-    );
-
-    self.uiCloseBtn.frame = uiCloseBtnRect;
+    const CGFloat size = 44;
+    WebViewReturnButton *button = [[WebViewReturnButton alloc] initWithFrame:NSMakeRect(0, 0, size, size)];
+    button.bordered = NO;
+    button.title = @"";
+    button.toolTip = NSLocalizedString(@"Return to Paracraft (drag to move)", nil);
+    [button setAccessibilityLabel:NSLocalizedString(@"Return to Paracraft", nil)];
+    button.target = self;
+    button.action = @selector(onCloseBtn);
+    [content addSubview:button positioned:NSWindowAbove relativeTo:webView];
+    [button placeAt:NSMakePoint(16, NSMidY(content.bounds) - size / 2)];
+    self.uiCloseBtn = button;
+    [button release];
 }
 
 - (void)webView:(WKWebView *)webView didStartProvisionalNavigation:(WKNavigation *)navigation {
@@ -101,7 +174,8 @@
 {
     [self.webView setHidden:true];
     [self.uiCloseBtn setHidden:true];
-    [self.webView loadRequest:[NSURLRequest requestWithURL:[NSURL URLWithString:@""]]];
+    [self.webView.window makeFirstResponder:self.webView.superview];
+    [self.webView loadRequest:[NSURLRequest requestWithURL:[NSURL URLWithString:@"about:blank"]]];
 }
 
 - (WKWebView *)webView:(WKWebView *)webView
@@ -147,60 +221,22 @@ namespace ParaEngine {
         return webview;
     }
 
-    void ParaEngineWebView::openWebView(const std::string &url)
+    void ParaEngineWebView::openWebView(const std::string &url, bool hideReturnButton)
     {
-        if (isOpenUrlLoaded) {
-            ParaEngineWebView *pView = getWebViewByIndex(openUrlViewTag);
-
-            if (pView) {
-                pView->loadUrl(url);
-                pView->setVisible(true);
-            }
-            
-            return;
+        ParaEngineWebView *view = isOpenUrlLoaded ? getWebViewByIndex(openUrlViewTag) : nullptr;
+        if (!view) {
+            view = createWebView(0, 0, 0, 0);
+            if (!view)
+                return;
+            [view->_webViewController installReturnButton];
+            view->setAlpha(0.95f);
+            openUrlViewTag = view->viewTag;
+            isOpenUrlLoaded = true;
         }
-        
-        RenderWindowOSX *pWnd = (RenderWindowOSX *)CGlobals::GetApp()->GetRenderWindow();
-        int w = pWnd->GetWidth();
-        int h = pWnd->GetHeight();
-        int scale = pWnd->currentBackingScaleFactor;
-        w = w / scale;
-        h = h / scale;
 
-        ParaEngineWebView *pView = createWebView(0, 0, w, h);
-
-        if (!pView)
-            return;
-
-        pView->loadUrl(url);
-        pView->setVisible(true);
-        pView->resize(w, h);
-        pView->move(0, 0);
-        pView->setAlpha(0.95f);
-        
-        // add close btn.
-        NSBundle *bundle = [NSBundle mainBundle];
-        NSString *resPath = [bundle resourcePath];
-        resPath = [resPath stringByAppendingPathComponent:@"res/WebViewCloseBtn.png"];
-
-        NSImage *closeBtn = [[NSImage alloc] initWithContentsOfFile:resPath];
-
-        float closeBtnW = closeBtn.size.width;
-        float closeBtnH = closeBtn.size.height;
-
-        NSWindow *renderWindow = (NSWindow *)pWnd->GetNativeHandle();
-        float iconY = (renderWindow.contentView.frame.size.height - closeBtnH) / 2;
-
-        pView->_webViewController.uiCloseBtn = [[NSButton alloc] initWithFrame:CGRectMake(30, iconY, closeBtnW, closeBtnH)];
-        [pView->_webViewController.uiCloseBtn setImage:closeBtn];
-        [pView->_webViewController.uiCloseBtn setTarget:pView->_webViewController];
-        [pView->_webViewController.uiCloseBtn setAction:@selector(onCloseBtn)];
-        [pView->_webViewController autoResize];
-
-        [renderWindow.contentView addSubview:pView->_webViewController.uiCloseBtn];
-
-        openUrlViewTag = pView->viewTag;
-        isOpenUrlLoaded = true;
+        view->hideCloseButton(hideReturnButton);
+        view->loadUrl(url);
+        view->setVisible(true);
     }
 
     ParaEngineWebView *ParaEngineWebView::getWebViewByIndex(int viewTag)
@@ -252,6 +288,8 @@ namespace ParaEngine {
 
     ParaEngineWebView::~ParaEngineWebView()
     {
+        [_webViewController.uiCloseBtn removeFromSuperview];
+        _webViewController.uiCloseBtn = nil;
         [_webViewController.webView stopLoading];
         [_webViewController.webView removeFromSuperview];
         _webViewController.webView = nil;
@@ -298,33 +336,16 @@ namespace ParaEngine {
 
     void ParaEngineWebView::hideCloseButton(bool bHide)
     {
-         if (_webViewController)
-         {
-         }
+        _webViewController.closeButtonHidden = bHide;
+        _webViewController.uiCloseBtn.hidden = bHide || _webViewController.webView.hidden;
     }
 
     void ParaEngineWebView::setVisible(bool bVisible)
     {
-        if (_webViewController)
-        {
-//            if (!bVisible) {
-//                [_webViewController.webView loadRequest:[NSURLRequest requestWithURL:[NSURL URLWithString:@""]]];
-//            }
-
-            [_webViewController.webView setHidden:!bVisible];
-            
-            if (_webViewController.uiCloseBtn) {
-                NSWindow *renderWindow = (NSWindow *)CGlobals::GetApp()->GetRenderWindow()->GetNativeHandle();
-                float iconHeight = _webViewController.uiCloseBtn.frame.size.height;
-                float iconX = _webViewController.uiCloseBtn.frame.origin.x;
-                float iconY = (renderWindow.contentView.frame.size.height - iconHeight) / 2;
-
-                [_webViewController.uiCloseBtn setFrameOrigin:NSMakePoint(iconX, iconY)];
-                [_webViewController.uiCloseBtn setHidden:!bVisible];
-            }
-        }
+        _webViewController.webView.hidden = !bVisible;
+        _webViewController.uiCloseBtn.hidden = !bVisible || _webViewController.closeButtonHidden;
     }
-    
+
     void ParaEngineWebView::SetHideViewWhenClickBack(bool b)
     {
          if (_webViewController)

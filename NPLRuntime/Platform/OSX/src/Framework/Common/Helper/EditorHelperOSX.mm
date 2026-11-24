@@ -122,12 +122,6 @@ namespace ParaEngine {
 		return false;
 	}
 
-	static bool openUrl(const char* url)
-	{
-		ParaEngineWebView::openWebView(url);
-		return true;
-	}
-
 	static bool executeOnOSX(const char* lpFile, const char* lpParameters, const char* lpDirectory, bool isWait)
 	{
 		if (!lpFile || lpFile[0] == '\0')
@@ -217,7 +211,10 @@ namespace ParaEngine {
 
 			if (isHttpUrl && op == "open")
 			{
-				return openUrl(lpFile);
+				// The opt-out applies only to this open of the shared fullscreen view.
+				bool hideReturnButton = lpParameters && strcmp(lpParameters, "HideCloseButton=true") == 0;
+				ParaEngineWebView::openWebView(lpFile, hideReturnButton);
+				return true;
 			}
 			return executeOnOSX(lpFile, lpParameters, lpDirectory, false);
 		}

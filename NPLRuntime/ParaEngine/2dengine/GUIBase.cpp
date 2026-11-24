@@ -1350,6 +1350,12 @@ bool CGUIBase::MsgProc(MSG* event)
 			SetDirty(true);
 			bHandled = OnModify();
 		}
+		else if (m_event->IsMapTo(nEvent, EM_MOUSE_HWHEEL) && HasEvent(EM_MOUSE_HWHEEL)) {
+			// Keep sub-notch trackpad motion and deliver it only to horizontal wheel listeners.
+			const string code = "mouse_wheel_x=" + std::to_string((int)event->lParam) +
+				";mouse_x=" + std::to_string(pt.x) + ";mouse_y=" + std::to_string(pt.y) + ";";
+			bHandled = ActivateScript(code, EM_MOUSE_HWHEEL);
+		}
 		else if (m_event->IsMapTo(nEvent, EM_MOUSE_WHEEL)) {
 			// modified 2007.10.12 LXZ: so that the message can be leaked to its container during scrolling
 			int nDelta = ((int32)(event->lParam)) / 120;
@@ -2377,14 +2383,14 @@ bool ParaEngine::CGUIBase::IsScrollable()
 bool ParaEngine::CGUIBase::IsScrollableOrHasMouseWheelRecursive()
 {
 	bool bCanDrag = false;
-	bool bScrollable = IsScrollable() || HasEvent(EM_MOUSE_WHEEL);
+	bool bScrollable = IsScrollable() || HasEvent(EM_MOUSE_WHEEL) || HasEvent(EM_MOUSE_HWHEEL);
 	if (!bScrollable)
 		bCanDrag = bCanDrag || GetCandrag();
 
 	CGUIContainer* temp = GetParent();
 	while (!bScrollable && temp != NULL)
 	{
-		bScrollable = temp->IsScrollable() || temp->HasEvent(EM_MOUSE_WHEEL);
+		bScrollable = temp->IsScrollable() || temp->HasEvent(EM_MOUSE_WHEEL) || temp->HasEvent(EM_MOUSE_HWHEEL);
 		if (!bScrollable)
 			bCanDrag = bCanDrag || GetCandrag();
 		temp = temp->GetParent();

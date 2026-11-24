@@ -276,12 +276,14 @@ namespace ParaEngine
 	class DeviceMouseWheelEvent : public DeviceMouseEvent
 	{
 	public:
-		DeviceMouseWheelEvent(int wheel) :m_wheel(wheel) {}
+		DeviceMouseWheelEvent(int wheel, bool horizontal = false) :m_wheel(wheel), m_horizontal(horizontal) {}
+		bool IsHorizontal() const { return m_horizontal; }
 		virtual EMouseEventType GetEventType() const { return EMouseEventType::Wheel; }
 		virtual int GetWheel() const { return m_wheel; }
 
 		virtual std::string ToString();
 	private:
 		int m_wheel;
+		bool m_horizontal;
 	};
 }

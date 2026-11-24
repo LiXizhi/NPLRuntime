@@ -94,17 +94,13 @@ namespace ParaEngine
 
 #define CHECK_BIT(x,y) (((x)&(y))>0)
 
-#ifndef Int32x32To64
-#define Int32x32To64(a, b)  (((int64_t)((int32_t)(a))) * ((int64_t)((int32_t)(b))))
-#endif
-
 	/**
 	A FILETIME is defined as : Contains a 64-bit value representing the number of 100-nanosecond intervals since January 1, 1601 (UTC).
 	*/
 	void TimetToFileTime(const std::time_t& t, FILETIME* pft)
 	{
 		// Microseconds between 1601-01-01 00:00:00 UTC and 1970-01-01 00:00:00 UTC
-		int64_t ll = Int32x32To64(t, 10000000) + 116444736000000000;
+		int64_t ll = static_cast<int64_t>(t) * 10000000 + 116444736000000000;
 		pft->dwLowDateTime = (DWORD)ll;
 		pft->dwHighDateTime = ll >> 32;
 	}
@@ -398,7 +394,11 @@ namespace ParaEngine
 			fileInfo.m_mode = CParaFileInfo::ModeOther;
 
 		fileInfo.m_ftLastWriteTime = info.st_mtime;
+#if defined(__APPLE__)
+		fileInfo.m_ftCreationTime = info.st_birthtimespec.tv_sec;
+#else
 		fileInfo.m_ftCreationTime = info.st_ctime;
+#endif
 		fileInfo.m_ftLastAccessTime = info.st_atime;
 		fileInfo.m_dwFileSize = (DWORD)info.st_size;
 		fileInfo.m_dwFileAttributes = (DWORD)info.st_mode;

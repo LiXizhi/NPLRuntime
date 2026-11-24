@@ -57,9 +57,12 @@ void CGUIMouseVirtual::PushMouseEvent(const DeviceMouseEventPtr &e)
             {
                 if(m_buffered_mouse_msgs[i]->GetEventType() == EMouseEventType::Wheel)
                 {
-                    int delta = (static_cast<const DeviceMouseWheelEvent*>(e.get()))->GetWheel();
-                    delta += (static_cast<const DeviceMouseWheelEvent*>(m_buffered_mouse_msgs[i].get()))->GetWheel();
-                    m_buffered_mouse_msgs[i] = DeviceMouseEventPtr(new DeviceMouseWheelEvent(delta));
+                    const auto* wheel = static_cast<const DeviceMouseWheelEvent*>(e.get());
+                    const auto* buffered = static_cast<const DeviceMouseWheelEvent*>(m_buffered_mouse_msgs[i].get());
+                    if (buffered->IsHorizontal() != wheel->IsHorizontal())
+                        continue;
+                    int delta = wheel->GetWheel() + buffered->GetWheel();
+                    m_buffered_mouse_msgs[i] = DeviceMouseEventPtr(new DeviceMouseWheelEvent(delta, wheel->IsHorizontal()));
                     return;
                 }
             }
@@ -234,7 +237,8 @@ bool ParaEngine::CGUIMouseVirtual::ReadBufferedData()
 			case EMouseEventType::Wheel:
 			{
 				const DeviceMouseWheelEvent* wheelEvent = (DeviceMouseWheelEvent*)(e.get());
-				m_curMouseState.z = wheelEvent->GetWheel();
+				if (!wheelEvent->IsHorizontal())
+					m_curMouseState.z = wheelEvent->GetWheel();
 				break;
 			}
 			case EMouseEventType::Unknown:

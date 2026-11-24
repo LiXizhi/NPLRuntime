@@ -1349,9 +1349,9 @@ int CGUIRoot::HandleUserInput()
 			}break;
 			case EMouseEventType::Wheel:
 			{
-				const DeviceMouseWheelEvent* buttonEvent = static_cast<const DeviceMouseWheelEvent*>(e.get());
-				newMsg.message = EM_MOUSE_WHEEL;
-				newMsg.lParam = (int)buttonEvent->GetWheel();
+				const auto* wheel = static_cast<const DeviceMouseWheelEvent*>(e.get());
+				newMsg.message = wheel->IsHorizontal() ? EM_MOUSE_HWHEEL : EM_MOUSE_WHEEL;
+				newMsg.lParam = wheel->GetWheel();
 			}break;
 			}
 			if (newMsg.message == EM_MOUSE_MOVE)
