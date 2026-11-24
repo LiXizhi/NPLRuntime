@@ -118,7 +118,7 @@ namespace ParaEngine
 		}
 
 		/** this function will return the interpolated animation vector at the specified anim id and frame number*/
-		T getValue(int anim, int time)
+		T getValue(int anim, int time) const
 		{
 			if (data.size() > 1) {
 				AnimRange range;
@@ -127,6 +127,8 @@ namespace ParaEngine
 				if (seq >= 0) {
 					/// global animation has nothing to do the current animation. Such animation may be 
 					/// the blinking of eyes and some effects which always loops regardless of the current animation.
+					if (!globals)
+						return data.front();
 					if (globals[seq] == 0)
 						time = 0;
 					else
@@ -136,23 +138,19 @@ namespace ParaEngine
 				}
 				else if (seq == -2)
 				{
-					// Legacy local loops can omit the range table. A one-key track
-					// is constant even when the file supplies no timestamps.
-					const size_t keyCount = std::min(data.size(), times.size());
-					if (keyCount < 2)
-						return getDefaultValue();
-					range = ranges.empty() ? AnimRange(0, static_cast<uint32>(keyCount - 1)) : ranges.front();
-					if (range.first > range.second || range.second >= keyCount)
-						return getDefaultValue();
-					const int64_t start = times[range.first];
-					const int64_t duration = static_cast<int64_t>(times[range.second]) - start;
-					if (duration <= 0)
-						return data[range.first];
-					time = static_cast<int>(start + globalTime % duration);
+					if (ranges.empty()) {
+						// Legacy loops can omit the range table. Use the keys with timestamps.
+						const size_t keyCount = std::min(data.size(), times.size());
+						if (keyCount < 2)
+							return getDefaultValue();
+						range = AnimRange(0, static_cast<uint32>(keyCount - 1));
+					}
+					else
+						range = ranges.front();
 				}
-				else if (seq == -1) {
+				else {
 					/// get the range according to the current animation.
-					if (anim >= 0 && anim < (int)ranges.size())
+					if (seq == -1 && anim >= 0 && anim < (int)ranges.size())
 					{
 						range = ranges[anim];
 					}
@@ -164,11 +162,25 @@ namespace ParaEngine
 					// there is a chance that time = times[times.size()-1]
 					//time %= times[times.size()-1]; // I think this might not be necessary?
 				}
+				if (range.first > range.second || range.second >= data.size())
+					return data.front();
+				if (range.first == range.second)
+					return data[range.first];
+				if (range.second >= times.size())
+					return data.front();
+				if (seq == -2)
+				{
+					const int start = times[range.first];
+					const int64_t duration = static_cast<int64_t>(times[range.second]) - start;
+					if (duration <= 0)
+						return data[range.first];
+					time = static_cast<int>(start + globalTime % duration);
+				}
 				if (time >= times[range.second])
 				{
 					return data[range.second];
 				}
-				else if (range.first != range.second && time > times[range.first])
+				else if (time > times[range.first])
 				{
 					size_t pos = range.first;
 					if (range.second - range.first == 2)
@@ -215,16 +227,15 @@ namespace ParaEngine
 					return data[range.first];
 				}
 			}
-			else {
-				// Constant and empty tracks need neither a range nor timestamps.
-				return getDefaultValue();
-			}
+			return getDefaultValue();
 		}
 
 		// default value
-		T getDefaultValue()
+		T getDefaultValue() const
 		{
-			return data.empty() ? T(0.0f) : data.front();
+			// Static storage also zero-initializes vector types with an empty default constructor.
+			static const T emptyTrackValue{};
+			return data.empty() ? emptyTrackValue : data.front();
 		}
 
 		/**

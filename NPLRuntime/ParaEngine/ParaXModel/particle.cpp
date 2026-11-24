@@ -1053,18 +1053,20 @@ void ParticleSystem::DrawInstanceSub(ParticleList* instancePS)
 void ParticleSystem::InitCommonParticleFields(Particle& p, int anim, int time) const
 {
 	p.life = 0.0f;
-	p.maxlife = std::max(0.01f, (lifespan.used || !lifespan.data.empty()) ? const_cast<Animated<float>&>(lifespan).getValue(anim, time) : 1.0f);
+	p.maxlife = std::max(0.01f, lifespan.data.empty() ? 1.0f : lifespan.getValue(anim, time));
 
+	// Legacy exporters can leave a placeholder key on an absent optional track.
+	// V2 emitters also support explicit constant values without animation ranges.
+	const auto hasOptionalKeys = [this](const Animated<float>& track) {
+		return !track.data.empty() && (m_bExtendedV2 || !track.ranges.empty());
+	};
 	p.random_force = 0.f;
-	if (!spread.ranges.empty() || !spread.data.empty())
-		p.random_force = const_cast<Animated<float>&>(spread).getValue(anim, time);
+	if (hasOptionalKeys(spread))
+		p.random_force = spread.getValue(anim, time);
 
 	p.trail_length = 0.f;
-	if (type == 0 || type == 2)
-	{
-		if (!lat.ranges.empty() || !lat.data.empty())
-			p.trail_length = const_cast<Animated<float>&>(lat).getValue(anim, time);
-	}
+	if ((type == 0 || type == 2) && hasOptionalKeys(lat))
+		p.trail_length = lat.getValue(anim, time);
 
 	p.size = sizes[0];
 	p.colorTint = palette.empty() ? Vector4(1, 1, 1, 1) : palette[randint(0, (int)palette.size() - 1)];
@@ -1080,10 +1082,10 @@ void ParticleSystem::InitCommonParticleFields(Particle& p, int anim, int time) c
 	p.twinklePhase = randfloat(0.0f, 2.0f * MATH_PI);
 
 	p.rotSpeed = 0.0f;
-	if (!grav2.ranges.empty() || !grav2.data.empty())
+	if (hasOptionalKeys(grav2))
 	{
 		float radValue = randfloat(-0.2f, 0.2f);
-		float rs = const_cast<Animated<float>&>(grav2).getValue(0, 0);
+		float rs = grav2.getValue(0, 0);
 		p.rotSpeed = rs * (1.0f + radValue);
 	}
 	p.rotation = p.rotSpeed * 2.0f;
