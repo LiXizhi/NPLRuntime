@@ -201,6 +201,16 @@ namespace
 		TEST_CHECK(sphere.newParticle(0, 0).trail_length == 3.75f);
 		sys.type = 1;
 		TEST_CHECK(plane.newParticle(0, 0).trail_length == 0.f);
+
+		const auto savedTime = globalTime;
+		globalTime = 50;
+		sys.spread.AppendKey(100, 1.25f);
+		TEST_CHECK(plane.newParticle(0, 0).random_force == 2.5f);
+		int duration = 100;
+		sys.spread.seq = 0;
+		sys.spread.globals = &duration;
+		TEST_CHECK(sphere.newParticle(0, 0).random_force == 2.5f);
+		globalTime = savedTime;
 	}
 
 	void TestLocalParticleTrackWithoutRanges()

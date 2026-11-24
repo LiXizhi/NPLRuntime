@@ -377,6 +377,14 @@ int main(int argc, char** argv) {
 
         local info = class_info(p)
         assert(info.name == "ParaObject")
+        local function contains(list, value)
+            for _, item in ipairs(list) do
+                if item == value then return true end
+            end
+            return false
+        end
+        assert(contains(info.attributes, "visible"))
+        assert(contains(class_names(), "ParaObject"))
 
         local d = MockScene.PolyDerived()
         assert(d:Compute() == 35)

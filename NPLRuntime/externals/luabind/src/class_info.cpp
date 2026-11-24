@@ -58,7 +58,7 @@ namespace luabind
         result.methods = newtable(L);
         result.attributes = newtable(L);
 
-        std::size_t index = 1;
+        int index = 1;
 
         for (iterator i(table), e; i != e; ++i)
         {
@@ -92,7 +92,7 @@ namespace luabind
         std::map<type_id, detail::class_rep*> const& classes = reg->get_classes();
 
         object result = newtable(L);
-        std::size_t index = 1;
+        int index = 1;
 
         for (std::map<type_id, detail::class_rep*>::const_iterator iter = classes.begin();
             iter != classes.end(); ++iter)

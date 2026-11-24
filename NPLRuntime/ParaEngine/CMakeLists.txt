@@ -61,7 +61,6 @@ list(APPEND sources_commmon
     ${CMAKE_CURRENT_SOURCE_DIR}/Engine/EdgeBuilder.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/Engine/GlowEffect.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/Engine/GuiConsole.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/Engine/LibInterface.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/Engine/MirrorSurface.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/Engine/OcclusionQueryBank.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/Engine/SpriteObject.cpp

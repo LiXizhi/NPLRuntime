@@ -1058,7 +1058,10 @@ void ParticleSystem::InitCommonParticleFields(Particle& p, int anim, int time) c
 	// Legacy exporters can leave a placeholder key on an absent optional track.
 	// V2 emitters also support explicit constant values without animation ranges.
 	const auto hasOptionalKeys = [this](const Animated<float>& track) {
-		return !track.data.empty() && (m_bExtendedV2 || !track.ranges.empty());
+		if (m_bExtendedV2 || !track.ranges.empty())
+			return !track.data.empty();
+		// Global sequences and legacy local loops can animate without a range table.
+		return (track.seq == -2 || track.seq >= 0) && track.data.size() > 1 && track.times.size() > 1;
 	};
 	p.random_force = 0.f;
 	if (hasOptionalKeys(spread))
