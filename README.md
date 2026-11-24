@@ -168,6 +168,14 @@ See [`docs/web-dev-workflow.md`](docs/web-dev-workflow.md) for Boost Emscripten 
 ./build_linux.sh client --xcode
 ```
 
+To keep the macOS Documents permission across local desktop rebuilds, use the
+same Keychain signing identity for Debug and Release. Put its 40-character
+certificate SHA-1 fingerprint on one line in
+`~/.config/paracraft/macos-signing-identity`. New CMake build trees pick it
+up for Make, Ninja, and Xcode. For an existing tree, configure with
+`-DPARACRAFT_MACOS_SIGN_IDENTITY=<fingerprint>`. An explicit empty value
+keeps the original Xcode team signing or command-line ad hoc signing.
+
 ---
 
 ### 5. Mobile & Standalone XR (Android, PICO VR, iOS, HarmonyOS)

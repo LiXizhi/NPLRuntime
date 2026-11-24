@@ -68,12 +68,9 @@ if [[ "$APP_BUNDLE" == *.app ]]; then
     PARAENGINE_EXE="$APP_BUNDLE/Contents/MacOS/$(basename "$PARAENGINE_EXE")"
 fi
 
-# Ensure the bundle has a valid ad-hoc signature on Apple Silicon before launching
-if [[ "$APP_BUNDLE" == *.app ]]; then
-    if ! /usr/bin/codesign --verify "$APP_BUNDLE" >/dev/null 2>&1; then
-        echo "[ParaRHI] Re-signing $APP_BUNDLE (ad-hoc)..."
-        /usr/bin/codesign --force --deep --sign - "$APP_BUNDLE"
-    fi
+if [[ "$APP_BUNDLE" == *.app ]] && ! /usr/bin/codesign --verify "$APP_BUNDLE"; then
+    echo "[ERROR] Invalid app signature. Rebuild or restore $APP_BUNDLE before launching." >&2
+    exit 1
 fi
 
 REQ_RENDERER="auto"

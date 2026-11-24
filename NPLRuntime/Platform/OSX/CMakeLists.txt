@@ -81,6 +81,19 @@ endif()
 # Inherit the toolchain's Release flags. Forcing -O0 into the global cache here
 # also disables optimization in ParaEngine and the renderer targets.
 
+# Share the developer's certificate across clean build trees and generators.
+set(identity_file "$ENV{HOME}/.config/paracraft/macos-signing-identity")
+if (NOT DEFINED PARACRAFT_MACOS_SIGN_IDENTITY AND EXISTS "${identity_file}")
+    file(READ "${identity_file}" local_identity)
+    string(STRIP "${local_identity}" local_identity)
+    string(LENGTH "${local_identity}" identity_length)
+    if (NOT identity_length EQUAL 40 OR NOT local_identity MATCHES "^[0-9A-Fa-f]+$")
+        message(FATAL_ERROR "Expected a certificate SHA-1 fingerprint in ${identity_file}")
+    endif()
+endif()
+set(PARACRAFT_MACOS_SIGN_IDENTITY "${local_identity}" CACHE STRING
+    "Desktop development signing identity (empty uses the generator's default)")
+
 if(NPL_OSX_ARCHS)
     string(REPLACE ";" " " OSX_XCODE_ARCHS "${CMAKE_OSX_ARCHITECTURES}")
 else()
@@ -105,6 +118,14 @@ set_target_properties(Paracraft PROPERTIES
     BUILD_WITH_INSTALL_RPATH TRUE
     XCODE_ATTRIBUTE_ARCHS "${OSX_XCODE_ARCHS}"
 )
+
+if (PARACRAFT_MACOS_SIGN_IDENTITY)
+    set_target_properties(Paracraft PROPERTIES
+        XCODE_ATTRIBUTE_CODE_SIGN_STYLE "Manual"
+        XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY "${PARACRAFT_MACOS_SIGN_IDENTITY}"
+        XCODE_ATTRIBUTE_DEVELOPMENT_TEAM ""
+    )
+endif()
 
 target_include_directories(Paracraft PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
@@ -206,12 +227,17 @@ if (NPL_HAS_DESKTOP_ONNXRUNTIME)
 endif ()
 
 if (NOT CMAKE_GENERATOR STREQUAL "Xcode")
+    set(sign_identity "${PARACRAFT_MACOS_SIGN_IDENTITY}")
+    if (NOT sign_identity)
+        set(sign_identity "-")
+    endif()
     add_custom_command(TARGET Paracraft POST_BUILD
         COMMAND /usr/bin/plutil -replace CFBundleExecutable -string "Paracraft" "$<TARGET_BUNDLE_DIR:Paracraft>/Contents/Info.plist"
         COMMAND /usr/bin/plutil -replace CFBundleName -string "${product_name}" "$<TARGET_BUNDLE_DIR:Paracraft>/Contents/Info.plist"
         COMMAND /usr/bin/plutil -replace LSMinimumSystemVersion -string "${CMAKE_OSX_DEPLOYMENT_TARGET}" "$<TARGET_BUNDLE_DIR:Paracraft>/Contents/Info.plist"
-        COMMAND /usr/bin/codesign --force --deep --sign - "$<TARGET_BUNDLE_DIR:Paracraft>"
-        COMMENT "Updating Info.plist and ad-hoc signing Paracraft.app for macOS"
+        COMMAND /usr/bin/codesign --force --deep --sign "${sign_identity}" "$<TARGET_BUNDLE_DIR:Paracraft>"
+        COMMENT "Updating Info.plist and signing Paracraft.app for macOS"
+        VERBATIM
     )
 endif ()
 

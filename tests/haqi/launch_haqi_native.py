@@ -145,7 +145,7 @@ def main():
             bundle = exe.parents[2]
             if bundle.suffix == ".app" and subprocess.run(
                     ["codesign", "--verify", str(bundle)], capture_output=True).returncode:
-                subprocess.run(["codesign", "--force", "--deep", "--sign", "-", str(bundle)], check=True)
+                raise ValueError(f"Invalid app signature. Rebuild or restore {bundle} before launching.")
         env = dict(os.environ, PARA_ASSET_PATH=runtime.as_posix() + "/")
         command = [str(exe), "--renderer=" + args.renderer,
                    "dev=" + runtime.as_posix() + "/", "writablepath=" + runtime.as_posix() + "/",
