@@ -1080,9 +1080,14 @@ float ApplyRoundedBlockBorders(inout SurfaceStruct surface, inout float sun_ligh
 				float3 tMax3 = max(t0Box, t1Box);
 				float tmin = max(max(tMin3.x, max(tMin3.y, tMin3.z)), 0.0f);
 				float tmax = min(tMax3.x, min(tMax3.y, tMax3.z));
-				if (tmin - tmax > 0.03f)
-					return 1.0f;
-				tmax = max(tmax, tmin);
+				if (tmin > tmax)
+				{
+					float3 pMid = eyeLocal + rayDirWS * (0.5f * (tmin + tmax));
+					float3 boxGap = max(max(-pMid, pMid - 1.0f), 0.0f);
+					if (dot(boxGap, boxGap) > 0.05f * 0.05f)
+						return 1.0f;
+					tmax = tmin;
+				}
 
 				float3 p0 = clamp(eyeLocal + rayDirWS * tmin, 0.0f, 1.0f);
 				float trel = tmax - tmin;
@@ -1260,95 +1265,157 @@ float ApplyRoundedBlockBorders(inout SurfaceStruct surface, inout float sun_ligh
 				float sLen = length(sHit);
 				float3 nRB = (sLen > 1e-5f) ? (sHit / sLen) : face;
 
-				// 4) Silhouette miss: jump to exact back-facing silhouette plane of [0,1]^3 + 1.25..3.75 px
+				// 4) Silhouette miss: coarse-to-fine 2D screen march from origTexCoord to the exact first texel outside selfVoxel
 				if (minSdf > 0.0f)
 				{
-					float pxBlock = clamp(surface.depth * TanHalfFOV * 2.0f / max(screenParam.y, 1.0f), 0.001f, 0.025f);
-					float sxSil = (rayDirWS.x >= 0.0f) ? 1.0f : -1.0f;
-					float sySil = (rayDirWS.y >= 0.0f) ? 1.0f : -1.0f;
-					float szSil = (rayDirWS.z >= 0.0f) ? 1.0f : -1.0f;
-					float txSil = (nRB.x * sxSil > 1e-4f) ? ((((sxSil > 0.0f) ? 1.0f : 0.0f) - pHit.x) / nRB.x) : 1e6f;
-					float tySil = (nRB.y * sySil > 1e-4f) ? ((((sySil > 0.0f) ? 1.0f : 0.0f) - pHit.y) / nRB.y) : 1e6f;
-					float tzSil = (nRB.z * szSil > 1e-4f) ? ((((szSil > 0.0f) ? 1.0f : 0.0f) - pHit.z) / nRB.z) : 1e6f;
-					float tSil = min(txSil, min(tySil, tzSil));
+					float pxBlock = clamp(surface.depth * TanHalfFOV * 2.0f / max(screenParam.y, 1.0f), 0.0005f, 0.025f);
+					float3 pExit = p0 + rayDirWS * trel;
+					float3 nOut = nRB;
+					if (!expNY && pExit.y < 0.002f && abs(nRB.y) < 0.05f)
+					{
+						// Protruding vertical cylinder base meeting a solid floor: step down-outward onto the floor
+						nOut = normalize(nRB + float3(0.0f, -1.0f, 0.0f));
+					}
+					else if (!expPY && pExit.y > 0.998f && abs(nRB.y) < 0.05f)
+					{
+						nOut = normalize(nRB + float3(0.0f, 1.0f, 0.0f));
+					}
+					float3 nHoriz3D = nOut - rayDirWS * dot(nOut, rayDirWS);
+					float nHorizLen = length(nHoriz3D);
+					nHoriz3D = (nHorizLen > 1e-4f) ? (nHoriz3D / nHorizLen) : nOut;
 
-					float3 marchDir = nRB;
-					float3 silExitLocal = pHit;
-					if (tSil < 10.0f)
-					{
-						silExitLocal = clamp(pHit + nRB * max(0.0f, tSil), 0.0f, 1.0f);
-					}
-					else
-					{
-						// Protruding 2-visible-face vertical corner base sitting on a floor/ceiling
-						silExitLocal = float3(pHit.x, (sySil > 0.0f) ? 1.0f : 0.0f, pHit.z);
-						marchDir = normalize(float3(nRB.x, sySil, nRB.z));
-					}
-					float3 silExitWS = BlockGridOrigin.xyz + (selfVoxel + silExitLocal) * blockSize;
+					float2 originSS = convertCameraSpaceToScreenSpace(exactPosVS);
+					float3 nudgedVS = mul(float4(worldRel + nHoriz3D * (0.05f * blockSize), 1.0f), matView).xyz;
+					float2 deltaPx = (convertCameraSpaceToScreenSpace(nudgedVS) - originSS) * screenParam;
+					float deltaLen = length(deltaPx);
+					float2 stepDirUV = (deltaLen > 1e-4f) ? ((deltaPx / deltaLen) / screenParam) : float2(0.0f, -1.0f / screenParam.y);
 					float fgTol = max(0.03f, pxBlock * 2.0f * blockSize);
+					float maxMarchPx = clamp(deltaLen * 20.0f * (1.45f * rLocal) + 6.0f, 16.0f, 180.0f);
 
-					[loop] for (int pxStep = 1; pxStep <= 3; ++pxStep)
+					float loPx = 0.0f;
+					float hiPx = -1.0f;
+					bool foundBg = false;
+					float2 bestBgUV = origTexCoord;
+					float bestBgDepth = 0.0f;
+					float3 bestBgPosWS = float3(0.0f, 0.0f, 0.0f);
+
+					[loop] for (int cIdx = 0; cIdx < 8; ++cIdx)
 					{
-						float extraBlocks = pxBlock * (1.25f * (float)pxStep);
-						float3 probeVS = mul(float4(silExitWS + marchDir * (extraBlocks * blockSize), 1.0f), matView).xyz;
-						if (probeVS.z <= 0.05f)
-							break;
-						float2 bgUV = SnapTexelUV(convertCameraSpaceToScreenSpace(probeVS), pixelPhase);
-						float bgDepth = tex2Dlod(depthSampler, float4(bgUV, 0, 0)).r;
-						if (bgDepth >= 0.01f && bgDepth < surface.depth - fgTol)
+						float curPx = (cIdx == 0) ? 1.0f :
+							((cIdx == 1) ? 3.0f :
+							((cIdx == 2) ? 6.0f :
+							((cIdx == 3) ? 11.0f :
+							((cIdx == 4) ? max(18.0f, floor(maxMarchPx * 0.28f + 0.5f)) :
+							((cIdx == 5) ? max(28.0f, floor(maxMarchPx * 0.48f + 0.5f)) :
+							((cIdx == 6) ? max(42.0f, floor(maxMarchPx * 0.72f + 0.5f)) :
+								max(60.0f, floor(maxMarchPx + 0.5f))))))));
+						float2 candUV = SnapTexelUV(origTexCoord + stepDirUV * curPx, pixelPhase);
+						float candDepth = tex2Dlod(depthSampler, float4(candUV, 0, 0)).r;
+						if (candDepth >= 0.01f && candDepth < surface.depth - fgTol)
 						{
-							// Hit a foreground occluder in front of selfVoxel; do not jump across it
+							// Hit a foreground occluder: bracket [loPx, curPx] in case a narrow gap precedes it
+							hiPx = curPx;
 							break;
 						}
-						bool validBg = (bgDepth < 0.01f);
-						float3 bgPosWS = float3(0.0f, 0.0f, 0.0f);
-						if (!validBg)
+						bool isBg = (candDepth < 0.01f);
+						float3 candPosWS = float3(0.0f, 0.0f, 0.0f);
+						if (!isBg)
 						{
-							bgPosWS = mul(float4(ViewPosition(bgUV, bgDepth), 1.0f), matViewInverse).xyz;
-							float3 candLocal = (bgPosWS - BlockGridOrigin.xyz) * BlockGridOrigin.w - selfVoxel;
-							validBg = any(candLocal < -0.015f) || any(candLocal > 1.015f);
+							candPosWS = mul(float4(ViewPosition(candUV, candDepth), 1.0f), matViewInverse).xyz;
+							float3 candLocal = (candPosWS - BlockGridOrigin.xyz) * BlockGridOrigin.w - selfVoxel;
+							isBg = any(candLocal < -0.015f) || any(candLocal > 1.015f);
 						}
-						if (validBg)
+						if (isBg)
 						{
-							float3 bgColorSRGB = tex2Dlod(colorSampler, float4(bgUV, 0, 0)).rgb;
-							float3 bgLinear = pow(max(bgColorSRGB, 0.0f), 2.2f);
-							float4 bgInfo = tex2Dlod(matInfoSampler, float4(bgUV, 0, 0));
-							float3 bgNorm = tex2Dlod(normalSampler, float4(bgUV, 0, 0)).rgb * 2.0f - 1.0f;
+							hiPx = curPx;
+							foundBg = true;
+							bestBgUV = candUV;
+							bestBgDepth = candDepth;
+							bestBgPosWS = candPosWS;
+							break;
+						}
+						loPx = curPx;
+						if (curPx >= maxMarchPx)
+							break;
+					}
 
-							surface.sky.albedo = bgLinear;
-							surface.albedo = DecodeSurfaceAlbedo(bgLinear);
-							surface.normal = bgNorm;
-							surface.category_id = (int)(bgInfo.r * 255.0f + 0.4f);
-							sun_light_strength = bgInfo.g;
-							torch_light_strength = bgInfo.b;
-
-							if (bgDepth < 0.01f)
+					if (hiPx > 0.0f)
+					{
+						[loop] for (int bIdx = 0; bIdx < 5; ++bIdx)
+						{
+							if (hiPx - loPx <= 1.1f)
+								break;
+							float midPx = floor(0.5f * (loPx + hiPx) + 0.5f);
+							float2 candUV = SnapTexelUV(origTexCoord + stepDirUV * midPx, pixelPhase);
+							float candDepth = tex2Dlod(depthSampler, float4(candUV, 0, 0)).r;
+							if (candDepth >= 0.01f && candDepth < surface.depth - fgTol)
 							{
-								surface.depth = bgDepth;
-								surface.cameraSpacePos = rayVS1 * bgDepth;
+								hiPx = midPx;
+								continue;
+							}
+							bool isBg = (candDepth < 0.01f);
+							float3 candPosWS = float3(0.0f, 0.0f, 0.0f);
+							if (!isBg)
+							{
+								candPosWS = mul(float4(ViewPosition(candUV, candDepth), 1.0f), matViewInverse).xyz;
+								float3 candLocal = (candPosWS - BlockGridOrigin.xyz) * BlockGridOrigin.w - selfVoxel;
+								isBg = any(candLocal < -0.015f) || any(candLocal > 1.015f);
+							}
+							if (isBg)
+							{
+								hiPx = midPx;
+								foundBg = true;
+								bestBgUV = candUV;
+								bestBgDepth = candDepth;
+								bestBgPosWS = candPosWS;
 							}
 							else
 							{
-								float denomBg = dot(rayStepWS, bgNorm);
-								float zPlane = (abs(denomBg) > 0.15f) ? (dot(bgPosWS - eyeWS, bgNorm) / denomBg) : bgDepth;
-								if (abs(denomBg) > 0.15f && abs(zPlane - bgDepth) < 0.35f && zPlane >= surface.depth - 0.02f)
-								{
-									surface.depth = zPlane;
-									surface.cameraSpacePos = rayVS1 * zPlane;
-									surface.texCoord = origTexCoord;
-								}
-								else
-								{
-									surface.depth = bgDepth;
-									surface.cameraSpacePos = ViewPosition(bgUV, bgDepth);
-									surface.texCoord = bgUV;
-								}
-								CalculateMasks(surface);
-								float bgBlendCode = floor(bgInfo.a * 255.0f + 0.5f);
-								ApplyTerrainZigZagBlend(surface, bgColorSRGB, bgBlendCode);
+								loPx = midPx;
 							}
-							return 1.0f;
 						}
+					}
+
+					if (foundBg)
+					{
+						float3 bgColorSRGB = tex2Dlod(colorSampler, float4(bestBgUV, 0, 0)).rgb;
+						float3 bgLinear = pow(max(bgColorSRGB, 0.0f), 2.2f);
+						float4 bgInfo = tex2Dlod(matInfoSampler, float4(bestBgUV, 0, 0));
+						float3 bgNorm = tex2Dlod(normalSampler, float4(bestBgUV, 0, 0)).rgb * 2.0f - 1.0f;
+
+						surface.sky.albedo = bgLinear;
+						surface.albedo = DecodeSurfaceAlbedo(bgLinear);
+						surface.normal = bgNorm;
+						surface.category_id = (int)(bgInfo.r * 255.0f + 0.4f);
+						sun_light_strength = bgInfo.g;
+						torch_light_strength = bgInfo.b;
+
+						if (bestBgDepth < 0.01f)
+						{
+							surface.depth = bestBgDepth;
+							surface.cameraSpacePos = rayVS1 * bestBgDepth;
+						}
+						else
+						{
+							float denomBg = dot(rayStepWS, bgNorm);
+							float zPlane = (abs(denomBg) > 0.15f) ? (dot(bestBgPosWS - eyeWS, bgNorm) / denomBg) : bestBgDepth;
+							if (abs(denomBg) > 0.15f && abs(zPlane - bestBgDepth) < 0.35f && zPlane >= surface.depth - 0.02f)
+							{
+								surface.depth = zPlane;
+								surface.cameraSpacePos = rayVS1 * zPlane;
+								surface.texCoord = origTexCoord;
+							}
+							else
+							{
+								surface.depth = bestBgDepth;
+								surface.cameraSpacePos = ViewPosition(bestBgUV, bestBgDepth);
+								surface.texCoord = bestBgUV;
+							}
+							CalculateMasks(surface);
+							float bgBlendCode = floor(bgInfo.a * 255.0f + 0.5f);
+							ApplyTerrainZigZagBlend(surface, bgColorSRGB, bgBlendCode);
+						}
+						return 1.0f;
 					}
 				}
 
