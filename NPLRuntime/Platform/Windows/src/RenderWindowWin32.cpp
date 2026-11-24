@@ -847,7 +847,19 @@ namespace ParaEngine {
 			L"ParaWorld"
 		};
 		wndClass.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
-		wndClass.hIcon = (HICON)LoadImage(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_PARAWORLD_ICON), IMAGE_ICON, 48, 48, 0);
+		// In DLL builds (PARAENGINE_CLIENT_DLL) the icon resource lives in the engine DLL,
+		// not in the loader exe, so try the current module first and fall back to the exe.
+		HICON hAppIcon = (HICON)LoadImage(GetModuleHandleW(NULL), MAKEINTRESOURCE(IDI_PARAWORLD_ICON), IMAGE_ICON, 48, 48, 0);
+		if (!hAppIcon)
+		{
+			HMODULE hSelf = NULL;
+			if (GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
+				(LPCWSTR)&RenderWindowWin32::WindowProc, &hSelf) && hSelf)
+			{
+				hAppIcon = (HICON)LoadImage(hSelf, MAKEINTRESOURCE(IDI_PARAWORLD_ICON), IMAGE_ICON, 48, 48, 0);
+			}
+		}
+		wndClass.hIcon = hAppIcon;
 		RegisterClassW(&wndClass);
 
 		DWORD exStyle = m_bIsChildWindow ? 0 : WS_EX_APPWINDOW;
