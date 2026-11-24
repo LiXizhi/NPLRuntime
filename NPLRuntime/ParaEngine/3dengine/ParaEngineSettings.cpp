@@ -21,6 +21,7 @@
 #include "AsyncLoader.h"
 #include "TextureEntity.h"
 #include "ParaEngineSettings.h"
+#include "renderer/RenderDevice.h"
 #include "NPLRuntime.h"
 #include "util/os_calls.h"
 #include "SelectionManager.h"
@@ -1409,12 +1410,12 @@ int ParaEngine::ParaEngineSettings::GetFPS()
 
 int ParaEngine::ParaEngineSettings::GetTriangleCount()
 {
-	return 0;
+	return RenderDevice::GetLastFramePerfCount(RenderDevice::DRAW_PERF_TOTAL_TRIANGLES);
 }
 
 int ParaEngine::ParaEngineSettings::GetDrawCallCount()
 {
-	return 0;
+	return RenderDevice::GetLastFramePerfCount(RenderDevice::DRAW_PERF_DRAW_CALL_COUNT);
 }
 
 bool ParaEngine::ParaEngineSettings::Is64BitsSystem()

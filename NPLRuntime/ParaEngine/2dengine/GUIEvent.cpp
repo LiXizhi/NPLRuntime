@@ -131,7 +131,7 @@ MSG CGUIEvent::GenerateMessage()
 	newMsg.pt.y=m_mouse.y;
 	newMsg.time=m_nTime;
 	newMsg.lParam=m_mouse.WheelDelta;
-	newMsg.wParam=m_keyboard.nAlterKey;
+	newMsg.wParam = (m_nTriggerEvent == EM_MOUSE_WHEEL || m_nTriggerEvent == EM_MOUSE_HWHEEL) ? m_mouse.preciseWheel : m_keyboard.nAlterKey;
 	newMsg.message=m_nTriggerEvent;
 	return newMsg;
 }
@@ -143,6 +143,7 @@ bool CGUIEvent::InterpretMessage(MSG *msg,int option)
 		return false;
 	}
 	m_mouse.WheelDelta=(short)msg->lParam;
+	m_mouse.preciseWheel = (msg->message == EM_MOUSE_WHEEL || msg->message == EM_MOUSE_HWHEEL) && msg->wParam == 1;
 	m_nTime=msg->time;
 	if (m_eState==GUIESNone) {
 		m_eState|=GUIESLeftNone;

@@ -14,6 +14,7 @@
 #include "Framework/FileSystem/ReadFile.h"
 #include "MemReadFile.h"
 #include <algorithm>
+#include <ctime>
 #include <set>
 #include "FileManager.h"
 #include "IO/FileUtils.h"

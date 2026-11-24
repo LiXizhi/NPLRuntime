@@ -14,6 +14,9 @@
 #include "cAudioString.h"
 #include "IThread.h"
 #include "IAudioDeviceContext.h"
+#ifdef CAUDIO_USE_INTERNAL_THREAD
+#include <condition_variable>
+#endif
 
 namespace cAudio
 {
@@ -37,6 +40,7 @@ namespace cAudio
 		virtual bool initialize(const char* deviceName = 0x0, int outputFrequency = -1, int eaxEffectSlots = 4);      
 		virtual void shutDown();     
 		virtual void update();
+		void setSourceActive(IAudioSource* source, bool active);
 		virtual IAudioSource* getSoundByName(const char* name);       
 		virtual void releaseAllSources();
 		virtual void release(IAudioSource* source);
@@ -85,6 +89,15 @@ namespace cAudio
 	private:
 		//! Mutex for thread synchronization
 		cAudioMutex Mutex;
+
+		// Source methods may hold their own mutex here. Never call a source under this lock.
+		cAudioMutex ActivityMutex;
+		cAudioVector<IAudioSource*>::Type activeSources;
+		cAudioVector<IAudioSource*>::Type pendingUpdates;
+#ifdef CAUDIO_USE_INTERNAL_THREAD
+		std::condition_variable_any ActivityChanged;
+		bool Stopping = false;
+#endif
 
 		//! Whether the manager is currently initialized and ready to go.
 		bool Initialized;

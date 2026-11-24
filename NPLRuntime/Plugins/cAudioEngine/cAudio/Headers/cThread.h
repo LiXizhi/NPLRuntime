@@ -7,6 +7,7 @@
 #include "cMutex.h"
 #include "cAudioDefines.h"
 #include "IThread.h"
+#include <atomic>
 
 #ifdef CAUDIO_PLATFORM_WIN
 #include <windows.h>	//Basic windows includes
@@ -42,7 +43,7 @@ namespace cAudio
 		IThreadWorker* Worker;
 		unsigned int ThreadID;
 		cAudioMutex Mutex;
-		bool IsInit;
-		bool Loop;
+		std::atomic<bool> IsInit;
+		std::atomic<bool> Loop;
 	};
 };

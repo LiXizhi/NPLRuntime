@@ -295,21 +295,20 @@ namespace ParaScripting
 		//
 		//////////////////////////////////////////////////////////////////////////
 		/**
-		* Prepare and play a wave object from a standard wave file (wav, mp3, ogg/vorbis).
+		* Prepare and play a wave object from a sound file (wav, mp3, ogg/vorbis, or a format 0/1 MIDI sequence).
 		* If a wave file is already prepared before. It will be reused.
 		* @param szWavePath Path to the wave file. It can be from asset_manifest or relative to current directory path.
 		* @param nLoop 0 means non-looping. 1 means looping.
 		*/
 		static bool PlayWaveFile(const char* szWavePath, int nLoop);
 		static bool PlayWaveFile1(const char* szWavePath);
-		/** more information, please see: midiOutShortMsg
-		* @param dwMsg: MIDI message. The message is packed into a DWORD value with the first byte of the message in the low-order byte. The message is packed into this parameter as follows.
+		/** Send a MIDI channel message. From least to most significant byte: status,
+		* data 1, data 2, optional note-on instrument. Channels are numbered 0-15.
+		* For example, 0x00403C90 starts middle C and 0x00003C80 releases it.
+		* Returns S_OK on success.
 		*/
 		static int PlayMidiMsg(DWORD dwMsg);
-		/**
-		* step a midi track.
-		* @param channel: midi track number.
-		*/
+		/** Release the live notes on one channel. */
 		static int StopMidiMsg(int channel = 0);
 		static int StopMidiMsg0();
 

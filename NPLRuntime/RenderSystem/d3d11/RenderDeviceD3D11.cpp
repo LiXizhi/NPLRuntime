@@ -1,4 +1,5 @@
 #include "ParaEngine.h"
+#include "renderer/RenderDevice.h"
 #include "RenderDeviceD3D11.h"
 #include "renderer/VertexDeclarationOpenGL.h"
 #include "RHISoftwareS3TC.h"
@@ -2005,6 +2006,7 @@ namespace ParaEngine
 		ID3D11SamplerState* samp = linearFilter ? m_blitLinearSampler.Get() : m_blitPointSampler.Get();
 		m_context->PSSetSamplers(0, 1, &samp);
 		m_context->Draw(4, 0);
+		RenderDevice::RecordDraw(EPrimitiveType::TRIANGLESTRIP, 2);
 
 		ID3D11ShaderResourceView* nullSrv = nullptr;
 		m_context->PSSetShaderResources(0, 1, &nullSrv);
@@ -2073,6 +2075,7 @@ namespace ParaEngine
 		ApplyPipelineStatesBeforeDraw();
 		m_context->IASetPrimitiveTopology(topo);
 		m_context->DrawIndexedInstanced(indexCount, instanceCount, indexStart, baseVertexIndex, 0);
+		RenderDevice::RecordDraw(primitiveType, primitiveCount, instanceCount);
 		return true;
 	}
 
@@ -2949,10 +2952,12 @@ namespace ParaEngine
 			m_context->IASetIndexBuffer(ib, DXGI_FORMAT_R16_UINT, 0);
 			m_currentIndexBuffer = nullptr;
 			m_context->DrawIndexed(PrimitiveCount * 3u, 0, static_cast<INT>(StartVertex));
+			RenderDevice::RecordDraw(PrimitiveType, PrimitiveCount);
 			return true;
 		}
 
 		m_context->Draw(vertCount, StartVertex);
+		RenderDevice::RecordDraw(PrimitiveType, PrimitiveCount);
 		return true;
 	}
 
@@ -2976,6 +2981,7 @@ namespace ParaEngine
 		ApplyPipelineStatesBeforeDraw();
 		m_context->IASetPrimitiveTopology(topo);
 		m_context->DrawIndexed(indexCount, indexStart, BaseVertexIndex);
+		RenderDevice::RecordDraw(Type, PrimitiveCount);
 		return true;
 	}
 
@@ -3045,10 +3051,12 @@ namespace ParaEngine
 			m_context->IASetIndexBuffer(ib, DXGI_FORMAT_R16_UINT, 0);
 			m_currentIndexBuffer = nullptr;
 			m_context->DrawIndexed(PrimitiveCount * 3u, 0, 0);
+			RenderDevice::RecordDraw(PrimitiveType, PrimitiveCount);
 			return true;
 		}
 
 		m_context->Draw(vertCount, 0);
+		RenderDevice::RecordDraw(PrimitiveType, PrimitiveCount);
 		return true;
 	}
 
@@ -3154,6 +3162,7 @@ namespace ParaEngine
 		ApplyPipelineStatesBeforeDraw();
 		m_context->IASetPrimitiveTopology(topo);
 		m_context->DrawIndexed(indexCount, 0, 0);
+		RenderDevice::RecordDraw(PrimitiveType, PrimitiveCount);
 		return true;
 	}
 

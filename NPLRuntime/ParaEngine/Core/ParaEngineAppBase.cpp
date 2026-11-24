@@ -44,6 +44,7 @@
 #include "FileLogger.h"
 #include "Render/IRenderContext.h"
 #include "RHIBackendRegistry.h"
+#include "renderer/RenderDevice.h"
 #include "InfoCenter/ICDBManager.h"
 #include "InfoCenter/ICConfigManager.h"
 #include "SceneObject.h"
@@ -569,9 +570,7 @@ void ParaEngine::CParaEngineAppBase::Render()
 	float fElapsedTime = (float)(CGlobals::GetFrameRateController(FRC_RENDER)->FrameMove(fTime));
 	m_fElapsedTime = fElapsedTime;
 
-#ifndef USE_NULL_RENDERER
 	RenderDevice::ClearAllPerfCount();
-#endif
 
 	m_pRenderDevice->BeginScene();
 	{
@@ -615,6 +614,7 @@ void ParaEngine::CParaEngineAppBase::Render()
 	}
 
 	m_pRenderDevice->EndScene();
+	RenderDevice::PublishFramePerfCounts();
 	pMoviePlatform->EndCaptureFrame();
 }
 
@@ -909,6 +909,7 @@ bool ParaEngine::CParaEngineAppBase::ForceRender()
 #else
 	if (pRenderDevice->BeginScene())
 	{
+		RenderDevice::ClearAllPerfCount();
 		auto color = m_pRootScene->GetClearColor();
 
 		// NOTE: on android devices will ignore all gl calls after the last draw call, so we need to restore everything to default settings
@@ -925,6 +926,7 @@ bool ParaEngine::CParaEngineAppBase::ForceRender()
 		CGlobals::GetGUI()->AdvanceGUI(0);
 
 		pRenderDevice->EndScene();
+		RenderDevice::PublishFramePerfCounts();
 
 		//bSucceed = pRenderDevice->Present();
 		pRenderDevice->Flush();

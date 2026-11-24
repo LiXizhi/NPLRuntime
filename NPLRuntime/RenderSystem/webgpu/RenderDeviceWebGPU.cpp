@@ -1,4 +1,5 @@
 #include "ParaEngine.h"
+#include "renderer/RenderDevice.h"
 #include "RenderDeviceWebGPU.h"
 #include "RHISoftwareS3TC.h"
 #include "VertexDeclarationOpenGL.h"
@@ -3001,6 +3002,7 @@ namespace ParaEngine
 		PARA_WGPU_CALL(m_wgpu, wgpuRenderPassEncoderSetPipeline, rpe, blitPipe);
 		PARA_WGPU_CALL(m_wgpu, wgpuRenderPassEncoderSetBindGroup, rpe, 0, bg, 0, nullptr);
 		PARA_WGPU_CALL(m_wgpu, wgpuRenderPassEncoderDraw, rpe, 3, 1, 0, 0);
+		RenderDevice::RecordDraw(EPrimitiveType::TRIANGLELIST, 1);
 		PARA_WGPU_CALL(m_wgpu, wgpuRenderPassEncoderEnd, rpe);
 		PARA_WGPU_CALL(m_wgpu, wgpuRenderPassEncoderRelease, rpe);
 		if (!src || !dst)
@@ -3975,6 +3977,7 @@ namespace ParaEngine
 				return false;
 			BindIndexBufferCached(ib, WGPUIndexFormat_Uint16, ibOff, ibAligned);
 			PARA_WGPU_CALL(m_wgpu, wgpuRenderPassEncoderDrawIndexed, m_renderPass, static_cast<uint32_t>(fanIdx.size()), 1, 0, 0, 0);
+			RenderDevice::RecordDraw(PrimitiveType, PrimitiveCount);
 			return true;
 		}
 
@@ -3988,6 +3991,7 @@ namespace ParaEngine
 			instanceCount = (std::max)(1u, m_streams[0].frequencyDivider & 0x3FFFFFFFu);
 
 		PARA_WGPU_CALL(m_wgpu, wgpuRenderPassEncoderDraw, m_renderPass, vertCount, instanceCount, StartVertex, 0);
+		RenderDevice::RecordDraw(PrimitiveType, PrimitiveCount, instanceCount);
 		return true;
 	}
 
@@ -4039,6 +4043,7 @@ namespace ParaEngine
 			BindIndexBufferCached(transIb, WGPUIndexFormat_Uint16, ibOff, ibAligned);
 			PARA_WGPU_CALL(m_wgpu, wgpuRenderPassEncoderDrawIndexed,
 				m_renderPass, static_cast<uint32_t>(fanIdx.size()), instanceCount, 0, baseVertexIndex, 0);
+			RenderDevice::RecordDraw(primitiveType, primitiveCount, instanceCount);
 			return true;
 		}
 
@@ -4054,6 +4059,7 @@ namespace ParaEngine
 			m_boundIndexBuffer->GetAlignedSize());
 		PARA_WGPU_CALL(m_wgpu, wgpuRenderPassEncoderDrawIndexed,
 			m_renderPass, idxCount, instanceCount, indexStart, baseVertexIndex, 0);
+		RenderDevice::RecordDraw(primitiveType, primitiveCount, instanceCount);
 		return true;
 	}
 
@@ -4107,6 +4113,7 @@ namespace ParaEngine
 			BindIndexBufferCached(arenaIb, WGPUIndexFormat_Uint16, ibOff, ibAligned);
 			PARA_WGPU_CALL(m_wgpu, wgpuRenderPassEncoderDrawIndexed,
 				m_renderPass, static_cast<uint32_t>(fanIdx.size()), 1, 0, 0, 0);
+			RenderDevice::RecordDraw(PrimitiveType, PrimitiveCount);
 			return true;
 		}
 
@@ -4116,6 +4123,7 @@ namespace ParaEngine
 			return false;
 
 		PARA_WGPU_CALL(m_wgpu, wgpuRenderPassEncoderDraw, m_renderPass, vertCount, 1, 0, 0);
+		RenderDevice::RecordDraw(PrimitiveType, PrimitiveCount);
 		return true;
 	}
 
@@ -4198,6 +4206,7 @@ namespace ParaEngine
 
 		BindIndexBufferCached(arenaIb, wgpuIdxFmt, ibOff, ibAligned);
 		PARA_WGPU_CALL(m_wgpu, wgpuRenderPassEncoderDrawIndexed, m_renderPass, idxCount, 1, 0, 0, 0);
+		RenderDevice::RecordDraw(PrimitiveType, PrimitiveCount);
 		return true;
 	}
 

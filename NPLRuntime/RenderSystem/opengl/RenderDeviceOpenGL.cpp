@@ -5,6 +5,7 @@
 #include <cstring>
 #include <cstdio>
 #include "ParaEngine.h"
+#include "renderer/RenderDevice.h"
 #include "renderer/VertexDeclarationOpenGL.h"
 #include "math/ParaViewport.h"
 #include "RenderDeviceOpenGL.h"
@@ -1697,6 +1698,7 @@ namespace ParaEngine
 					glVertexAttribPointer(GLProgram::VERTEX_ATTRIB_POSITION, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), reinterpret_cast<const void*>(0));
 					glVertexAttribPointer(GLProgram::VERTEX_ATTRIB_TEX_COORD, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), reinterpret_cast<const void*>(2 * sizeof(float)));
 					glDrawArrays(GL_TRIANGLE_STRIP, vertOffset, 4);
+					RenderDevice::RecordDraw(EPrimitiveType::TRIANGLESTRIP, 2);
 
 					if (prevMinFilter != desiredFilter)
 						glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, prevMinFilter);
@@ -1807,6 +1809,7 @@ namespace ParaEngine
 		{
 			glDrawElementsInstanced(mode, count, GL_UNSIGNED_SHORT, indexOffset, static_cast<GLsizei>(instanceCount));
 		}
+		RenderDevice::RecordDraw(primitiveType, primitiveCount, instanceCount);
 		PE_CHECK_GL_ERROR_DEBUG();
 		return true;
 	}
@@ -2235,6 +2238,7 @@ namespace ParaEngine
 		ApplyStencilStateChange();
 		ApplyDrawBuffersForCurrentProgram();
 		glDrawElements(mode, indexCount, glIndexType, pIndexData);
+		RenderDevice::RecordDraw(PrimitiveType, PrimitiveCount);
 		PE_CHECK_GL_ERROR_DEBUG();
 		return true;
 	}
@@ -2250,6 +2254,7 @@ namespace ParaEngine
 		ApplyStencilStateChange();
 		ApplyDrawBuffersForCurrentProgram();
 		glDrawArrays(mode, static_cast<GLint>(StartVertex), vertCount);
+		RenderDevice::RecordDraw(PrimitiveType, PrimitiveCount);
 		PE_CHECK_GL_ERROR_DEBUG();
 		return true;
 	}
@@ -2281,6 +2286,7 @@ namespace ParaEngine
 			ApplyGLVertexDeclaration(m_CurrentVertexDeclaration, pVertexStreamZeroData, VertexStreamZeroStride);
 #endif
 		glDrawArrays(mode, nOffset, vertCount);
+		RenderDevice::RecordDraw(PrimitiveType, PrimitiveCount);
 		PE_CHECK_GL_ERROR_DEBUG();
 		return true;
 	}
@@ -2467,6 +2473,7 @@ namespace ParaEngine
 		if (BaseVertexIndex != 0 && glad_glDrawElementsBaseVertex != nullptr)
 		{
 			glDrawElementsBaseVertex(mode, indexCount, GL_UNSIGNED_SHORT, indexOffset, BaseVertexIndex);
+			RenderDevice::RecordDraw(Type, PrimitiveCount);
 			PE_CHECK_GL_ERROR_DEBUG();
 			return true;
 		}
@@ -2486,6 +2493,7 @@ namespace ParaEngine
 		{
 			glDrawElements(mode, indexCount, GL_UNSIGNED_SHORT, indexOffset);
 		}
+		RenderDevice::RecordDraw(Type, PrimitiveCount);
 
 		PE_CHECK_GL_ERROR_DEBUG();
 		return true;

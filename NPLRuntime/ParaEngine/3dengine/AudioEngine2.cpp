@@ -44,6 +44,8 @@ const char* AUDIO_ENGINE_DLL_PATH = ("cAudioEngine." DLL_FILE_EXT);
 ParaEngine::CAudioEngine2::CAudioEngine2()
 	:m_pAudioEngine(NULL), m_bEnableAudioEngine(true), m_fGlobalVolume(1.f), m_bAutoMoveListener(true), m_fGlobalVolumeBeforeSwitch(0.f), m_fCaptureAudioQuality(0.1f)
 {
+	// CleanupAudioEngine also runs from our destructor. Construct MIDI first.
+	CMidiMsg::GetSingleton();
 }
 
 ParaEngine::CAudioEngine2::~CAudioEngine2()
@@ -300,6 +302,7 @@ void ParaEngine::CAudioEngine2::SetGlobalVolume(const float& volume)
 	if (m_fGlobalVolume != volume)
 	{
 		m_fGlobalVolume = volume;
+		CMidiMsg::GetSingleton().SetVolumeFloat(volume);
 
 		if (m_pAudioEngine)
 		{
@@ -1101,13 +1104,7 @@ bool ParaEngine::CAudioSource2::play3d(const PARAVECTOR3& position, const float&
 {
 	if (m_pSource && !(m_pSource->isPlaying()))
 	{
-#ifdef PARAENGINE_MOBILE
-		/** 3d sound is disabled for mobile version */
-		m_pSource->loop(toLoop);
-		return true;
-#else
 		return m_pSource->play3d(position, soundstr, toLoop);
-#endif
 	}
 	return false;
 }

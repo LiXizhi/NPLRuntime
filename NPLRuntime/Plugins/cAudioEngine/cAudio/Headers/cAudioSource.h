@@ -135,13 +135,25 @@ namespace cAudio
 
 	private:
 		//! Mutex for thread synchronization
-		cAudioMutex Mutex;
+		mutable cAudioMutex Mutex;
 		//! Empties the current working buffer queue
 		void empty();
 		//! Checks for OpenAL errors and reports them
 		bool checkError() const;
 		//! Streams audio data from the decoder into a buffer
-		bool stream(ALuint buffer);
+		bool queueBuffer(ALuint buffer);
+		bool startPlayback();
+		void setPlaybackState(ALenum state);
+		int frameSize() const;
+		double playbackFrame();
+		struct QueuedBuffer
+		{
+			double firstFrame;
+			int frames;
+		};
+		QueuedBuffer Queue[CAUDIO_SOURCE_NUM_BUFFERS];
+		int Queued = 0;
+		double NextFrame = 0;
 		//! Signals a event to all event handlers
 		void signalEvent(Events sevent);
 		//! Converts our audio format enum to OpenAL's
@@ -158,7 +170,7 @@ namespace cAudio
 		//! OpenAL source
 		ALuint Source; 
 
-		ALenum oldState;
+		ALenum oldState = AL_INITIAL;
 		//! cAudio decoder being used to stream data
 		IAudioDecoder* Decoder;
 

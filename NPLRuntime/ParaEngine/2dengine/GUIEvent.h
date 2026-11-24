@@ -111,6 +111,7 @@ namespace ParaEngine
 		struct GUI_EVENT_MOUSE {
 			public:
 			short x,y;
+			bool preciseWheel = false;
 			short WheelDelta;//if the mouse wheel scrolls, it is the the number of detents the mouse wheel has rotated.
 			int HoverDuration;//how long the mouse is on the control, set by InterpretEvent()
 			GUI_SIMPLE_EVENT_MOUSE LastLDown,LastRDown,LastMDown;//store the last click 

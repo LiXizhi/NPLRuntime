@@ -1,8 +1,6 @@
 #import <Cocoa/Cocoa.h>
 #include "ParaAppOSX.h"
 #include "RenderWindowOSX.h"
-#import "MidiPlayer/ParaEngineMediaPlayer.h"
-#include "MidiMsg.h"
 #include "FramePacing.h"
 #import <QuartzCore/CAMetalLayer.h>
 #include "RenderDeviceAGL.h"
@@ -18,7 +16,6 @@ IParaEngineApp* CreateParaEngineApp()
 ParaEngine::CParaEngineAppOSX::CParaEngineAppOSX()
 {
     // SetTouchInputting(true);
-    CMidiMsg::GetSingleton().SetMediaPlayer(ParaEngineMediaPlayer::GetSingleton());
 }
 
 bool ParaEngine::CParaEngineAppOSX::InitApp(IRenderWindow* pWindow, const char* sCommandLine /*= nullptr*/)

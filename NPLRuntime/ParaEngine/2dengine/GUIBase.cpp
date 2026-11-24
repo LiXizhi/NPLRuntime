@@ -974,24 +974,16 @@ bool CGUIBase::OnMouseHover(int MouseState, int X, int Y)
 }
 
 
-bool CGUIBase::OnMouseWheel(int Delta, int X, int Y)
+static string MouseWheelScript(int steps, int x, int y)
 {
-	if (!HasEvent(EM_MOUSE_WHEEL))
-		return false;
-	char ctemp[40];
-	string code = "mouse_wheel=";
-	ParaEngine::StringHelper::fast_itoa(Delta, ctemp, 40);
-	code += ctemp; code += ";";
-	code += "mouse_x=";
-	ParaEngine::StringHelper::fast_itoa(X, ctemp, 40);
-	code += ctemp; code += ";";
-	code += "mouse_y=";
-	ParaEngine::StringHelper::fast_itoa(Y, ctemp, 40);
-	code += ctemp; code += ";";
-	// OUTPUT_LOG("OnMouseWheel: delta %d\n", Delta);
-	return ActivateScript(code, EM_MOUSE_WHEEL);
+	return "mouse_wheel=" + std::to_string(steps) + ";mouse_x=" + std::to_string(x) +
+		";mouse_y=" + std::to_string(y) + ";";
 }
 
+bool CGUIBase::OnMouseWheel(int Delta, int X, int Y)
+{
+	return HasEvent(EM_MOUSE_WHEEL) && ActivateScript("mouse_wheel_precise=nil;" + MouseWheelScript(Delta, X, Y), EM_MOUSE_WHEEL);
+}
 
 bool CGUIBase::OnMouseMove(int MouseState, int X, int Y)
 {
@@ -1354,14 +1346,20 @@ bool CGUIBase::MsgProc(MSG* event)
 			// Keep sub-notch trackpad motion and deliver it only to horizontal wheel listeners.
 			const string code = "mouse_wheel_x=" + std::to_string((int)event->lParam) +
 				";mouse_x=" + std::to_string(pt.x) + ";mouse_y=" + std::to_string(pt.y) + ";";
-			bHandled = ActivateScript(code, EM_MOUSE_HWHEEL);
+			bHandled = ActivateScript(string("mouse_wheel_precise=") + (m_event->m_mouse.preciseWheel ? "true;" : "nil;") + code, EM_MOUSE_HWHEEL);
 		}
 		else if (m_event->IsMapTo(nEvent, EM_MOUSE_WHEEL)) {
 			// modified 2007.10.12 LXZ: so that the message can be leaked to its container during scrolling
 			int nDelta = ((int32)(event->lParam)) / 120;
 			if (nDelta == 0)
 				nDelta = ((int32)(event->lParam)) > 0 ? 1 : -1;
-			bHandled = OnMouseWheel(nDelta, m_event->m_mouse.x, m_event->m_mouse.y);
+			if (m_event->m_mouse.preciseWheel && event->lParam != 0)
+			{
+				string code = "mouse_wheel_precise=true;mouse_wheel_y=" + std::to_string((int)event->lParam) + ";";
+				bHandled = ActivateScript(code + MouseWheelScript(nDelta, pt.x, pt.y), EM_MOUSE_WHEEL);
+			}
+			else if (event->lParam != 0)
+				bHandled = OnMouseWheel(nDelta, pt.x, pt.y);
 		}
 		if (m_event->IsMapTo(nEvent, EM_CTRL_FOCUSIN)) {
 			//by default, we map the Left click to focus in.

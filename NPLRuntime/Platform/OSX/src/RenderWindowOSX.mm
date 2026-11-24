@@ -3,6 +3,7 @@
 #include "ParaEngine.h"
 #include "2dengine/GUIRoot.h"
 #include "2dengine/GUIEdit.h"
+#include "Core/Variable.h"
 #include "ViewportManager.h"
 #include "NPLRuntime.h"
 #include "WindowDelegate.h"
@@ -617,49 +618,57 @@ void RenderWindowOSX::OnScrollWheel(NSEvent* event)
     NSEventPhase phase = [event phase];
     NSEventPhase momentumPhase = [event momentumPhase];
     
-    static bool s_bMouseOverScrollableUI = false;
-    if (CGlobals::GetApp()->GetAppState() == PEAppState_Ready)
+    if (CGlobals::GetApp()->GetAppState() != PEAppState_Ready)
+        return;
+    const bool overUI = CGUIRoot::GetInstance()->IsMouseOverScrollableUI();
+    const bool precise = [event hasPreciseScrollingDeltas];
+    // Convert Cocoa points to wheel notches. The GUI bridge retains 120 ticks per notch.
+    const float dx = precise ? [event scrollingDeltaX] / 40.f : [event deltaX];
+    const float dy = precise ? [event scrollingDeltaY] / 40.f : [event deltaY];
+
+    if (phase == NSEventPhaseNone && momentumPhase == NSEventPhaseNone)
     {
-        s_bMouseOverScrollableUI = CGUIRoot::GetInstance()->IsMouseOverScrollableUI();
+        SendWheel(dx, overUI ? dy : [event deltaY], precise && overUI);
+        return;
     }
-    
-    // Precise Cocoa deltas are in points; MCML uses 40 logical pixels per notch.
-    const float deltaX = [event hasPreciseScrollingDeltas] ? [event scrollingDeltaX] / 40.f : [event deltaX];
-    if(phase == NSEventPhaseNone && momentumPhase == NSEventPhaseNone)
+    if (phase == NSEventPhaseMayBegin || phase == NSEventPhaseBegan)
+        m_scrollGestureOverUI = overUI;
+    // Position updates stop while fingers are held still. Expose contact separately
+    // so an elastic pane can wait for lift even when there is no final wheel delta.
+    if (phase == NSEventPhaseBegan || phase == NSEventPhaseEnded || phase == NSEventPhaseCancelled)
     {
-        OnMouseWhell(deltaX, [event deltaY]);
+        CVariable tracking;
+        tracking = phase == NSEventPhaseBegan && m_scrollGestureOverUI;
+        CGUIRoot::GetInstance()->SetDynamicField("TrackpadScrollActive", tracking);
     }
-    else if(phase != NSEventPhaseNone)
+    if (m_scrollGestureOverUI)
+    {
+        if (overUI && (phase == NSEventPhaseChanged || phase == NSEventPhaseBegan ||
+            momentumPhase == NSEventPhaseBegan || momentumPhase == NSEventPhaseChanged))
+            SendWheel(dx, dy, precise);
+        if (phase == NSEventPhaseCancelled || momentumPhase == NSEventPhaseEnded || momentumPhase == NSEventPhaseCancelled)
+            m_scrollGestureOverUI = false;
+        return;
+    }
+    if (phase != NSEventPhaseNone)
     {
         m_scrollMouseX += [event deltaX] * 4;
         m_scrollMouseY += [event deltaY] * 4;
-        
-        if(s_bMouseOverScrollableUI)
+
+        switch (phase)
         {
-            if(phase == NSEventPhaseChanged)
-            {
-                OnMouseWhell(deltaX, [event deltaY]);
-            }
-        }
-        else
-        {
-            switch (phase) {
-                //case NSEventPhaseMayBegin:
-                case NSEventPhaseBegan:
-                    OnMouseButton(EMouseButton::RIGHT, EKeyState::PRESS, m_scrollMouseX, m_scrollMouseY);
-                    break;
-                case NSEventPhaseChanged:
-                {
-                    OnMouseMove(m_scrollMouseX, m_scrollMouseY);
-                }
-                    break;
-                case NSEventPhaseEnded:
-                //case NSEventPhaseCancelled:
-                    OnMouseButton(EMouseButton::RIGHT, EKeyState::RELEASE, m_scrollMouseX, m_scrollMouseY);
-                    break;
-                default:
-                    break;
-            }
+            case NSEventPhaseBegan:
+                OnMouseButton(EMouseButton::RIGHT, EKeyState::PRESS, m_scrollMouseX, m_scrollMouseY);
+                break;
+            case NSEventPhaseChanged:
+                OnMouseMove(m_scrollMouseX, m_scrollMouseY);
+                break;
+            case NSEventPhaseEnded:
+            case NSEventPhaseCancelled:
+                OnMouseButton(EMouseButton::RIGHT, EKeyState::RELEASE, m_scrollMouseX, m_scrollMouseY);
+                break;
+            default:
+                break;
         }
     }
 }
@@ -847,19 +856,19 @@ void RenderWindowOSX::OnKey(ParaEngine::EVirtualKey key, ParaEngine::EKeyState s
 }
 
 
-void RenderWindowOSX::OnMouseWhell(float deltaX, float deltaY)
+void RenderWindowOSX::SendWheel(float deltaX, float deltaY, bool precise)
 {
     if (CGlobals::GetApp()->GetAppState() != PEAppState_Ready)
     {
         return;
     }
     
-    if (int ticks = static_cast<int>(deltaX * 120))
-        CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(DeviceMouseEventPtr(new DeviceMouseWheelEvent(ticks, true)));
+    if (int ticks = static_cast<int>(std::lround(deltaX * 120)))
+        CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(DeviceMouseEventPtr(new DeviceMouseWheelEvent(ticks, true, precise)));
 
-    if(deltaY != 0.f)
+    if (int ticks = static_cast<int>(std::lround(deltaY * 120)))
     {
-        CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(DeviceMouseEventPtr(new DeviceMouseWheelEvent(deltaY * 120)));
+        CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(DeviceMouseEventPtr(new DeviceMouseWheelEvent(ticks, false, precise)));
     }
 }
 

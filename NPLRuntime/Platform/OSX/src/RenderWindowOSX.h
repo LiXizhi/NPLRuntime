@@ -53,12 +53,13 @@ namespace ParaEngine
         void OnKey(EVirtualKey key, EKeyState state);
         
         void OnMouseMove(uint32_t x, uint32_t y);
-        void OnMouseWhell(float deltaX, float deltaY);
+        void SendWheel(float deltaX, float deltaY, bool precise = false);
                
         void OnChar(unsigned int character);
     protected:
         bool m_shouldClose;
         NSWindow* m_window;
+        bool m_scrollGestureOverUI = false;
         float m_scrollMouseX;
         float m_scrollMouseY;
         float m_lastAutoUIScale = 0.0f;

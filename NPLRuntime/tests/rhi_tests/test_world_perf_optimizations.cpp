@@ -12,6 +12,7 @@
 #include "BlockEngine/BlockCommon.h"
 #include "BlockEngine/RenderableChunk.h"
 #include "renderer/ParaVertexBuffer.h"
+#include "renderer/RenderDevice.h"
 #include "renderer/ParaVertexBufferPool.h"
 #include "renderer/VertexFVF.h"
 #include "ShapeAABB.h"
@@ -364,6 +365,28 @@ namespace
 		world.SetBlockId(30, 255, 30, 1);
 		TEST_CHECK(world.GetBlockId(30, 255, 30) == 1);
 		boost::filesystem::remove(file);
+	}
+
+	void TestFrameDrawStatistics()
+	{
+		auto& settings = CGlobals::GetSettings();
+		RenderDevice::ClearAllPerfCount();
+		RenderDevice::RecordDraw(EPrimitiveType::LINELIST, 20);
+		RenderDevice::RecordDraw(EPrimitiveType::POINTLIST, 8);
+		RenderDevice::RecordDraw(EPrimitiveType::TRIANGLESTRIP, 2);
+		RenderDevice::RecordDraw(EPrimitiveType::TRIANGLEFAN, 5);
+		RenderDevice::RecordDraw(EPrimitiveType::TRIANGLELIST, 10, 3);
+		RenderDevice::PublishFramePerfCounts();
+		TEST_CHECK(settings.GetDrawCallCount() == 5);
+		TEST_CHECK(settings.GetTriangleCount() == 37);
+
+		// Scripts reading during the next frame still see the completed frame.
+		RenderDevice::ClearAllPerfCount();
+		TEST_CHECK(settings.GetDrawCallCount() == 5);
+		TEST_CHECK(settings.GetTriangleCount() == 37);
+		RenderDevice::PublishFramePerfCounts();
+		TEST_CHECK(settings.GetDrawCallCount() == 0);
+		TEST_CHECK(settings.GetTriangleCount() == 0);
 	}
 
 	void TestLowEndAndSkinningCaps()
@@ -881,6 +904,7 @@ int main()
 	TestBlockHeightRange();
 	TestSparseSkyLight();
 	TestSavedSectionValidity();
+	TestFrameDrawStatistics();
 	TestLowEndAndSkinningCaps();
 	TestBlockChunkVisibilityGraph();
 	TestSoftwareOcclusionBufferMode(true);   // D3D11 / D3D12 / Vulkan / Metal / WebGPU [0, 1] clip Z

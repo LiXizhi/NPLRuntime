@@ -153,7 +153,7 @@ namespace cAudio
 
 	int cOggDecoder::getTotalSize()
 	{
-		return ov_pcm_total(&oggStream, -1) * vorbisInfo->channels;
+		return ov_pcm_total(&oggStream, -1) * vorbisInfo->channels * 2;
 	}
 
 	int cOggDecoder::getCompressedSize()

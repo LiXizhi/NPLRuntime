@@ -10,6 +10,7 @@
 #endif
 
 #include "ParaEngine.h"
+#include "renderer/RenderDevice.h"
 #include "RenderContextMetal.h"
 #include "RenderDeviceMetal.h"
 #include "FxShaderTypes.h"
@@ -1893,6 +1894,7 @@ namespace ParaEngine
 			if (smp)
 				[enc setFragmentSamplerState:smp atIndex:0];
 			[enc drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:0 vertexCount:3];
+			RenderDevice::RecordDraw(EPrimitiveType::TRIANGLELIST, 1);
 			[enc endEncoding];
 			return true;
 		}
@@ -2524,6 +2526,7 @@ namespace ParaEngine
 							 indexType:MTLIndexTypeUInt16
 						   indexBuffer:reinterpret_cast<id<MTLBuffer>>(mtlBuf)
 					 indexBufferOffset:off];
+			RenderDevice::RecordDraw(PrimitiveType, PrimitiveCount);
 			return true;
 		}
 
@@ -2532,6 +2535,7 @@ namespace ParaEngine
 			instCount = (std::max)(1u, m_streams[0].frequencyDivider & 0x3FFFFFFFu);
 
 		[enc drawPrimitives:mtlTopo vertexStart:StartVertex vertexCount:vertCount instanceCount:instCount];
+		RenderDevice::RecordDraw(PrimitiveType, PrimitiveCount, instCount);
 		return true;
 	}
 
@@ -2599,6 +2603,7 @@ namespace ParaEngine
 						 instanceCount:instanceCount
 							baseVertex:baseVertexIndex
 						  baseInstance:0];
+			RenderDevice::RecordDraw(primitiveType, primitiveCount, instanceCount);
 			return true;
 		}
 
@@ -2610,6 +2615,7 @@ namespace ParaEngine
 					 instanceCount:instanceCount
 						baseVertex:baseVertexIndex
 					  baseInstance:0];
+		RenderDevice::RecordDraw(primitiveType, primitiveCount, instanceCount);
 		return true;
 	}
 
@@ -2667,11 +2673,13 @@ namespace ParaEngine
 									 indexType:MTLIndexTypeUInt16
 								   indexBuffer:reinterpret_cast<id<MTLBuffer>>(ibuf)
 							 indexBufferOffset:ioff];
+					RenderDevice::RecordDraw(PrimitiveType, PrimitiveCount);
 				}
 			}
 			else
 			{
 				[enc drawPrimitives:mtlTopo vertexStart:0 vertexCount:vertCount];
+				RenderDevice::RecordDraw(PrimitiveType, PrimitiveCount);
 			}
 		}
 
@@ -2759,6 +2767,7 @@ namespace ParaEngine
 							 indexType:is32 ? MTLIndexTypeUInt32 : MTLIndexTypeUInt16
 						   indexBuffer:reinterpret_cast<id<MTLBuffer>>(iBuf)
 					 indexBufferOffset:iOff];
+			RenderDevice::RecordDraw(PrimitiveType, PrimitiveCount);
 		}
 
 		m_streams[0] = prev0;

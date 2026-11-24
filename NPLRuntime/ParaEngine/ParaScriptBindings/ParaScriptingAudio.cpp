@@ -11,6 +11,7 @@
 #include "AudioEngine2.h"
 #include "util/MidiMsg.h"
 #include "MCIController.h"
+#include <boost/algorithm/string/predicate.hpp>
 
 using namespace ParaEngine;
 using namespace ParaScripting;
@@ -28,7 +29,6 @@ void ParaAudio::EnableAudioEngine(bool bEnable)
 void ParaAudio::SetVolume(float fVolume)
 {
 	CAudioEngine2::GetInstance()->SetGlobalVolume(fVolume);
-	CMidiMsg::GetSingleton().SetVolumeFloat(fVolume);
 }
 
 float ParaAudio::GetVolume()
@@ -51,27 +51,20 @@ int ParaScripting::ParaAudio::StopMidiMsg0()
 	return CMidiMsg::GetSingleton().StopMidiMsg(0);
 }
 
+namespace {
+bool IsMidiFile(const std::string& filename)
+{
+	std::string ext = CParaFile::GetFileExtension(filename);
+	return boost::iequals(ext, "mid") || boost::iequals(ext, "midi");
+}
+}
+
 bool ParaAudio::PlayWaveFile(const char* szWavePath, int nLoopCount)
 {
 	const std::string filename = szWavePath ? szWavePath : "";
-	if (CParaFile::GetFileExtension(filename) == "mid")
-	{
-		CMidiMsg::PlayMidiFile(filename);
-	}
-	else
-	{
-		// stop last midi sound
-		if (filename.empty()) {
-			CMidiMsg::PlayMidiFile(filename);
-			return true;
-		}
-
-		if (FAILED(CAudioEngine2::GetInstance()->PlayWaveFile(szWavePath, nLoopCount > 0)))
-		{
-			return false;
-		}
-	}
-	return true;
+	if (filename.empty() || IsMidiFile(filename))
+		return CMidiMsg::PlayMidiFile(filename, nLoopCount);
+	return SUCCEEDED(CAudioEngine2::GetInstance()->PlayWaveFile(szWavePath, nLoopCount > 0));
 }
 
 bool ParaAudio::PlayWaveFile1(const char* szWavePath)
@@ -83,6 +76,8 @@ bool ParaAudio::StopWaveFile(const char* szWavePath, bool bImmediateStop)
 {
 	if (!szWavePath)
 		return false;
+	if (IsMidiFile(szWavePath))
+		return CMidiMsg::GetSingleton().StopMidiFile(szWavePath, bImmediateStop);
 	if (FAILED(CAudioEngine2::GetInstance()->StopWaveFile(szWavePath, bImmediateStop ? AUDIO_FLAG_STOP_IMMEDIATE : AUDIO_FLAG_STOP_RELEASE)))
 	{
 		return false;
@@ -99,6 +94,8 @@ bool ParaAudio::ReleaseWaveFile(const char* szWavePath)
 {
 	if (!szWavePath)
 		return false;
+	if (IsMidiFile(szWavePath))
+		return CMidiMsg::GetSingleton().StopMidiFile(szWavePath, true);
 	if (FAILED(CAudioEngine2::GetInstance()->ReleaseWaveFile(szWavePath)))
 	{
 		return false;

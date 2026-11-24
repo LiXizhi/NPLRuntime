@@ -10,12 +10,9 @@ namespace ParaEngine
 	class RenderableChunk;
 	class BlockRenderTask;
 
-	/** this is used for rendering a super large block world across several frames. 
-	* because chunk buffer of the world usually can not be held all in video memory. 
-	* In general, this renderer is only used to generate large preview image of the world offline. 
-	* However, it is also possible to use this as environment map or right after the sky box. 
-	* A new image will be generated when the camera changed. 
-	*/
+	/** Draws a live surface LOD behind the scene. Preview and custom camera modes
+	 * retain the incremental, full-detail render target.
+	 */
 	class CMultiFrameBlockWorldRenderer : public IAttributeFields
 	{
 	public:
@@ -28,6 +25,9 @@ namespace ParaEngine
 
 		ATTRIBUTE_METHOD1(CMultiFrameBlockWorldRenderer, IsEnabled_s, bool*)	{ *p1 = cls->IsEnabled(); return S_OK; }
 		ATTRIBUTE_METHOD1(CMultiFrameBlockWorldRenderer, SetEnabled_s, bool)	{ cls->SetEnabled(p1); return S_OK; }
+
+		ATTRIBUTE_METHOD1(CMultiFrameBlockWorldRenderer, GetRealTime_s, bool*) { *p1 = cls->m_realTime; return S_OK; }
+		ATTRIBUTE_METHOD1(CMultiFrameBlockWorldRenderer, SetRealTime_s, bool) { cls->m_realTime = p1; cls->SetDirty(true); return S_OK; }
 
 		ATTRIBUTE_METHOD1(CMultiFrameBlockWorldRenderer, IsDirty_s, bool*)	{ *p1 = cls->IsDirty(); return S_OK; }
 		ATTRIBUTE_METHOD1(CMultiFrameBlockWorldRenderer, SetDirty_s, bool)	{ cls->SetDirty(p1); return S_OK; }
@@ -105,6 +105,9 @@ namespace ParaEngine
 		virtual CRenderTarget* CreateGetRenderTarget(bool bCreateIfNotExist = true);
 
 		bool DrawInternal(int nMaxChunks);
+		bool UsesLiveTerrain() const { return m_realTime && m_bDrawToSkybox && !m_bUseMyCamera && !m_bDebugImage; }
+		bool DrawLiveTerrain();
+		bool m_realTime = true;
 
 		void DrawRenderTasks(BlockRenderPass nCurRenderPass);
 

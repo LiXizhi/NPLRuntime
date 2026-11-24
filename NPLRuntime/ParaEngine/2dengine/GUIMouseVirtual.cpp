@@ -59,10 +59,10 @@ void CGUIMouseVirtual::PushMouseEvent(const DeviceMouseEventPtr &e)
                 {
                     const auto* wheel = static_cast<const DeviceMouseWheelEvent*>(e.get());
                     const auto* buffered = static_cast<const DeviceMouseWheelEvent*>(m_buffered_mouse_msgs[i].get());
-                    if (buffered->IsHorizontal() != wheel->IsHorizontal())
+                    if (buffered->IsHorizontal() != wheel->IsHorizontal() || buffered->IsPrecise() != wheel->IsPrecise())
                         continue;
                     int delta = wheel->GetWheel() + buffered->GetWheel();
-                    m_buffered_mouse_msgs[i] = DeviceMouseEventPtr(new DeviceMouseWheelEvent(delta, wheel->IsHorizontal()));
+                    m_buffered_mouse_msgs[i] = DeviceMouseEventPtr(new DeviceMouseWheelEvent(delta, wheel->IsHorizontal(), wheel->IsPrecise()));
                     return;
                 }
             }

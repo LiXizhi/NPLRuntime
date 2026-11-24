@@ -6,7 +6,7 @@
 #include "cAudio.h"
 #include "cAudioSource.h"
 #include "cAudioPlatform.h"
-#include "cAudioSleep.h"
+#include <chrono>
 #include "cUtils.h"
 #include "cThread.h"
 #include "cLogger.h"
@@ -42,6 +42,10 @@ namespace cAudio
 		}
 
 #ifdef CAUDIO_USE_INTERNAL_THREAD
+		{
+			cAudioMutexBasicLock activityLock(ActivityMutex);
+			Stopping = false;
+		}
 		if (!AudioThread)
 		{
 			AudioThread = new cAudioThread(this);
@@ -58,6 +62,13 @@ namespace cAudio
 		{
 			if (AudioThread) // First wait for our update thread to finish up
 			{
+#ifdef CAUDIO_USE_INTERNAL_THREAD
+				{
+					cAudioMutexBasicLock activityLock(ActivityMutex);
+					Stopping = true;
+				}
+				ActivityChanged.notify_one();
+#endif
 				AudioThread->join();
 				AudioThread->release();
 				AudioThread = NULL;
@@ -80,33 +91,44 @@ namespace cAudio
 		}
 	}
 
+	void cAudioManager::setSourceActive(IAudioSource* source, bool active)
+	{
+		cAudioMutexBasicLock lock(ActivityMutex);
+		auto it = std::find(activeSources.begin(), activeSources.end(), source);
+		if (active && it == activeSources.end())
+		{
+			activeSources.push_back(source);
+#ifdef CAUDIO_USE_INTERNAL_THREAD
+			if (activeSources.size() == 1)
+				ActivityChanged.notify_one();
+#endif
+		}
+		else if (!active && it != activeSources.end())
+			activeSources.erase(it);
+	}
+
 	void cAudioManager::update()
 	{
 		cAudioMutexBasicLock lock(Mutex);
-		size_t count = audioSources.size();
-		for (size_t i = 0; i < count; i++)
 		{
-			IAudioSource* source = audioSources[i];
-			if (source->isValid())
-			{
-				source->update();
-			}
+			cAudioMutexBasicLock activityLock(ActivityMutex);
+			pendingUpdates = activeSources;
+		}
+		while (!pendingUpdates.empty())
+		{
+			auto* source = pendingUpdates.back();
+			pendingUpdates.pop_back();
+			source->update();
 		}
 
 		if (!managedAudioSources.empty())
 		{
-			count = managedAudioSources.size();
+			size_t count = managedAudioSources.size();
 			for (size_t i = 0; i < count; i++)
 			{
 				IAudioSource* source = managedAudioSources[i];
-				if (source->isValid())
-				{
-					source->update();
-					if (source->isStopped())
-					{
-						managedAudioSourcesDelBuffer.push_back(source);
-					}
-				}
+				if (source->isStopped())
+					managedAudioSourcesDelBuffer.push_back(source);
 			}
 
 			count = managedAudioSourcesDelBuffer.size();
@@ -126,13 +148,16 @@ namespace cAudio
 
 	void cAudioManager::run()
 	{
-		if (!audioSources.empty())
-			update();
-
-#ifdef __EMSCRIPTEN__
-		cAudioSleep(100);
-#else
-		cAudioSleep(1);
+#ifdef CAUDIO_USE_INTERNAL_THREAD
+		{
+			std::unique_lock<cAudioMutex> lock(ActivityMutex);
+			ActivityChanged.wait(lock, [this] { return Stopping || !activeSources.empty(); });
+			if (Stopping)
+				return;
+		}
+		update();
+		std::unique_lock<cAudioMutex> lock(ActivityMutex);
+		ActivityChanged.wait_for(lock, std::chrono::milliseconds(5), [this] { return Stopping; });
 #endif
 	}
 
@@ -156,6 +181,8 @@ namespace cAudio
 	{
 		cAudioMutexBasicLock lock(Mutex);
 		IAudioSource* pAudioSrc = create("", filename, true);
+		if (!pAudioSrc)
+			return NULL;
 
 		if (!playLooped && !startPaused)
 		{
@@ -164,9 +191,10 @@ namespace cAudio
 			{
 				audioSources.erase(it);
 			}
-			managedAudioSources.push_back(pAudioSrc);
-
-			pAudioSrc->play2d();
+			if (pAudioSrc->play2d())
+				managedAudioSources.push_back(pAudioSrc);
+			else
+				CAUDIO_DELETE pAudioSrc;
 			return NULL;
 		}
 
@@ -182,6 +210,8 @@ namespace cAudio
 	{
 		cAudioMutexBasicLock lock(Mutex);
 		IAudioSource* pAudioSrc = create("", filename, true);
+		if (!pAudioSrc)
+			return NULL;
 
 		if (!playLooped && !startPaused)
 		{
@@ -190,9 +220,10 @@ namespace cAudio
 			{
 				audioSources.erase(it);
 			}
-			managedAudioSources.push_back(pAudioSrc);
-
-			pAudioSrc->play3d(position);
+			if (pAudioSrc->play3d(position))
+				managedAudioSources.push_back(pAudioSrc);
+			else
+				CAUDIO_DELETE pAudioSrc;
 			return NULL;
 		}
 
@@ -248,7 +279,9 @@ namespace cAudio
 					audioIndex[audioName] = audio;
 
 				audioSources.push_back(audio);
-				getLogger()->logInfo("AudioManager", "Audio Source (%s) created from Data Source %s.", toUTF8(audioName), toUTF8(dataSource));
+				// toUTF8 conversions reuse a scratch buffer. Keep the first argument alive.
+				const std::string sourceName(toUTF8(audioName));
+				getLogger()->logInfo("AudioManager", "Audio Source (%s) created from Data Source %s.", sourceName.c_str(), toUTF8(dataSource));
 				return audio;
 			}
 
@@ -257,7 +290,8 @@ namespace cAudio
 				audio->drop();
 			return NULL;
 		}
-		getLogger()->logError("AudioManager", "Failed to create Audio Source (%s): Audio data could not be decoded by (.%s) decoder.", toUTF8(audioName), toUTF8(decoder->getType()));
+		const std::string sourceName(toUTF8(audioName));
+		getLogger()->logError("AudioManager", "Failed to create Audio Source (%s): Audio data could not be decoded by (.%s) decoder.", sourceName.c_str(), decoder ? toUTF8(decoder->getType()) : "unknown");
 		if (decoder)
 			decoder->drop();
 		return NULL;
@@ -274,7 +308,7 @@ namespace cAudio
 		IAudioDecoderFactory* factory = getAudioDecoderFactory(toUTF8(ext));
 
 		if (!factory) {
-			getLogger()->logError("AudioManager", "Failed to create Audio Source (%s): No decoder could be found for (.%s).", toUTF8(audioName), toUTF8(ext));
+			getLogger()->logError("AudioManager", "Failed to create Audio Source (%s): No decoder could be found for (.%s).", name, toUTF8(ext));
 			return NULL;
 		}
 
@@ -577,6 +611,7 @@ namespace cAudio
 		cAudioMutexBasicLock lock(Mutex);
 		cAudioVector<IAudioSource*>::Type::iterator audioSourcesIter;
 
+		pendingUpdates.clear();
 		cAudioVector<IAudioSource*>::Type deleteSources;
 		for (audioSourcesIter = audioSources.begin(); audioSourcesIter != audioSources.end(); ++audioSourcesIter)
 		{
@@ -616,6 +651,7 @@ namespace cAudio
 		if (source)
 		{
 			cAudioMutexBasicLock lock(Mutex);
+			pendingUpdates.erase(std::remove(pendingUpdates.begin(), pendingUpdates.end(), source), pendingUpdates.end());
 			audioIndexIterator it = audioIndex.begin();
 			for (it = audioIndex.begin(); it != audioIndex.end(); it++)
 			{

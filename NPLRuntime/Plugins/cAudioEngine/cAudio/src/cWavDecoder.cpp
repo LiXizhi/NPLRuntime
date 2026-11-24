@@ -4,6 +4,7 @@
 
 #include "cWavDecoder.h"
 #include <string.h>
+#include <algorithm>
 
 #if CAUDIO_COMPILE_WITH_WAV_DECODER == 1
 
@@ -191,18 +192,22 @@ namespace cAudio
 
 	bool cWavDecoder::seek(float seconds, bool relative)
 	{
-		int amountToSeek = seconds * (float)SampleRate * (float)Channels * (float)(BitsPerSample / 8);
-		return setPosition(amountToSeek, relative);
+		const int bytesPerFrame = Channels * (BitsPerSample / 8);
+		const int currentFrame = relative ? (Stream->getCurrentPos() - DataOffset) / bytesPerFrame : 0;
+		const double target = currentFrame + double(seconds) * SampleRate;
+		const int lastFrame = (std::min)(DataSize, Stream->getSize() - DataOffset) / bytesPerFrame;
+		const int frame = static_cast<int>((std::max)(0.0, (std::min)(target, double(lastFrame))));
+		return setPosition(DataOffset + frame * bytesPerFrame, false);
 	}
 
 	float cWavDecoder::getTotalTime()
 	{
-		return (float)Stream->getSize() / ((float)SampleRate * (float)Channels * (float)(BitsPerSample / 8));
+		return (float)DataSize / ((float)SampleRate * (float)Channels * (float)(BitsPerSample / 8));
 	}
 
 	int cWavDecoder::getTotalSize()
 	{
-		return Stream->getSize();
+		return DataSize;
 	}
 
 	int cWavDecoder::getCompressedSize()
@@ -212,7 +217,7 @@ namespace cAudio
 
 	float cWavDecoder::getCurrentTime()
 	{
-		return (float)Stream->getCurrentPos() / ((float)SampleRate * (float)Channels * (float)(BitsPerSample / 8));
+		return (float)(Stream->getCurrentPos() - DataOffset) / ((float)SampleRate * (float)Channels * (float)(BitsPerSample / 8));
 	}
 
 	int cWavDecoder::getCurrentPosition()

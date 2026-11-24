@@ -25,8 +25,10 @@ namespace ParaEngine
 		/** reset all the performance counters to 0. this is usually called at the beginning of each frame */
 		static void ClearAllPerfCount();
 
-		/** increment both draw count and vertices */
-		static void IncrementDrawBatchAndVertices(int nDrawCount, int nVertices, int nPrimitiveType = DRAW_PERF_TRIANGLES_UNKNOWN);
+		// Backends record each native draw once, including draws that bypass the category wrappers.
+		static void RecordDraw(EPrimitiveType topology, uint32_t primitiveCount, uint32_t instanceCount = 1);
+		static void PublishFramePerfCounts();
+		static int GetLastFramePerfCount(StatisticsType type);
 
 		/* max number of simultaneous textures. in most cards, it is 8, some is 4. */
 		static int GetMaxSimultaneousTextures();

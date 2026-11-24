@@ -4,7 +4,7 @@
 #include "IAudioDecoder.h"
 
 #ifdef USE_MINI_MP3
-	#include "../minimp3/minimp3.h"
+	#include "../minimp3/minimp3_ex.h"
 #else
 	#include "../mpaudec/mpaudec.h"
 #endif
@@ -50,40 +50,10 @@ public:
 	virtual int getCurrentCompressedPosition() ;
 	virtual cAudioString getType() const override;
 
-protected:
-	class cMP3Packet
-	{
-	public:
-		cMP3Packet()
-		{
-			reset();
-		}
-
-		void reset()
-		{
-			size = 0;
-			read = 0;
-		}
-		int size;
-		int read;
-
-		int samples;
-
-		mp3dec_frame_info_t info;
-		unsigned char data[MINIMP3_MAX_SAMPLES_PER_FRAME * sizeof(short)];
-	};
-
-	cMP3Packet		_currentPacket;
-
-
-	mp3dec_t		_context;
-	bool			_valid;
-	unsigned int	_dataOffset;
-
-	int				_numChannels;
-	int				_frequency;
-	int				_totalSize;
-	int				_currentPosition;
+private:
+	mp3dec_ex_t decoder{};
+	mp3dec_io_t io{};
+	bool valid = false;
 };
 
 #else

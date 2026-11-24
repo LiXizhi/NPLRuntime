@@ -244,7 +244,7 @@ Press **`F5`** in VS Code with **`Debug ParaEngineClient`**, **`Release ParaEngi
 | `NPLRUNTIME_ENABLE_WEBGPU` | `ON` (Win32/Web) | Enable WebGPU ParaRHI backend |
 | `NPLRUNTIME_LUAJIT21` / `LUAJIT20` / `LUA51` | Platform-specific | Select Lua VM implementation (only enable one) |
 | `NPLRUNTIME_PHYSICS` | `ON` (client) | Build Bullet Physics (`PhysicsBT`) plugin |
-| `NPLRUNTIME_AUDIO` | `ON` (client) | Build OpenAL (`cAudioEngine`) audio plugin |
+| `NPLRUNTIME_AUDIO` | `ON` (client) | Build the OpenAL (`cAudioEngine`) audio plugin and MIDI playback |
 | `NPLRUNTIME_WEB_ROBOT` | `ON` (Web) | Include MuJoCo + ONNX Runtime robotics support in WASM builds |
 | `NPLRUNTIME_BUILD_TESTS` | `ON` | Enable ParaRHI & NPLRuntime CTest suite |
 | `EMSCRIPTEN_SINGLE_THREAD` | `ON` (dev_web) | Single-thread Emscripten WASM build (`ParaCraftSingleThread`) |
@@ -263,6 +263,26 @@ NPL.this(function()
     end
 end)
 ```
+
+---
+
+## MIDI playback from NPL
+
+Audio-enabled clients expose the same `ParaAudio` calls on Windows, macOS, Linux, Android/PICO, iOS, HarmonyOS and WebAssembly. In a browser, interact with the page to enable audio. MIDI files can come from disk, a mounted archive or the asset manifest.
+
+```lua
+ParaAudio.PlayMidiMsg(0x00403C90) -- Middle C, velocity 64, channel 0
+-- Later, release this key or stop all live notes on its channel.
+ParaAudio.PlayMidiMsg(0x00003C80)
+ParaAudio.StopMidiMsg(0)
+
+local playing = ParaAudio.PlayWaveFile("music/theme.mid", 1) -- loop
+if playing then
+    ParaAudio.StopWaveFile("music/theme.mid", false) -- finish this iteration
+end
+```
+
+Short messages use the low byte for status, the next two bytes for MIDI data and the optional high byte for a note's instrument. Playback supports Standard MIDI File formats 0 and 1. The software synthesizer uses FM instruments. Windows can also use its default MIDI output for short messages. Headless builds return a playback failure without opening an audio device.
 
 ---
 

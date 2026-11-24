@@ -126,8 +126,8 @@ namespace cAudio
 			alcDestroyContext(Context);
 			Context = NULL;
 			//Close the device
-			alcCloseDevice(Device);
-			checkError();
+			if (!alcCloseDevice(Device))
+				getLogger()->logError("AudioManager", "Failed to close OpenAL device.");
 
 			Device = NULL;
 			Initialized = false;

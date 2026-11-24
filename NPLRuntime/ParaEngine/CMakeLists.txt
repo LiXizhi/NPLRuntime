@@ -28,6 +28,9 @@ set(NPLRUNTIME_INCLUDES)
 # Libraries 
 set(NPLRUNTIME_LIBS)
 
+# Pick up new block renderer sources in existing incremental build trees.
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/BlockEngine")
+
 ucm_add_dirs(
     Framework
     dirmonitor
@@ -166,6 +169,29 @@ endif()
 ###################################################################
 ## Target
 add_library(ParaEngine ${sources_commmon} ${sources_rendersystem})
+
+# MIDI playback is independent of the host's installed instrument bank.
+if (NOT NPLRUNTIME_SERVER AND (NPLRUNTIME_AUDIO OR HARMONY_OS))
+    set(midi_dir ${CMAKE_CURRENT_SOURCE_DIR}/../Platform/Midi)
+    target_sources(ParaEngine PRIVATE
+        ${midi_dir}/MidiSequence.cpp ${midi_dir}/MidiPlayback.cpp ${midi_dir}/MidiOutput.cpp)
+    set_property(SOURCE util/MidiMsg.cpp APPEND PROPERTY COMPILE_DEFINITIONS PARAENGINE_MIDI_OUTPUT)
+    if (HARMONY_OS)
+        target_link_libraries(ParaEngine PUBLIC ohaudio)
+    elseif (ANDROID)
+        target_link_libraries(ParaEngine PUBLIC OpenSLES)
+    elseif (APPLE)
+        target_link_libraries(ParaEngine PUBLIC "-framework AudioToolbox")
+        if (IOS)
+            set_source_files_properties(${midi_dir}/MidiOutput.cpp PROPERTIES COMPILE_FLAGS "-x objective-c++")
+            target_link_libraries(ParaEngine PUBLIC "-framework AVFoundation")
+        endif()
+    elseif (CMAKE_SYSTEM_NAME STREQUAL "Linux")
+        find_package(SDL2 REQUIRED CONFIG HINTS ${SDL_ROOT})
+        target_link_libraries(ParaEngine PUBLIC SDL2::SDL2)
+    endif()
+endif()
+
 if(NPLRUNTIME_WEB_ROBOT)
     target_sources(ParaEngine PRIVATE robotics/RobotCoordinateConverter.cpp robotics/MujocoRobotSimulation.cpp)
     target_include_directories(ParaEngine PRIVATE robotics)

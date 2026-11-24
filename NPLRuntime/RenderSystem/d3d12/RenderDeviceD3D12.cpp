@@ -1,4 +1,5 @@
 #include "ParaEngine.h"
+#include "renderer/RenderDevice.h"
 #include "RenderDeviceD3D12.h"
 #include "renderer/VertexDeclarationOpenGL.h"
 #include "RHISoftwareS3TC.h"
@@ -3996,10 +3997,12 @@ namespace ParaEngine
 			cmd->IASetIndexBuffer(&ibv);
 			m_currentIndexBuffer = nullptr;
 			cmd->DrawIndexedInstanced(PrimitiveCount * 3u, 1, 0, static_cast<INT>(StartVertex), 0);
+			RenderDevice::RecordDraw(PrimitiveType, PrimitiveCount);
 			return true;
 		}
 
 		cmd->DrawInstanced(vertCount, 1, StartVertex, 0);
+		RenderDevice::RecordDraw(PrimitiveType, PrimitiveCount);
 		return true;
 	}
 
@@ -4033,6 +4036,7 @@ namespace ParaEngine
 			return false;
 
 		m_cmdList->DrawIndexedInstanced(indexCount, instanceCount, indexStart, baseVertexIndex, 0);
+		RenderDevice::RecordDraw(primitiveType, primitiveCount, instanceCount);
 		return true;
 	}
 
@@ -4091,10 +4095,12 @@ namespace ParaEngine
 			m_cmdList->IASetIndexBuffer(&ibv);
 			m_currentIndexBuffer = nullptr;
 			m_cmdList->DrawIndexedInstanced(PrimitiveCount * 3u, 1, 0, 0, 0);
+			RenderDevice::RecordDraw(PrimitiveType, PrimitiveCount);
 			return true;
 		}
 
 		m_cmdList->DrawInstanced(vertCount, 1, 0, 0);
+		RenderDevice::RecordDraw(PrimitiveType, PrimitiveCount);
 		return true;
 	}
 
@@ -4177,6 +4183,7 @@ namespace ParaEngine
 		m_cmdList->IASetVertexBuffers(0, 1, &vbv);
 		m_cmdList->IASetIndexBuffer(&ibv);
 		m_cmdList->DrawIndexedInstanced(indexCount, 1, 0, 0, 0);
+		RenderDevice::RecordDraw(PrimitiveType, PrimitiveCount);
 		return true;
 	}
 

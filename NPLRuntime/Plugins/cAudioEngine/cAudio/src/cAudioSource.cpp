@@ -3,6 +3,10 @@
 // For conditions of distribution and use, see copyright notice in cAudio.h
 
 #include "cAudioSource.h"
+#include "cAudioManager.h"
+#include <algorithm>
+#include <cmath>
+#include <limits>
 #include "cAudio.h"
 #include "cLogger.h"
 #include "cFilter.h"
@@ -82,6 +86,7 @@ namespace cAudio
 		Filter = NULL;
 #endif
 		
+		setPlaybackState(AL_STOPPED);
 		//Stops the audio Source
 		alSourceStop(Source);
 		empty();
@@ -111,42 +116,52 @@ namespace cAudio
 		return false;
 	}
 
+	void cAudioSource::setPlaybackState(ALenum state)
+	{
+		if ((oldState == AL_PLAYING) != (state == AL_PLAYING))
+			static_cast<cAudioManager*>(Context->getAudioManager())->setSourceActive(this, state == AL_PLAYING);
+		oldState = state;
+	}
+
+	bool cAudioSource::startPlayback()
+	{
+		if (!Queued)
+		{
+			for (auto buffer : Buffers)
+				if (!queueBuffer(buffer))
+					break;
+			if (!Queued)
+				return false;
+		}
+		alSourcePlay(Source);
+		return !checkError();
+	}
+
 	bool cAudioSource::play()
 	{
 		cAudioMutexBasicLock lock(Mutex);
-		if (!isPaused())
-        {
-            int queueSize = 0;
-			//Purges all buffers from the source
-			alSourcei(Source, AL_BUFFER, 0);
-			checkError();
-            for(int u = 0; u < CAUDIO_SOURCE_NUM_BUFFERS; u++)
-            {
-                int val = stream(Buffers[u]);
-
-                if(val < 0)
-                {
-                    return false;
-                }
-                else if(val > 0)
-                    ++queueSize;
-            }
-            //Stores the sources 3 buffers to be used in the queue
-            alSourceQueueBuffers(Source, queueSize, Buffers);
-			checkError();
-        }
+		if (oldState == AL_PLAYING)
+		{
+			alSourceStop(Source);
+			empty();
+			Decoder->setPosition(0, false);
+			NextFrame = 0;
+		}
 #if CAUDIO_EFX_ENABLED == 1
 		updateFilter();
 		for(unsigned int i=0; i<CAUDIO_SOURCE_MAX_EFFECT_SLOTS; ++i)
 			updateEffect(i);
 #endif
-        alSourcePlay(Source);
-		checkError();
+		if (!startPlayback())
+		{
+			setPlaybackState(AL_STOPPED);
+			return false;
+		}
+		setPlaybackState(AL_PLAYING);
 		getLogger()->logDebug("Audio Source", "Source playing.");
 		signalEvent(ON_PLAY);
-		oldState = AL_PLAYING;
-        return true;
-    }
+		return true;
+	}
 
 	bool cAudioSource::play2d(const bool& toLoop)
 	{
@@ -173,34 +188,25 @@ namespace cAudio
 	void cAudioSource::pause()
 	{
 		cAudioMutexBasicLock lock(Mutex);
-        alSourcePause(Source);
-		checkError();
-		getLogger()->logDebug("Audio Source", "Source paused.");
+		if (oldState != AL_PLAYING)
+			return;
+		alSourcePause(Source);
+		if (!isPaused())
+			return;
+		setPlaybackState(AL_PAUSED);
 		signalEvent(ON_PAUSE);
-		oldState = AL_PAUSED;
-    }
+	}
 
 	void cAudioSource::stop()
 	{
 		cAudioMutexBasicLock lock(Mutex);
-        alSourceStop(Source);
-
-		//INFO:FIXED EXTREME SLOWDOWN ON IPHONE
-		int queued = 0;
-		alGetSourcei(Source, AL_BUFFERS_QUEUED, &queued);
-		while ( queued-- )
-		{
-			ALuint buffer;
-			alSourceUnqueueBuffers(Source, 1, &buffer);
-		}
-
-		//Resets the audio to the beginning
+		alSourceStop(Source);
+		empty();
 		Decoder->setPosition(0, false);
-		checkError();
-		getLogger()->logDebug("Audio Source", "Source stopped.");
+		NextFrame = 0;
+		setPlaybackState(AL_STOPPED);
 		signalEvent(ON_STOP);
-		oldState = AL_STOPPED;
-    }
+	}
 
 	void cAudioSource::loop(const bool& loop)
 	{
@@ -210,102 +216,129 @@ namespace cAudio
 
 	bool cAudioSource::seek(const float& seconds, bool relative)
 	{
-		bool state = false;
 		cAudioMutexBasicLock lock(Mutex);
-        if(Decoder->isSeekingSupported())
-        {
-			state = Decoder->seek(seconds, relative);
-        }
-		return state;
-    }
+		if (!Decoder->isSeekingSupported() || !std::isfinite(seconds))
+			return false;
+		float target = (std::max)(0.f, relative ? getCurrentAudioTime() + seconds : seconds);
+		const float duration = Decoder->getTotalTime();
+		if (duration >= 0.f)
+			target = (std::min)(target, duration);
+		if (!Decoder->seek(target, false))
+			return false;
+
+		alSourceStop(Source);
+		empty();
+		const float decodedTime = Decoder->getCurrentTime();
+		NextFrame = std::round(double(decodedTime >= 0.f ? decodedTime : target) * Decoder->getFrequency());
+		// A paused source stays silent until play() primes its new queue.
+		if (oldState == AL_PLAYING && !startPlayback())
+		{
+			setPlaybackState(AL_STOPPED);
+			signalEvent(ON_STOP);
+		}
+		return true;
+	}
 
 	float cAudioSource::getTotalAudioTime()
 	{
+		cAudioMutexBasicLock lock(Mutex);
 		return Decoder->getTotalTime();
 	}
 
 	int cAudioSource::getTotalAudioSize()
 	{
+		cAudioMutexBasicLock lock(Mutex);
 		return Decoder->getTotalSize();
 	}
 
 	int cAudioSource::getCompressedAudioSize()
 	{
+		cAudioMutexBasicLock lock(Mutex);
 		return Decoder->getCompressedSize();
+	}
+
+	int cAudioSource::frameSize() const
+	{
+		switch (Decoder->getFormat())
+		{
+		case EAF_16BIT_STEREO: return 4;
+		case EAF_8BIT_MONO: return 1;
+		default: return 2;
+		}
+	}
+
+	double cAudioSource::playbackFrame()
+	{
+		if (!Queued || (oldState == AL_PLAYING && !isPlaying()))
+			return NextFrame;
+		// OpenAL offsets are relative to the beginning of the entire current queue.
+		// Individual buffers can start a new loop iteration.
+		ALint offset = 0;
+		alGetSourcei(Source, AL_SAMPLE_OFFSET, &offset);
+		for (int i = 0; i < Queued; ++i)
+		{
+			if (offset < Queue[i].frames)
+				return Queue[i].firstFrame + offset;
+			offset -= Queue[i].frames;
+		}
+		return NextFrame;
 	}
 
 	float cAudioSource::getCurrentAudioTime()
 	{
-		return Decoder->getCurrentTime();
+		cAudioMutexBasicLock lock(Mutex);
+		return static_cast<float>(playbackFrame() / Decoder->getFrequency());
 	}
 
 	int cAudioSource::getCurrentAudioPosition()
 	{
-		return Decoder->getCurrentPosition();
+		cAudioMutexBasicLock lock(Mutex);
+		return static_cast<int>((std::min)(playbackFrame() * frameSize(), double((std::numeric_limits<int>::max)())));
 	}
 
 	int cAudioSource::getCurrentCompressedAudioPosition()
 	{
+		cAudioMutexBasicLock lock(Mutex);
 		return Decoder->getCurrentCompressedPosition();
 	}
 
 	bool cAudioSource::update()
 	{
 		cAudioMutexBasicLock lock(Mutex);
-
-		int processed = 0;
-		bool active = true;
-        if(isValid() || isPlaying())
-		{
+		if (oldState != AL_PLAYING)
+			return false;
 #if CAUDIO_EFX_ENABLED == 1
-			updateFilter();
-			for(unsigned int i=0; i<CAUDIO_SOURCE_MAX_EFFECT_SLOTS; ++i)
-				updateEffect(i);
+		updateFilter();
+		for (unsigned int i = 0; i < CAUDIO_SOURCE_MAX_EFFECT_SLOTS; ++i)
+			updateEffect(i);
 #endif
-
-			//gets the sound source processed buffers
-			alGetSourcei(Source, AL_BUFFERS_PROCESSED, &processed);
-            checkError();
-            
-			//while there is more data refill buffers with audio data.
-			while (processed--)
-			{
-				ALuint buffer;
-				alSourceUnqueueBuffers(Source, 1, &buffer);
-
-				if (checkError()) break;
-
-				// LiXizhi 2014.12.2 fixing a bug where stopped music still get played 1-2 seconds on rewind. 
-				// if audio is already stopped, we should not read from the buffer (changing the buffer position)
-				if (oldState != AL_STOPPED)
-				{
-					active = stream(buffer);
-					//if more in stream continue playing.
-					if (active)
-					{
-						alSourceQueueBuffers(Source, 1, &buffer);
-						if (checkError()) break;
-					}
-				}
-			}
-
-			signalEvent(ON_UPDATE);
-		}
-
-		ALenum state;
-		alGetSourcei(Source, AL_SOURCE_STATE, &state);
-        checkError();
-		if(state == AL_STOPPED && oldState != state)
+		ALint processed = 0;
+		alGetSourcei(Source, AL_BUFFERS_PROCESSED, &processed);
+		const bool drained = processed == Queued;
+		while (processed-- > 0 && Queued > 0)
 		{
-			//Resets the audio to the beginning
-			Decoder->setPosition(0, false);
-			getLogger()->logDebug("Audio Source", "Source stopped.");
-			signalEvent(ON_STOP);
-			oldState = state;
+			ALuint buffer;
+			alSourceUnqueueBuffers(Source, 1, &buffer);
+			if (checkError())
+				break;
+			--Queued;
+			std::move(Queue + 1, Queue + 1 + Queued, Queue);
+			queueBuffer(buffer);
 		}
-
-		return active;
-    }
+		if (!Queued)
+		{
+			Decoder->setPosition(0, false);
+			NextFrame = 0;
+			setPlaybackState(AL_STOPPED);
+			signalEvent(ON_STOP);
+			return false;
+		}
+		// If the mixer consumed the whole queue between updates, resume the refilled stream.
+		if (drained)
+			alSourcePlay(Source);
+		signalEvent(ON_UPDATE);
+		return true;
+	}
 
 	const bool cAudioSource::isValid() const
 	{
@@ -322,18 +355,23 @@ namespace cAudio
 
 	const bool cAudioSource::isPaused() const
 	{
+		cAudioMutexBasicLock lock(Mutex);
+		if (oldState == AL_PAUSED && !Queued)
+			return true;
 		ALenum state = 0;
-        alGetSourcei(Source, AL_SOURCE_STATE, &state);
-        checkError();
-        return (state == AL_PAUSED);
+		alGetSourcei(Source, AL_SOURCE_STATE, &state);
+		return state == AL_PAUSED;
     }
 
 	const bool cAudioSource::isStopped() const
 	{
+		cAudioMutexBasicLock lock(Mutex);
+		if (oldState == AL_STOPPED)
+			return true;
 		ALenum state = 0;
         alGetSourcei(Source, AL_SOURCE_STATE, &state);
         checkError();
-		return (state == AL_STOPPED);
+		return state == AL_STOPPED && oldState != AL_PAUSED;
     }
 
 	const bool cAudioSource::isLooping() const
@@ -659,6 +697,7 @@ namespace cAudio
 
     void cAudioSource::empty()
     {
+        Queued = 0;
         int queued = 0;
         alGetSourcei(Source, AL_BUFFERS_QUEUED, &queued);
         checkError();
@@ -686,60 +725,40 @@ namespace cAudio
 		return false;
     }
 
-    bool cAudioSource::stream(ALuint buffer)
-    {
-        if(Decoder)
-        {
-	        //stores the calculated data into buffer that is passed to output.
-			size_t totalread = 0;
-			unsigned int errorcount = 0;
-	        char tempbuffer[CAUDIO_SOURCE_BUFFER_SIZE];
-			int nActualreadFailCount = 0;
-			while( totalread < CAUDIO_SOURCE_BUFFER_SIZE )
+	bool cAudioSource::queueBuffer(ALuint buffer)
+	{
+		alignas(short) char pcm[CAUDIO_SOURCE_BUFFER_SIZE];
+		int bytes = 0;
+		int failures = 0;
+		bool rewound = false;
+		while (bytes < CAUDIO_SOURCE_BUFFER_SIZE)
+		{
+			int read = Decoder->readAudioData(pcm + bytes, CAUDIO_SOURCE_BUFFER_SIZE - bytes);
+			if (read > 0)
+				bytes += read;
+			else if (read < 0 && ++failures < 3)
+				continue;
+			else if (read == 0 && !bytes && Loop && !rewound && Decoder->setPosition(0, false))
 			{
-				char tempbuffer2[CAUDIO_SOURCE_BUFFER_SIZE];
-				int actualread = Decoder->readAudioData(tempbuffer2, CAUDIO_SOURCE_BUFFER_SIZE-totalread);
-				if(actualread > 0)
-				{
-					memcpy(tempbuffer+totalread,tempbuffer2,actualread);
-					totalread += actualread;
-				}
-				if(actualread < 0)
-				{
-					++errorcount;
-					getLogger()->logDebug("Audio Source", "Decoder returned an error: %i (%i of 3)", actualread, errorcount);
-					if(errorcount >= 3)
-					{
-						stop();
-						break;
-					}
-				}
-				if (actualread == 0 && ++nActualreadFailCount>2)
-				{
-					if(isLooping())
-					{
-						//If we are to loop, set to the beginning and reload from the start
-						Decoder->setPosition(0, false);
-						getLogger()->logDebug("Audio Source", "Buffer looping.");
-						break;
-					}
-					else
-						break;
-				}
+				NextFrame = 0;
+				rewound = true;
 			}
-
-	        //Second check, in case looping is not enabled, we will return false for end of stream
-	        if(totalread == 0 && !isLooping())
-	       	{
-	       		return false;
-	        }
-			getLogger()->logDebug("Audio Source", "Buffered %i bytes of data into buffer %i at %i hz.", totalread, buffer, Decoder->getFrequency());
-            alBufferData(buffer, convertAudioFormatEnum(Decoder->getFormat()), tempbuffer, totalread, Decoder->getFrequency());
-			checkError();
-            return true;
-        }
-		return false;
-    }
+			else
+				break;
+		}
+		if (!bytes)
+			return false;
+		alBufferData(buffer, convertAudioFormatEnum(Decoder->getFormat()), pcm, bytes, Decoder->getFrequency());
+		if (checkError())
+			return false;
+		alSourceQueueBuffers(Source, 1, &buffer);
+		if (checkError())
+			return false;
+		const int frames = bytes / frameSize();
+		Queue[Queued++] = {NextFrame, frames};
+		NextFrame += frames;
+		return true;
+	}
 
 	ALenum cAudioSource::convertAudioFormatEnum(AudioFormats format)
 	{

@@ -1352,6 +1352,7 @@ int CGUIRoot::HandleUserInput()
 				const auto* wheel = static_cast<const DeviceMouseWheelEvent*>(e.get());
 				newMsg.message = wheel->IsHorizontal() ? EM_MOUSE_HWHEEL : EM_MOUSE_WHEEL;
 				newMsg.lParam = wheel->GetWheel();
+				newMsg.wParam = wheel->IsPrecise();
 			}break;
 			}
 			if (newMsg.message == EM_MOUSE_MOVE)

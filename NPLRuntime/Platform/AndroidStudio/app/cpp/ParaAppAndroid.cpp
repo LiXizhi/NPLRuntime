@@ -7,9 +7,7 @@
 
 #include "ParaAppAndroid.h"
 #include "jni/ParaEngineGLSurfaceView.h"
-#include "jni/ParaEngineMediaPlayer.h"
 #include "3dengine/AudioEngine2.h"
-#include "MidiMsg.h"
 #include "Framework/Common/Bridge/LuaJavaBridge.h"
 #include "jni/ParaEngineHelper.h"
 
@@ -122,7 +120,6 @@ namespace ParaEngine {
 
     CParaEngineAppAndroid::CParaEngineAppAndroid() {
         SetTouchInputting(true);
-        CMidiMsg::GetSingleton().SetMediaPlayer(ParaEngineMediaPlayer::GetSingleton());
 
         initCrashHandler();
 

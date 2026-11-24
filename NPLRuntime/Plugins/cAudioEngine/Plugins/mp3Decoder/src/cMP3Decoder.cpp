@@ -1,283 +1,110 @@
+#ifdef USE_MINI_MP3
+#define MINIMP3_IMPLEMENTATION
+#endif
 #include "cMP3Decoder.h"
 #include <stdlib.h>
 #include <string.h>
 
 #ifdef USE_MINI_MP3
+#include <algorithm>
+#include <climits>
+#include <cmath>
 
-#define MINIMP3_IMPLEMENTATION
-#include "../minimp3/minimp3.h"
-
-cMP3Decoder::cMP3Decoder(IDataSource* stream)
-	: IAudioDecoder(stream)
-	, _valid(false)
-	, _dataOffset(0)
-	, _numChannels(0)
-	, _frequency(0)
-	, _totalSize(0)
-	, _currentPosition(0)
+cMP3Decoder::cMP3Decoder(IDataSource* stream) : IAudioDecoder(stream)
 {
-	if (stream && stream->isValid() && stream->getSize() > 0)
-	{
-		mp3dec_init(&_context);
+	if (!stream || !stream->isValid() || stream->getSize() <= 0)
+		return;
 
-		//Check to see if we need to skip the idv3 header
-		char idv3Header[10];
-		int amountRead = stream->read(idv3Header, 10);
-		if (amountRead == 10 && idv3Header[0] == 'I' && idv3Header[1] == 'D' && idv3Header[2] == '3')
-		{
-			int versionMajor = idv3Header[3];
-			int versionMinor = idv3Header[4];
-			int flags = idv3Header[5];
-
-			int size = 0;
-			size = (idv3Header[6] & 0x7f) << (3 * 7);
-			size |= (idv3Header[7] & 0x7f) << (2 * 7);
-			size |= (idv3Header[8] & 0x7f) << (1 * 7);
-			size |= (idv3Header[9] & 0x7f);
-
-			size += 10;
-
-			_dataOffset = size;
-			stream->seek(_dataOffset, false);
-		}
-		else
-		{
-			stream->seek(0, false);
-		}
-
-		unsigned char inputBuffer[4096];
-		int inputSize = stream->read(inputBuffer, 4096);
-
-
-		auto samples = mp3dec_decode_frame(&_context, inputBuffer, inputSize, nullptr, &_currentPacket.info);
-
-		if (samples == 0 && _currentPacket.info.frame_bytes == 0)
-			return;
-
-		_numChannels	= _currentPacket.info.channels;
-		_frequency		= _currentPacket.info.hz;
-
-		stream->seek(_dataOffset, false);
-
-	
-		auto curPos = _dataOffset;
-
-		while (curPos < (unsigned int)stream->getSize())
-		{
-			inputSize = stream->read(inputBuffer, 4096);
-			int samples = mp3dec_decode_frame(&_context, inputBuffer, inputSize, nullptr, &_currentPacket.info);
-
-			if (samples == 0)
-			{
-				if (_currentPacket.info.frame_bytes == 0)
-					return;
-			}
-			else
-			{
-				_currentPacket.samples = samples;
-			}
-
-
-			curPos += _currentPacket.info.frame_bytes;
-
-			_totalSize += _currentPacket.samples * sizeof(short) * _numChannels;
-
-			stream->seek(curPos, false);
-		}
-
-		stream->seek(_dataOffset, false);
-
-		_valid = true;
-	}
+	io.read_data = io.seek_data = stream;
+	io.read = [](void* buffer, size_t size, void* data) -> size_t {
+		return static_cast<IDataSource*>(data)->read(buffer, static_cast<int>(size));
+	};
+	io.seek = [](uint64_t pos, void* data) -> int {
+		return pos <= INT_MAX && static_cast<IDataSource*>(data)->seek(static_cast<int>(pos), false) ? 0 : -1;
+	};
+	valid = mp3dec_ex_open_cb(&decoder, &io, MP3D_SEEK_TO_SAMPLE) == 0 &&
+		decoder.info.hz > 0 && (decoder.info.channels == 1 || decoder.info.channels == 2) && decoder.samples > 0;
 }
 
 cMP3Decoder::~cMP3Decoder()
 {
-
+	mp3dec_ex_close(&decoder);
 }
 
 AudioFormats cMP3Decoder::getFormat()
 {
-	if (_valid)
-	{
-		if (_numChannels == 1)
-		{
-			return EAF_16BIT_MONO;
-		}
-		else
-		{
-			return EAF_16BIT_STEREO;
-		}
-	}
-	return EAF_8BIT_MONO;
+	return decoder.info.channels == 1 ? EAF_16BIT_MONO : EAF_16BIT_STEREO;
 }
 
 int cMP3Decoder::getFrequency()
 {
-	if (_valid)
-	{
-		return _frequency;
-	}
-
-	return 0;
+	return decoder.info.hz;
 }
 
 bool cMP3Decoder::isSeekingSupported()
 {
-	return true;
+	return valid;
 }
 
 bool cMP3Decoder::isValid()
 {
-	return _valid;
+	return valid;
 }
 
 int cMP3Decoder::readAudioData(void* output, int amount)
 {
-	if (_valid)
-	{
-		// Check to see if we have an empty packet and fill it
-		if (_currentPacket.size <= _currentPacket.read)
-		{
-			//Empty packet, grab a new one.
-			_currentPacket.reset();
-
-			unsigned char inputBuffer[MINIMP3_MAX_SAMPLES_PER_FRAME * sizeof(short)];
-			int oldPos = Stream->getCurrentPos();
-			int inputSize = Stream->read(inputBuffer, _currentPacket.samples * sizeof(short) > sizeof(inputBuffer) ? sizeof(inputBuffer) : _currentPacket.samples * sizeof(short));
-
-			if (!inputSize)
-				return 0;
-
-			int samples = mp3dec_decode_frame(&_context, inputBuffer, inputSize, (short*)_currentPacket.data, &_currentPacket.info);
-			_currentPacket.size = samples * sizeof(short) * _numChannels; //_currentPacket.info.frame_bytes;
-
-			if (samples == 0)
-			{
-				if (_currentPacket.info.frame_bytes == 0)
-					return -1;
-			}
-			else
-			{
-				_currentPacket.samples = samples;
-			}
-
-			if (_numChannels != _currentPacket.info.channels)
-				return -1;
-
-			if (_frequency != _currentPacket.info.hz)
-				return -1;
-
-			Stream->seek(oldPos + _currentPacket.info.frame_bytes, false);
-		}
-
-		//If we have data left since last time, put it in if we have space
-		if (_currentPacket.size > _currentPacket.read)
-		{
-			int amountLeft = _currentPacket.size - _currentPacket.read;
-			if (amountLeft < amount)
-			{
-				//Dump in all our data
-				memcpy(output, _currentPacket.data + _currentPacket.read, amountLeft);
-				_currentPacket.read += amountLeft;
-				_currentPosition += amountLeft;
-				return amountLeft;
-			}
-			else
-			{
-				//Not enough space for all our data, put in a little bit
-				memcpy(output, _currentPacket.data + _currentPacket.read, amount);
-				_currentPacket.read += amount;
-				_currentPosition += amount;
-
-				return amount;
-			}
-		}
-	}
-
-	return 0;
+	if (!valid || amount < 2)
+		return 0;
+	const size_t samples = mp3dec_ex_read(&decoder, static_cast<mp3d_sample_t*>(output), amount / 2);
+	if (!samples && decoder.last_error)
+		return -1;
+	return static_cast<int>(samples * 2);
 }
 
 bool cMP3Decoder::setPosition(int position, bool relative)
 {
-	if (_valid)
-	{
-		position = relative ? Stream->getCurrentPos() + position : position += _dataOffset;
-
-		//Just reload from scratch
-		Stream->seek(_dataOffset, false);
-
-		_currentPosition = 0;
-
-
-		unsigned char inputBuffer[MINIMP3_MAX_SAMPLES_PER_FRAME * sizeof(short)];
-
-		int lastFrameSize = 0;
-
-		while (Stream->getCurrentPos() < position)
-		{
-			//Eat up frames till we reach about the right spot
-			int oldPos = Stream->getCurrentPos();
-
-			int inputSize = Stream->read(inputBuffer, _currentPacket.samples * sizeof(short) > sizeof(inputBuffer) ? sizeof(inputBuffer) : _currentPacket.samples * sizeof(short));
-
-			if (inputSize == 0)
-			{
-				Stream->seek(_dataOffset, false);
-				return false;
-			}
-
-			int samples = mp3dec_decode_frame(&_context, inputBuffer, inputSize, nullptr, &_currentPacket.info);
-
-			//Oops, error...
-			if (samples == 0)
-			{
-				if (_currentPacket.info.frame_bytes == 0)
-				{
-					Stream->seek(_dataOffset, false);
-					return false;
-				}
-			}
-			else
-			{
-				_currentPacket.samples = samples;
-			}
-
-			Stream->seek(oldPos + _currentPacket.info.frame_bytes, false);
-
-			_currentPosition += _currentPacket.samples * sizeof(short) * _numChannels;
-
-			lastFrameSize = _currentPacket.info.frame_bytes;
-		}
-
-		Stream->seek(-lastFrameSize, true);
-
-		return true;
-	}
-
-	return false;
+	if (!valid)
+		return false;
+	// This legacy method addresses compressed bytes. Source stop and loop use byte zero.
+	int64_t offset = relative ? int64_t(getCurrentCompressedPosition()) + position : position;
+	if (offset <= 0)
+		return mp3dec_ex_seek(&decoder, 0) == 0;
+	if (offset >= Stream->getSize())
+		return mp3dec_ex_seek(&decoder, decoder.samples) == 0;
+	// A tagged stream can report its duration before minimp3 has built a seek index.
+	if (!decoder.indexes_built && mp3dec_ex_seek(&decoder, 1) != 0)
+		return false;
+	if (!decoder.index.num_frames)
+		return false;
+	auto* first = decoder.index.frames;
+	auto* end = first + decoder.index.num_frames;
+	auto* frame = std::upper_bound(first, end, static_cast<uint64_t>(offset),
+		[](uint64_t value, const mp3dec_frame_t& entry) { return value < entry.offset; });
+	if (frame != first)
+		--frame;
+	const auto delay = static_cast<uint64_t>(decoder.start_delay);
+	return mp3dec_ex_seek(&decoder, frame->sample > delay ? frame->sample - delay : 0) == 0;
 }
 
 bool cMP3Decoder::seek(float seconds, bool relative)
 {
-	if (_valid)
-	{
-		//int amountToSeek = seconds * (float)(Context->bit_rate / 8);
-		// fixed by LiXizhi: the physical frame size is not Context->bit_rate / 8, but is some other constant value calculated below. 
-		int amountToSeek2 = (int)(seconds / getTotalTime() * (float)(Stream->getSize() - _dataOffset));
-		return setPosition(amountToSeek2, relative);
-	}
-	return false;
+	if (!valid || !std::isfinite(seconds))
+		return false;
+	double frame = std::round(double(seconds) * decoder.info.hz);
+	if (relative)
+		frame += decoder.cur_sample / decoder.info.channels;
+	const double sample = (std::max)(0.0, (std::min)(frame * decoder.info.channels, double(decoder.samples)));
+	return mp3dec_ex_seek(&decoder, static_cast<uint64_t>(sample)) == 0;
 }
 
 float cMP3Decoder::getTotalTime()
 {
-	return (float)_totalSize / ((float)_frequency * (float)_numChannels * 2.0f);
+	return valid ? float(double(decoder.samples) / (decoder.info.channels * decoder.info.hz)) : 0.f;
 }
 
 int cMP3Decoder::getTotalSize()
 {
-	return _totalSize;
+	return static_cast<int>((std::min)(decoder.samples * 2, uint64_t(INT_MAX)));
 }
 
 int cMP3Decoder::getCompressedSize()
@@ -287,17 +114,17 @@ int cMP3Decoder::getCompressedSize()
 
 float cMP3Decoder::getCurrentTime()
 {
-	return (float)_currentPosition / ((float)_frequency * (float)_numChannels * 2.0f);
+	return valid ? float(double(decoder.cur_sample) / (decoder.info.channels * decoder.info.hz)) : 0.f;
 }
 
 int cMP3Decoder::getCurrentPosition()
 {
-	return _currentPosition;
+	return static_cast<int>((std::min)(decoder.cur_sample * 2, uint64_t(INT_MAX)));
 }
 
 int cMP3Decoder::getCurrentCompressedPosition()
 {
-	return Stream->getCurrentPos();
+	return static_cast<int>(decoder.offset);
 }
 
 cAudioString cMP3Decoder::getType() const
@@ -516,7 +343,7 @@ bool cMP3Decoder::setPosition(int position, bool relative)
 			position += DataOffset;
 		}
 
-		//Just reload from scratch
+		CurrentPacket.reset();
 		Stream->seek(DataOffset, false);
 
 		MPAuDecContext oldContext = *Context;

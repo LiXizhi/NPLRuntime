@@ -9,8 +9,6 @@
 
 #include "ParaAppiOS.h"
 #include "RenderWindowiOS.h"
-#include "MidiPlayer/ParaEngineMediaPlayer.h"
-#include "MidiMsg.h"
 
 IParaEngineApp* CreateParaEngineApp()
 {
@@ -21,7 +19,6 @@ namespace ParaEngine {
     CParaEngineAppiOS::CParaEngineAppiOS()
     {
         SetTouchInputting(true);
-        CMidiMsg::GetSingleton().SetMediaPlayer(ParaEngineMediaPlayer::GetSingleton());
     }
 
     void CParaEngineAppiOS::GameToClient(int& inout_x, int & inout_y, bool bInBackbuffer /*= true*/)

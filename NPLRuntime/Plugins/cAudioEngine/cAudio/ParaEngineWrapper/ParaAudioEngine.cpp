@@ -107,7 +107,7 @@ void ParaEngine::CParaAudioEngine::registerLogReceiver(std::function<void(const 
 
 void ParaEngine::CParaAudioEngine::SetDistanceModel( ParaAudioDistanceModelEnum eDistModel )
 {
-	/*ALenum distModel = AL_NONE;
+	ALenum distModel = AL_NONE;
 	switch(eDistModel)
 	{
 	case Audio_DistModel_EXPONENT_DISTANCE:
@@ -132,7 +132,7 @@ void ParaEngine::CParaAudioEngine::SetDistanceModel( ParaAudioDistanceModelEnum 
 		distModel = AL_NONE;
 		break;
 	}
-	alDistanceModel(distModel);*/
+	alDistanceModel(distModel);
 }
 
 IParaAudioSource* ParaEngine::CParaAudioEngine::getSoundByName( const char* name )
@@ -309,7 +309,7 @@ void ParaEngine::CParaAudioSource::onStop()
 {
 	if(m_pEventHandler!=0)
 	{
-		m_pEventHandler->onPlay();
+		m_pEventHandler->onStop();
 	}
 }
 

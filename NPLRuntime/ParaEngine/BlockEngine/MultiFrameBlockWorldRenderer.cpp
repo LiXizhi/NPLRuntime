@@ -47,6 +47,7 @@ int ParaEngine::CMultiFrameBlockWorldRenderer::InstallFields(CAttributeClass* pC
 	IAttributeFields::InstallFields(pClass, bOverride);
 
 	pClass->AddField("Enabled", FieldType_Bool, (void*)SetEnabled_s, (void*)IsEnabled_s, NULL, NULL, bOverride);
+	pClass->AddField("RealTime", FieldType_Bool, (void*)SetRealTime_s, (void*)GetRealTime_s, NULL, NULL, bOverride);
 	pClass->AddField("Dirty", FieldType_Bool, (void*)SetDirty_s, (void*)IsDirty_s, NULL, NULL, bOverride);
 	pClass->AddField("IsFinished", FieldType_Bool, (void*)0, (void*)IsFinished_s, NULL, NULL, bOverride);
 	pClass->AddField("DebugImage", FieldType_Bool, (void*)SetDebugImage_s, (void*)IsDebugImage_s, NULL, NULL, bOverride);
@@ -59,8 +60,11 @@ int ParaEngine::CMultiFrameBlockWorldRenderer::InstallFields(CAttributeClass* pC
 
 bool ParaEngine::CMultiFrameBlockWorldRenderer::Draw(int nMaxChunks)
 {
-	if (!m_bEnabled || !m_pWorld->IsInBlockWorld())
+	if (!m_bEnabled || GetRenderDistance() <= 0 || !m_pWorld->IsInBlockWorld())
 		return false;
+
+	if (UsesLiveTerrain())
+		return IsFinished(); // The live surface is submitted in the sky pass.
 
 	if (CGlobals::GetScene()->GetSceneState()->m_bCameraMoved)
 	{
@@ -105,6 +109,7 @@ bool ParaEngine::CMultiFrameBlockWorldRenderer::IsEnabled() const
 
 void ParaEngine::CMultiFrameBlockWorldRenderer::SetEnabled(bool val)
 {
+	if (m_bEnabled != val) SetDirty(true);
 	m_bEnabled = val;
 }
 
@@ -115,6 +120,7 @@ bool ParaEngine::CMultiFrameBlockWorldRenderer::IsUseMyCamera() const
 
 void ParaEngine::CMultiFrameBlockWorldRenderer::SetUseMyCamera(bool val)
 {
+	if (m_bUseMyCamera != val) SetDirty(true);
 	m_bUseMyCamera = val;
 }
 
@@ -155,6 +161,7 @@ bool ParaEngine::CMultiFrameBlockWorldRenderer::IsDrawToSkybox() const
 
 void ParaEngine::CMultiFrameBlockWorldRenderer::SetDrawToSkybox(bool val)
 {
+	if (m_bDrawToSkybox != val) SetDirty(true);
 	m_bDrawToSkybox = val;
 }
 
@@ -198,6 +205,7 @@ int ParaEngine::CMultiFrameBlockWorldRenderer::GetRenderDistance() const
 
 void ParaEngine::CMultiFrameBlockWorldRenderer::SetRenderDistance(int val)
 {
+	if (m_nRenderDistance != val) SetDirty(true);
 	m_nRenderDistance = val;
 }
 
@@ -250,8 +258,16 @@ CRenderTarget* ParaEngine::CMultiFrameBlockWorldRenderer::CreateGetRenderTarget(
 
 bool ParaEngine::CMultiFrameBlockWorldRenderer::DrawToSkybox()
 {
-	if (!IsDrawToSkybox() || !m_pWorld->IsInBlockWorld() || !IsEnabled() || GetRenderDistance() == 0)
+	if (!IsDrawToSkybox() || !m_pWorld->IsInBlockWorld() || !IsEnabled() || GetRenderDistance() <= 0)
 		return false;
+
+	if (UsesLiveTerrain())
+	{
+		const bool drawn = DrawLiveTerrain();
+		SetDirty(false);
+		SetFinished(drawn);
+		return drawn;
+	}
 
 	CRenderTarget* pRenderTarget = CreateGetRenderTarget(false);
 	if (!pRenderTarget)
@@ -294,6 +310,7 @@ bool ParaEngine::CMultiFrameBlockWorldRenderer::IsDebugImage() const
 
 void ParaEngine::CMultiFrameBlockWorldRenderer::SetDebugImage(bool val)
 {
+	if (m_bDebugImage != val) SetDirty(true);
 	m_bDebugImage = val;
 }
 

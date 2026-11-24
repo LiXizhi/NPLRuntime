@@ -3,6 +3,7 @@
 // For conditions of distribution and use, see copyright notice in cAudio.h
 
 #include "cRawDecoder.h"
+#include <algorithm>
 
 namespace cAudio{
 
@@ -59,8 +60,11 @@ namespace cAudio{
 		else
 			SampleSize = 4;
 
-        int amountToSeek = seconds * (float)Frequency * (float)SampleSize;
-        return setPosition(amountToSeek, relative);
+        const double frame = double(seconds) * Frequency;
+		const double target = (relative ? Stream->getCurrentPos() / SampleSize : 0) + frame;
+		const int lastFrame = Stream->getSize() / SampleSize;
+		const int position = static_cast<int>((std::max)(0.0, (std::min)(target, double(lastFrame))));
+		return setPosition(position * SampleSize, false);
     }
 
 	float cRawDecoder::getTotalTime()

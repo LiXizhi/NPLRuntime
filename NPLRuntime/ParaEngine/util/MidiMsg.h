@@ -1,5 +1,8 @@
 #pragma once
 
+#include <array>
+#include <mutex>
+#include <string>
 #include "IMediaPlayer.h"
 #if defined(WIN32) && !defined(PARAENGINE_MOBILE) && !defined(NPLRUNTIME_SERVER)
 #include <mmsystem.h>
@@ -7,50 +10,37 @@
 
 namespace ParaEngine
 {
-	/** simple midi audio */
-	class CMidiMsg
-	{
-	public:
-		CMidiMsg();
-		~CMidiMsg(){
-			SafeRelease();
-		}
+    class CMidiMsg
+    {
+    public:
+        ~CMidiMsg() { SafeRelease(); }
+        static CMidiMsg& GetSingleton();
+        int PlayMidiMsg(DWORD message);
+        int StopMidiMsg(int channel = 0);
+        static bool PlayMidiFile(const std::string& filename, int loop = 0);
+        bool StopMidiFile(const std::string& filename, bool immediate);
+        DWORD GetVolume() const;
+        void SetVolume(DWORD volume);
+        void SetVolumeFloat(float volume);
+        bool CheckLoad();
+        bool IsLoaded() const;
+        void SafeRelease();
 
-		static CMidiMsg& GetSingleton();
-		int PlayMidiMsg(DWORD dwMsg);
-		int StopMidiMsg(int channel = 0);
+        // Optional replacement for hosts that provide their own media player.
+        void SetMediaPlayer(IMediaPlayer* player);
+        IMediaPlayer* GetMediaPlayer() const;
 
-		void SafeRelease();
-
-		bool CheckLoad();
-		// @param filename: if empty, it will stop last one. 
-		static void PlayMidiFile(const std::string& filename, int nLoopCount = 0);
-
-		/**
-		* New volume setting. The low-order word contains the left-channel volume setting,
-		* and the high-order word contains the right-channel setting. A value of 0xFFFF represents full volume, and a value of 0x0000 is silence.
-		*/
-		DWORD GetVolume() const;
-		void SetVolume(DWORD val);
-		/** set both left/right volume
-		* @param val: 0-1. where 1 is biggest one, 0 is mute. 
-		*/
-		void SetVolumeFloat(float val);
-
-		/** only load when first note is played. */
-		bool IsLoaded() const;
-
-		void SetMediaPlayer(ParaEngine::IMediaPlayer* mediaPlayer);
-		ParaEngine::IMediaPlayer* GetMediaPlayer() { return m_mediaPlayer; }
-	private:
+    private:
+        bool OpenLocked();
+        void ReleaseLocked();
+        mutable std::mutex m_mutex;
+        std::string m_filename;
+        IMediaPlayer* m_mediaPlayer = nullptr;
+        DWORD m_volume = 0xffffffff;
+        bool m_loaded = false;
 #if defined(WIN32) && !defined(PARAENGINE_MOBILE) && !defined(NPLRUNTIME_SERVER)
-		HMIDIOUT m_deviceMidiOut;
+        HMIDIOUT m_device = nullptr;
+        std::array<unsigned char, 16> m_programs{};
 #endif
-		bool m_bIsValid;
-		bool m_bIsLoaded;
-		
-		DWORD m_dwVolume;
-
-		ParaEngine::IMediaPlayer* m_mediaPlayer;
-	};
+    };
 }

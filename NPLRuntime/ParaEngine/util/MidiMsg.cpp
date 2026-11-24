@@ -1,263 +1,187 @@
-//-----------------------------------------------------------------------------
-// Class:	MidiMsg
-// Authors:	LiXizhi
-// Emails:	LiXizhi@yeah.net
-// Company: ParaEngine corporation
-// Date:	2014.4.22
-// Desc: simple midi playback
-//-----------------------------------------------------------------------------
 #include "ParaEngine.h"
-
 #include "MidiMsg.h"
-#ifdef __EMSCRIPTEN__
-#include <emscripten.h>
+#ifdef PARAENGINE_MIDI_OUTPUT
+#include "../../Platform/Midi/MidiPlayback.h"
 #endif
+
 using namespace ParaEngine;
-
-CMidiMsg::CMidiMsg() : 
-#if defined(WIN32) && !defined(PARAENGINE_MOBILE) && !defined(NPLRUNTIME_SERVER)
-m_deviceMidiOut(NULL), 
-#endif
-m_bIsValid(false), m_bIsLoaded(false), m_dwVolume(0xffffffff), m_mediaPlayer(NULL)
-{
-}
-
-void ParaEngine::CMidiMsg::SetMediaPlayer(ParaEngine::IMediaPlayer* mediaPlayer) {
-	m_mediaPlayer = mediaPlayer;
-}
-
-bool ParaEngine::CMidiMsg::CheckLoad()
-{
-	if (m_bIsLoaded)
-	{
-		return m_bIsValid;
-	}
-	else
-	{
-		m_bIsLoaded = true;
-#if defined(WIN32) && !defined(PARAENGINE_MOBILE) && !defined(NPLRUNTIME_SERVER)
-		unsigned int err = midiOutOpen(&m_deviceMidiOut, 0, 0, 0, CALLBACK_NULL);
-		if (err != MMSYSERR_NOERROR)
-		{
-			OUTPUT_LOG("error opening default MIDI device: %d\n", err);
-		}
-		else
-		{
-			m_bIsValid = true;
-			midiOutSetVolume(m_deviceMidiOut, m_dwVolume);
-			OUTPUT_LOG("successfully opened default MIDI device\n");
-		}
-#endif
-		return m_bIsValid;
-	}
-
-}
-
-DWORD ParaEngine::CMidiMsg::GetVolume() const
-{
-	return m_dwVolume;
-}
-
-void ParaEngine::CMidiMsg::SetVolume(DWORD val)
-{
-	if (m_dwVolume != val)
-	{
-		m_dwVolume = val;
-
-#if defined(WIN32) && !defined(PARAENGINE_MOBILE) && !defined(NPLRUNTIME_SERVER)
-		if (IsLoaded())
-		{
-			midiOutSetVolume(m_deviceMidiOut, m_dwVolume);
-		}
-#endif
-	}
-}
-
-void ParaEngine::CMidiMsg::SetVolumeFloat(float val)
-{
-	if (val > 1.0f)
-		val = 1.0f;
-
-	if (m_mediaPlayer) return m_mediaPlayer->SetVolume(val);
-
-	DWORD volume = (DWORD)(val * 0xffff);
-	volume = (volume << 16) + volume;
-	SetVolume(volume);
-}
-
-bool ParaEngine::CMidiMsg::IsLoaded() const
-{
-	return m_bIsLoaded;
-}
 
 CMidiMsg& CMidiMsg::GetSingleton()
 {
-	static CMidiMsg midiPlayer;
-	return midiPlayer;
+    static CMidiMsg player;
+    return player;
 }
 
-int CMidiMsg::PlayMidiMsg(DWORD dwMsg)
+bool CMidiMsg::OpenLocked()
 {
-#ifdef __EMSCRIPTEN__
-	int channel = dwMsg & 0xff;
-	char note = (dwMsg & 0xff00) >> 8;
-	char velocity = (dwMsg & 0xff0000) >> 16;
-	int baseNote = (dwMsg & 0xff000000) >> 24;
-	EM_ASM({
-		let note = $0;
-		let velocity = $1;
-		velocity = velocity / 127;
-		const synth = new Tone.Synth().toDestination();
-        synth.triggerAttackRelease(Tone.Frequency(note, "midi").toNote(), "8n", Tone.now(), velocity);
-	}, static_cast<int>(note), static_cast<int>(velocity));
-	return S_OK;
+    if (m_loaded || m_mediaPlayer) return true;
+#ifdef PARAENGINE_MIDI_OUTPUT
+#if defined(WIN32) && !defined(PARAENGINE_MOBILE)
+    if (midiOutOpen(&m_device, MIDI_MAPPER, 0, 0, CALLBACK_NULL) == MMSYSERR_NOERROR)
+    {
+        midiOutSetVolume(m_device, m_volume);
+        m_loaded = true;
+        return true;
+    }
 #endif
-	
-	if (m_mediaPlayer) {
-        int channel = dwMsg & 0xff;
-		char note = (dwMsg & 0xff00) >> 8;
-		char velocity = (dwMsg & 0xff0000) >> 16;
-        int baseNote = (dwMsg & 0xff000000) >> 24;
+    m_loaded = Midi::Open();
+#endif
+    return m_loaded;
+}
 
-        if ((channel - 144) > 0) {
-            m_mediaPlayer->PlayMidiNote(note, velocity, baseNote, channel - 144);
-        } else {
-            m_mediaPlayer->PlayMidiNote(note, velocity, baseNote);
+bool CMidiMsg::CheckLoad()
+{
+    std::lock_guard<std::mutex> lock(m_mutex);
+    return OpenLocked();
+}
+
+bool CMidiMsg::IsLoaded() const
+{
+    std::lock_guard<std::mutex> lock(m_mutex);
+    return m_loaded || m_mediaPlayer;
+}
+
+int CMidiMsg::PlayMidiMsg(DWORD message)
+{
+    std::lock_guard<std::mutex> lock(m_mutex);
+    const unsigned status = message & 0xf0, channel = message & 15;
+    const unsigned data1 = (message >> 8) & 127, data2 = (message >> 16) & 127;
+    if (m_mediaPlayer)
+    {
+        if (status == 0x90 && data2)
+            m_mediaPlayer->PlayMidiNote(data1, data2, (message >> 24) & 127, channel);
+        else if (status == 0x80 || status == 0x90 || (status == 0xb0 && (data1 == 120 || data1 == 123)))
+            m_mediaPlayer->StopMidiMsg(channel);
+        else
+            return E_FAIL;
+        return S_OK;
+    }
+#ifdef PARAENGINE_MIDI_OUTPUT
+    if (!OpenLocked()) return E_FAIL;
+#if defined(WIN32) && !defined(PARAENGINE_MOBILE)
+    if (m_device)
+    {
+        if (status == 0x90 && data2)
+        {
+            const DWORD program = message >> 24 ? (message >> 24) & 127 : m_programs[channel];
+            if (midiOutShortMsg(m_device, (program << 8) | 0xc0 | channel) != MMSYSERR_NOERROR) return E_FAIL;
         }
-		
-		return S_OK;
-	}
-#if defined(WIN32) && !defined(PARAENGINE_MOBILE) && !defined(NPLRUNTIME_SERVER)
-	if(CheckLoad())
-	{
-		int baseNote = (dwMsg & 0xff000000) >> 24;
-		int channel = (dwMsg & 0xff) - 0x90;
-		if (channel >= 0 && channel < 16)
-		{
-			midiOutShortMsg(m_deviceMidiOut, (baseNote << 8) | (0xC0 + channel));
-		}
-		midiOutShortMsg(m_deviceMidiOut, dwMsg);
-		return S_OK;
-	}
+        if (midiOutShortMsg(m_device, message & 0xffffff) != MMSYSERR_NOERROR) return E_FAIL;
+        if (status == 0xc0) m_programs[channel] = static_cast<unsigned char>(data1);
+        return S_OK;
+    }
 #endif
-	return E_FAIL;
+    return Midi::PlayMessage(message) ? S_OK : E_FAIL;
+#else
+    return E_FAIL;
+#endif
 }
 
 int CMidiMsg::StopMidiMsg(int channel)
 {
-#ifdef __EMSCRIPTEN__
-	return S_OK;
+    return PlayMidiMsg(0x7bb0 | (channel & 15));
+}
+
+bool CMidiMsg::PlayMidiFile(const std::string& filename, int loop)
+{
+    auto& player = GetSingleton();
+    if (filename.empty()) return player.StopMidiFile("", true);
+    std::unique_lock<std::mutex> lock(player.m_mutex);
+    if (!player.m_mediaPlayer)
+    {
+#ifdef PARAENGINE_MIDI_OUTPUT
+        // A package read or manifest download can take time. Live notes keep playing.
+        lock.unlock();
+        CParaFile file;
+        std::vector<Midi::Event> events;
+        if (file.OpenAssetFile(filename.c_str()) != 1 ||
+            !Midi::ReadSequence(file.getBuffer(), file.getSize(), Midi::SampleRate, events))
+            return false;
+        lock.lock();
+        if (!player.m_mediaPlayer && !Midi::PlayFile(std::move(events), loop > 0)) return false;
+#else
+        return false;
 #endif
-	if (m_mediaPlayer)
-	{
-		m_mediaPlayer->StopMidiMsg(channel);
-		return S_OK;
-	}
-#if defined(WIN32) && !defined(PARAENGINE_MOBILE) && !defined(NPLRUNTIME_SERVER)
-	if (CheckLoad())
-	{
-		midiOutShortMsg(m_deviceMidiOut, 0x7BB0 + (channel & 0x0F));
-		return S_OK;
-	}
+    }
+    if (player.m_mediaPlayer) player.m_mediaPlayer->PlayMidiFile(filename);
+    player.m_filename = filename;
+    return true;
+}
+
+bool CMidiMsg::StopMidiFile(const std::string& filename, bool immediate)
+{
+    std::lock_guard<std::mutex> lock(m_mutex);
+    if (!filename.empty() && filename != m_filename) return false;
+    if (m_mediaPlayer) m_mediaPlayer->PlayMidiFile("");
+#ifdef PARAENGINE_MIDI_OUTPUT
+    else Midi::StopFile(immediate);
 #endif
-	return E_FAIL;
+    if (immediate) m_filename.clear();
+    return true;
+}
+
+DWORD CMidiMsg::GetVolume() const
+{
+    std::lock_guard<std::mutex> lock(m_mutex);
+    return m_volume;
+}
+
+void CMidiMsg::SetVolume(DWORD volume)
+{
+    std::lock_guard<std::mutex> lock(m_mutex);
+    m_volume = volume;
+    const float left = (volume & 65535) / 65535.f, right = (volume >> 16) / 65535.f;
+    if (m_mediaPlayer) m_mediaPlayer->SetVolume((left + right) * 0.5f);
+#ifdef PARAENGINE_MIDI_OUTPUT
+    Midi::SetGain(left, right);
+#if defined(WIN32) && !defined(PARAENGINE_MOBILE)
+    if (m_device) midiOutSetVolume(m_device, m_volume);
+#endif
+#endif
+}
+
+void CMidiMsg::SetVolumeFloat(float volume)
+{
+    const DWORD word = static_cast<DWORD>((std::max)(0.f, (std::min)(volume, 1.f)) * 65535.f);
+    SetVolume((word << 16) | word);
+}
+
+void CMidiMsg::SetMediaPlayer(IMediaPlayer* player)
+{
+    std::lock_guard<std::mutex> lock(m_mutex);
+    if (m_mediaPlayer == player) return;
+    ReleaseLocked();
+    m_mediaPlayer = player;
+    if (player) player->SetVolume(((m_volume & 65535) + (m_volume >> 16)) / 131070.f);
+}
+
+IMediaPlayer* CMidiMsg::GetMediaPlayer() const
+{
+    std::lock_guard<std::mutex> lock(m_mutex);
+    return m_mediaPlayer;
 }
 
 void CMidiMsg::SafeRelease()
 {
-	if (m_mediaPlayer)
-	{
-		m_mediaPlayer->StopMidiMsg(0);
-	}
-#if defined(WIN32) && !defined(PARAENGINE_MOBILE) && !defined(NPLRUNTIME_SERVER)
-	if(m_bIsLoaded && m_bIsValid)
-	{
-		midiOutClose(m_deviceMidiOut);
-		m_bIsValid = false;
-	}
-	PlayMidiFile("");
-#endif
+    std::lock_guard<std::mutex> lock(m_mutex);
+    ReleaseLocked();
 }
 
-void CMidiMsg::PlayMidiFile(const std::string& filename, int nLoopCount)
+void CMidiMsg::ReleaseLocked()
 {
-	if (CMidiMsg::GetSingleton().GetMediaPlayer()) return CMidiMsg::GetSingleton().GetMediaPlayer()->PlayMidiFile(filename);
-
-#if defined(WIN32) && !defined(PARAENGINE_MOBILE) && !defined(NPLRUNTIME_SERVER)
-	static std::string g_last_filename;
-	static std::string g_last_cmd;
-	static std::string g_last_disk_filename;
-
-	if (g_last_filename != filename)
-	{
-		if (!g_last_filename.empty() || !g_last_disk_filename.empty())
-		{
-			std::string sCmd = "close ";
-			sCmd += g_last_disk_filename;
-			mciSendString(sCmd.c_str(), NULL, NULL, NULL);
-			g_last_filename.clear();
-			g_last_disk_filename.clear();
-		}
-
-		if (!filename.empty())
-		{
-			// if file is from a zip or asset manifest file, we will extract to a temp location. 
-			std::string sCmd = "play ";
-			if (CParaFile::DoesFileExist(filename.c_str(), false))
-			{
-				g_last_disk_filename = filename;
-				sCmd += filename;
-			}
-			else
-			{
-				CParaFile file;
-				file.OpenAssetFile(filename.c_str());
-				if (!file.isEof())
-				{
-					string sTempDiskFilename = CParaFile::GetCurDirectory(CParaFile::APP_TEMP_DIR);
-					sTempDiskFilename += "tempmidi/";
-					// sTempDiskFilename += CParaFile::GetFileName(filename);
-					sTempDiskFilename += "temp.mid";
-					// delete the source file if exists
-					if (ParaEngine::CParaFile::DoesFileExist(sTempDiskFilename.c_str(), false))
-					{
-						if (!::DeleteFile(sTempDiskFilename.c_str()))
-						{
-							OUTPUT_LOG("can not replace file %s. because we can not delete it\n", sTempDiskFilename.c_str());
-							return;
-						}
-					}
-					CParaFile fileTo;
-					if (fileTo.CreateNewFile(sTempDiskFilename.c_str()))
-					{
-						fileTo.write(file.getBuffer(), (int)(file.getSize()));
-						g_last_disk_filename = sTempDiskFilename;
-						sCmd += sTempDiskFilename;
-					}
-					else
-					{
-						return;
-					}
-				}
-				else
-				{
-					return;
-				}
-			}
-
-			g_last_cmd = sCmd;
-			mciSendString(sCmd.c_str(), NULL, NULL, NULL);
-		}
-		g_last_filename = filename;
-	}
-	else
-	{
-		if (!g_last_cmd.empty())
-		{
-			// repeat the last cmd
-			mciSendString(g_last_cmd.c_str(), NULL, NULL, NULL);
-		}
-	}
+    if (m_mediaPlayer) m_mediaPlayer->StopMidiMsg(0);
+#ifdef PARAENGINE_MIDI_OUTPUT
+    Midi::Close();
+#if defined(WIN32) && !defined(PARAENGINE_MOBILE)
+    if (m_device)
+    {
+        midiOutReset(m_device);
+        midiOutClose(m_device);
+        m_device = nullptr;
+    }
+    m_programs.fill(0);
 #endif
+#endif
+    m_loaded = false;
+    m_filename.clear();
 }
-

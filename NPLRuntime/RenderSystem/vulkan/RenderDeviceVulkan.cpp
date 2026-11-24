@@ -1,4 +1,5 @@
 #include "ParaEngine.h"
+#include "renderer/RenderDevice.h"
 #include "RenderDeviceVulkan.h"
 #include "FxShaderTypes.h"
 #include "renderer/VertexDeclarationOpenGL.h"
@@ -4427,6 +4428,7 @@ namespace ParaEngine
 			return false;
 
 		m_vk.vkCmdDraw(m_frames[m_frameIndex].cmdBuf, vertexCount, 1, StartVertex, 0);
+		RenderDevice::RecordDraw(PrimitiveType, PrimitiveCount);
 		return true;
 	}
 
@@ -4466,6 +4468,7 @@ namespace ParaEngine
 			m_currentIndexBuffer->GetActiveOffset(),
 			VK_INDEX_TYPE_UINT16);
 		m_vk.vkCmdDrawIndexed(cmd, indexCount, instanceCount, indexStart, baseVertexIndex, 0);
+		RenderDevice::RecordDraw(primitiveType, primitiveCount, instanceCount);
 		return true;
 	}
 
@@ -4522,6 +4525,7 @@ namespace ParaEngine
 		VkCommandBuffer cmd = m_frames[m_frameIndex].cmdBuf;
 		m_vk.vkCmdBindVertexBuffers(cmd, 0, 1, &vbBuf, &vbOff);
 		m_vk.vkCmdDraw(cmd, drawVertexCount, 1, 0, 0);
+		RenderDevice::RecordDraw(PrimitiveType, PrimitiveCount);
 		return true;
 	}
 
@@ -4608,6 +4612,7 @@ namespace ParaEngine
 		m_vk.vkCmdBindVertexBuffers(cmd, 0, 1, &vbBuf, &vbOff);
 		m_vk.vkCmdBindIndexBuffer(cmd, ibBuf, ibOff, isIdx32 ? VK_INDEX_TYPE_UINT32 : VK_INDEX_TYPE_UINT16);
 		m_vk.vkCmdDrawIndexed(cmd, indexCount, 1, 0, 0, 0);
+		RenderDevice::RecordDraw(PrimitiveType, PrimitiveCount);
 		return true;
 	}
 
