@@ -199,6 +199,20 @@ HRESULT ParaEngine::CParaXProcessor::Process(void* pData, int cBytes)
 	return S_OK;
 }
 
+// Block templates and BMax share the pe:blocktemplate mesh format. Other XML
+// assets retain their usual mesh-LOD descriptor semantics.
+static std::string ParaXFileFormat(const std::string& filename)
+{
+	std::string lower = filename;
+	StringHelper::make_lower(lower);
+	constexpr char suffix[] = ".blocks.xml";
+	constexpr size_t length = sizeof(suffix) - 1;
+	if (lower.size() >= length && lower.compare(lower.size() - length, length, suffix) == 0)
+		return "bmax";
+	std::string extension = CParaFile::GetFileExtension(lower);
+	return extension == "blocktemplate" ? "bmax" : extension;
+}
+
 HRESULT ParaEngine::CParaXProcessor::CopyToResource()
 {
 	if (m_asset.get() == 0)
@@ -210,8 +224,7 @@ HRESULT ParaEngine::CParaXProcessor::CopyToResource()
 
 		bool bLoadHeaderFromXFile = true;
 		bool bSingleLOD = true;
-		sRootFileExt = CParaFile::GetFileExtension(filename);
-		StringHelper::make_lower(sRootFileExt);
+		sRootFileExt = ParaXFileFormat(filename);
 		bool bIsXML = (sRootFileExt == "xml");
 		string sParentDirectory = CParaFile::GetParentDirectoryFromPath(filename);
 
@@ -305,8 +318,7 @@ HRESULT ParaEngine::CParaXProcessor::CopyToResource()
 				}
 				std::string sExt;
 				if (sRootFileExt.empty()) {
-					sExt = CParaFile::GetFileExtension(iCur->m_sMeshFileName);
-					StringHelper::make_lower(sExt);
+					sExt = ParaXFileFormat(iCur->m_sMeshFileName);
 				}
 				else {
 					sExt = sRootFileExt;
