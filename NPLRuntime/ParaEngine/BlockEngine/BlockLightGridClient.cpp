@@ -565,9 +565,10 @@ namespace ParaEngine
 				nLightCalculationTimeLeft = GetLightCalculationStep();
 				// since read/write lock is used, this function will try to notify any waiting writers. 
 
+				const bool idle = m_dirtyCells.empty() && processedCount == 0;
 				lock_.unlock();
 
-				if (m_dirtyCells.size() == 0 && processedCount == 0){
+				if (idle){
 					m_nDirtyBlocksCount = 0;
 #if defined(EMSCRIPTEN_SINGLE_THREAD)
 					CO_AWAIT(co_thread->Sleep(30));

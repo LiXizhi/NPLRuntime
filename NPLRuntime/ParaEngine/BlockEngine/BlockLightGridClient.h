@@ -16,7 +16,6 @@
 #endif
 #include <boost/shared_ptr.hpp>
 #include <boost/enable_shared_from_this.hpp>
-#include "util/ParaMemPool.h"
 #include "BlockReadWriteLock.h"
 #include "BlockLightGridBase.h"
 
@@ -28,8 +27,6 @@ namespace ParaEngine
 	class CBlockLightGridClient : public CBlockLightGridBase
 	{
 	public:
-		typedef FixedSizedAllocator< std::pair<const uint64_t, Light> >	DL_Allocator_BlockLight;
-
 		CBlockLightGridClient(int32_t chunkCacheDim, CBlockWorld* pBlockWorld);
 		virtual ~CBlockLightGridClient();
 
@@ -173,7 +170,8 @@ namespace ParaEngine
 		// temporary array used by Relight function
 		std::vector<LightBlock> m_blocksNeedLightRecalcuation;
 
-		std::map<uint64_t, Light, std::greater<uint64_t>, DL_Allocator_BlockLight> m_dirtyCells;
+		// The lighting worker allocates nodes while rendering uses the main-thread pool.
+		std::map<uint64_t, Light, std::greater<uint64_t>> m_dirtyCells;
 
 		typedef std::unordered_set<ChunkLocation, ChunkLocation::ChunkLocationHasher>  ChunkLocationSet_type;
 		ChunkLocationSet_type m_dirtyColumns;
