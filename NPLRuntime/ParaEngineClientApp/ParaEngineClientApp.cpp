@@ -104,7 +104,8 @@ int CMyApp::Run( HINSTANCE hInst,const char* lpCmdLine )
 	if(!CheckLoad())
 		return E_FAIL;
 
-	m_pParaEngineRenderWindow = m_pParaEngine->CreateRenderWindow(960, 640);
+	// InitApp creates the HWND after loading the startup resolution and window mode.
+	m_pParaEngineRenderWindow = m_pParaEngine->CreateRenderWindow(0, 0);
 
 	if (!m_pParaEngineRenderWindow)
 		return E_FAIL;

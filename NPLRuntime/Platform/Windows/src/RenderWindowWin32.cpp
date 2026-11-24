@@ -810,6 +810,35 @@ namespace ParaEngine {
 		return true;
 	}
 
+	static void FitInitialWindowToWorkArea(HWND hWnd, int width, int height)
+	{
+		RECT windowRect = {}, clientRect = {};
+		if (!::GetWindowRect(hWnd, &windowRect) || !::GetClientRect(hWnd, &clientRect))
+			return;
+
+		// Measure the frame on the monitor Windows selected for this hidden window.
+		const LONG frameWidth = (windowRect.right - windowRect.left) - clientRect.right;
+		const LONG frameHeight = (windowRect.bottom - windowRect.top) - clientRect.bottom;
+		LONG x = windowRect.left;
+		LONG y = windowRect.top;
+		MONITORINFO monitorInfo = {};
+		monitorInfo.cbSize = sizeof(monitorInfo);
+		HMONITOR monitor = ::MonitorFromPoint(POINT{x, y}, MONITOR_DEFAULTTONEAREST);
+		if (::GetMonitorInfoW(monitor, &monitorInfo))
+		{
+			const RECT& work = monitorInfo.rcWork;
+			const LONG availableWidth = std::max(1L, work.right - work.left - frameWidth);
+			const LONG availableHeight = std::max(1L, work.bottom - work.top - frameHeight);
+			const double scale = std::min({1.0, double(availableWidth) / width, double(availableHeight) / height});
+			width = std::max(1, static_cast<int>(width * scale));
+			height = std::max(1, static_cast<int>(height * scale));
+			x = std::clamp(x, work.left, std::max(work.left, work.right - frameWidth - width));
+			y = std::clamp(y, work.top, std::max(work.top, work.bottom - frameHeight - height));
+		}
+		::SetWindowPos(hWnd, nullptr, x, y, width + frameWidth, height + frameHeight,
+			SWP_NOZORDER | SWP_NOACTIVATE);
+	}
+
 	bool RenderWindowWin32::Create(HINSTANCE hInstance, int defaultWdith, int defaultHeight, HWND hParentWnd)
 	{
 		if (m_hWnd)
@@ -847,13 +876,25 @@ namespace ParaEngine {
 			L"ParaWorld"
 		};
 		wndClass.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
-		wndClass.hIcon = (HICON)LoadImage(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_PARAWORLD_ICON), IMAGE_ICON, 48, 48, 0);
+		// In DLL builds (PARAENGINE_CLIENT_DLL) the icon resource lives in the engine DLL,
+		// not in the loader exe, so try the current module first and fall back to the exe.
+		HICON hAppIcon = (HICON)LoadImage(GetModuleHandleW(NULL), MAKEINTRESOURCE(IDI_PARAWORLD_ICON), IMAGE_ICON, 48, 48, 0);
+		if (!hAppIcon)
+		{
+			HMODULE hSelf = NULL;
+			if (GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
+				(LPCWSTR)&RenderWindowWin32::WindowProc, &hSelf) && hSelf)
+			{
+				hAppIcon = (HICON)LoadImage(hSelf, MAKEINTRESOURCE(IDI_PARAWORLD_ICON), IMAGE_ICON, 48, 48, 0);
+			}
+		}
+		wndClass.hIcon = hAppIcon;
 		RegisterClassW(&wndClass);
 
 		DWORD exStyle = m_bIsChildWindow ? 0 : WS_EX_APPWINDOW;
 		DWORD dwWindowStyle = m_bIsChildWindow
 			? (WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN)
-			: (WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_VISIBLE);
+			: WS_OVERLAPPEDWINDOW;
 
 		RECT rect = { 0, 0, defaultWdith, defaultHeight };
 		if (!m_bIsChildWindow)
@@ -881,6 +922,17 @@ namespace ParaEngine {
 		{
 			OUTPUT_LOG("CreateWindowExW failed (err=%lu).\n", ::GetLastError());
 			return false;
+		}
+
+		if (!m_bIsChildWindow)
+		{
+			FitInitialWindowToWorkArea(m_hWnd, defaultWdith, defaultHeight);
+			RECT clientRect = {};
+			if (::GetClientRect(m_hWnd, &clientRect) && clientRect.right > 0 && clientRect.bottom > 0)
+			{
+				m_Width = m_window_width = clientRect.right;
+				m_Height = m_window_height = clientRect.bottom;
+			}
 		}
 
 		g_WindowMap[m_hWnd] = this;

@@ -50,7 +50,8 @@ if (PARAENGINE_COMPILE_LIB)
 		set(NPLRUNTIME_LIB_MODE "SHARED")
 	endif()
 
-	add_library(WindowsApplication ${NPLRUNTIME_LIB_MODE} ${src_platform} ${src_render_context} ${src_framework})
+	add_library(WindowsApplication ${NPLRUNTIME_LIB_MODE} ${src_platform} ${src_render_context} ${src_framework} ${PROJECT_SOURCE_DIR}/ParaEngine/ParaEngineRes.rc)
+	set_target_properties(WindowsApplication PROPERTIES OUTPUT_NAME "ParaEngineClient")
 else()
 	add_executable(WindowsApplication ${src_platform} ${src_render_context} ${src_framework} ${PROJECT_SOURCE_DIR}/ParaEngine/ParaEngineRes.rc)
     set_property(TARGET WindowsApplication PROPERTY VS_DPI_AWARE "PerMonitor")
@@ -97,6 +98,13 @@ target_link_libraries(WindowsApplication PRIVATE
 
 target_include_directories(WindowsApplication PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
+# The plugin entry points live in the static ParaEngine lib and are otherwise dropped by the linker.
+if(PARAENGINE_COMPILE_LIB AND MSVC)
+	foreach(_pe_export LibDescription LibVersion LibNumberClasses LibClassDesc)
+		target_link_options(WindowsApplication PRIVATE "/INCLUDE:${_pe_export}")
+	endforeach()
+endif()
+
 set_target_properties(WindowsApplication PROPERTIES WIN32_EXECUTABLE true)
 
 if(MSVC)
@@ -111,7 +119,11 @@ if(MSVC)
     SET(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} /MP")
 endif()
 
-set_property(GLOBAL PROPERTY WindowsApplicationName WindowsApplication)
+if(PARAENGINE_COMPILE_LIB)
+	set_property(GLOBAL PROPERTY WindowsApplicationName ParaEngineClient)
+else()
+	set_property(GLOBAL PROPERTY WindowsApplicationName WindowsApplication)
+endif()
 
 if(CMAKE_VS_PLATFORM_NAME STREQUAL "ARM64" OR
    (NOT CMAKE_VS_PLATFORM_NAME AND CMAKE_SIZEOF_VOID_P EQUAL 8 AND CMAKE_SYSTEM_PROCESSOR MATCHES "^(ARM64|arm64|aarch64)$"))

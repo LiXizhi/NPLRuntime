@@ -9,7 +9,8 @@ extern HINSTANCE g_hAppInstance;
 ParaEngine::IRenderWindow* CreateParaRenderWindow(const int width, const int height)
 {
 	auto p = new ParaEngine::RenderWindowDelegate();
-	p->Create(g_hAppInstance, width, height);
+	if (width != 0 || height != 0)
+		p->Create(g_hAppInstance, width, height);
 	return p;
 }
 

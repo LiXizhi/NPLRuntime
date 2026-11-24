@@ -6,6 +6,8 @@
 // Date:	2010.4.22
 // Desc:
 //-----------------------------------------------------------------------------
+#include "shlobj.h"
+
 #include "config.h"
 #include "AutoUpdaterClient.h"
 #include "ParaEngineClientApp.h"
@@ -13,8 +15,6 @@
 #include "AutoUpdaterApp.h"
 #include "CommandLineParser.hpp"
 #include "InterprocessMsg.h"
-
-#include "shlobj.h"
 
 using namespace ParaEngine;
 

@@ -141,6 +141,68 @@ namespace
 		TEST_CHECK(tex1 && tex1->GetRawData() != nullptr && tex1->GetRawDataSize() > 64);
 	}
 
+	void TestLocalLoopAnimationRanges()
+	{
+		Animated<float> track;
+		track.seq = -2;
+		TEST_CHECK(track.getValue(0, 0) == 0.0f);
+		track.AppendKey(0, 3.75f);
+		TEST_CHECK(track.getValue(0, 0) == 3.75f);
+		track.AppendKey(100, 6.0f);
+		track.AppendKey(200, 8.0f);
+		const int64_t savedTime = globalTime;
+		globalTime = 0;
+		TEST_CHECK(track.getValue(0, 0) == 3.75f);
+
+		globalTime = 250;
+		track.SetRangeByAnimIndex(0, AnimRange(1, 2));
+		TEST_CHECK(track.getValue(0, 0) == 7.0f);
+		globalTime = savedTime;
+
+		track.times[2] = track.times[1];
+		TEST_CHECK(track.getValue(0, 0) == 6.0f);
+		track.times.pop_back();
+		TEST_CHECK(track.getValue(0, 0) == 3.75f);
+		track.SetRangeByAnimIndex(0, AnimRange(2, 2));
+		TEST_CHECK(track.getValue(0, 0) == 8.0f);
+		track.SetRangeByAnimIndex(0, AnimRange(0, 3));
+		TEST_CHECK(track.getValue(0, 0) == 3.75f);
+	}
+
+	void TestLegacyOptionalParticleTracks()
+	{
+		ParticleSystem sys;
+		InitConstAnim(sys.areal, 0.f);
+		InitConstAnim(sys.areaw, 0.f);
+		InitConstAnim(sys.speed, 1.f);
+		InitConstAnim(sys.variation, 0.f);
+		for (auto* track : { &sys.lat, &sys.spread, &sys.grav2 })
+		{
+			track->seq = -2;
+			track->used = true;
+			track->AppendKey(0, 3.75f);
+		}
+		PlaneParticleEmitter plane(&sys);
+		SphereParticleEmitter sphere(&sys);
+		ParticleEmitter* emitters[] = { &plane, &sphere };
+		for (int type : { 0, 2 })
+		{
+			sys.type = type;
+			for (auto* emitter : emitters)
+			{
+				Particle p = emitter->newParticle(0, 0);
+				TEST_CHECK(p.trail_length == 0.f && p.random_force == 0.f && p.rotSpeed == 0.f);
+			}
+		}
+		sys.m_bExtendedV2 = true;
+		TEST_CHECK(plane.newParticle(0, 0).trail_length == 3.75f);
+		sys.m_bExtendedV2 = false;
+		sys.lat.SetRangeByAnimIndex(0, AnimRange(0, 0));
+		TEST_CHECK(sphere.newParticle(0, 0).trail_length == 3.75f);
+		sys.type = 1;
+		TEST_CHECK(plane.newParticle(0, 0).trail_length == 0.f);
+	}
+
 	void TestLocalParticleTrackWithoutRanges()
 	{
 		Animated<float> spread;
@@ -643,6 +705,8 @@ int main(int argc, char** argv)
 	}
 
 	TestProceduralBuiltinTextures();
+	TestLocalLoopAnimationRanges();
+	TestLegacyOptionalParticleTracks();
 	TestLocalParticleTrackWithoutRanges();
 	TestZeroRateSilenceAndEmitterShapes();
 	TestFireworkCascadeAndRibbonSimulation();

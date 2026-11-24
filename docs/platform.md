@@ -49,7 +49,7 @@ WinMain()                          // src/main.cpp
 
 Options:
 
-- `PARAENGINE_CLIENT_DLL=ON` — build as DLL instead of EXE
+- `PARAENGINE_CLIENT_DLL=ON` — build `ParaEngineClient.dll` (`ParaEngineClient_d.dll` in Debug) and the matching `ParaEngineClient` loader
 - `NPLRUNTIME_HAQI_LAUNCHER` — alternate launcher variant
 - `NPLRUNTIME_WEBVIEW` — WebView2 integration
 

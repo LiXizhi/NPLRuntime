@@ -118,6 +118,7 @@ add_executable(ParaEngineClientApp ${ParaEngineClientApp_SRCS})
 
 # When this property is set to true the executable when linked on Windows will be created with a WinMain() entry point instead of of just main().
 set_target_properties(ParaEngineClientApp PROPERTIES WIN32_EXECUTABLE true)
+set_property(TARGET ParaEngineClientApp PROPERTY VS_DPI_AWARE "PerMonitor")
 # set_target_properties(ParaEngineClientApp PROPERTIES LINK_FLAGS /MANIFESTUAC:"level='requireAdministrator' uiAccess='false'")
 # Since we are installing to local app data dir from now on, we will only need medium integrity level to run the app, however protected mode IE only gives use low IL, in which we need to write to registry to promote this process to medium IL. 
 # set_target_properties(ParaEngineClientApp PROPERTIES LINK_FLAGS /MANIFESTUAC:"level='highestAvailable' uiAccess='false'")
