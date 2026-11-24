@@ -137,13 +137,16 @@ namespace
 	{
 		HRESULT apartment = RoInitialize(RO_INIT_MULTITHREADED);
 		BluetoothLEDevice device{nullptr};
-		std::map<std::pair<std::string, std::string>, GattCharacteristic> writable;
+		using Endpoint = std::pair<std::string, std::string>;
+		std::map<Endpoint, GattCharacteristic> characteristics;
+		std::map<Endpoint, GattCharacteristic::ValueChanged_revoker> subscriptions;
 		double session = 0;
 
 		void Close()
 		{
 			session = 0;
-			writable.clear();
+			subscriptions.clear();
+			characteristics.clear();
 			if (device) {
 				auto closing = std::move(device);
 				closing.Close();
@@ -187,9 +190,7 @@ namespace
 							auto& item = row["characteristics"][j++];
 							item["uuid"] = UuidText(ch.Uuid());
 							item["properties"] = (double)ch.CharacteristicProperties();
-							const auto writeFlags = GattCharacteristicProperties::Write | GattCharacteristicProperties::WriteWithoutResponse;
-							if ((ch.CharacteristicProperties() & writeFlags) != GattCharacteristicProperties::None)
-								writable.emplace(std::make_pair(UuidText(service.Uuid()), UuidText(ch.Uuid())), ch);
+							characteristics.emplace(Endpoint{UuidText(service.Uuid()), UuidText(ch.Uuid())}, ch);
 						}
 					}
 				} catch (const winrt::hresult_error&) { row["partial"] = true; }
@@ -204,13 +205,51 @@ namespace
 			result["status"] = "connected";
 		}
 
+		bool Subscribe(const Endpoint& key, std::chrono::steady_clock::time_point deadline)
+		{
+			if (subscriptions.count(key)) return true;
+			auto found = characteristics.find(key);
+			if (found == characteristics.end()) return false;
+			const auto& ch = found->second;
+			const auto props = ch.CharacteristicProperties();
+			auto mode = GattClientCharacteristicConfigurationDescriptorValue::Notify;
+			if ((props & GattCharacteristicProperties::Notify) == GattCharacteristicProperties::None) {
+				if ((props & GattCharacteristicProperties::Indicate) == GattCharacteristicProperties::None) return false;
+				mode = GattClientCharacteristicConfigurationDescriptorValue::Indicate;
+			}
+			auto mainState = NPL::CNPLRuntime::GetInstance()->GetMainRuntimeState();
+			auto listener = ch.ValueChanged(winrt::auto_revoke, [key, request = session, mainState](auto const&, GattValueChangedEventArgs const& args) {
+				auto reader = winrt::Windows::Storage::Streams::DataReader::FromBuffer(args.CharacteristicValue());
+				std::string hex;
+				const char digits[] = "0123456789abcdef";
+				while (reader.UnconsumedBufferLength()) {
+					auto byte = reader.ReadByte();
+					hex.push_back(digits[byte >> 4]);
+					hex.push_back(digits[byte & 15]);
+				}
+				NPL::NPLObjectProxy event;
+				event["channel"] = "gatt";
+				event["status"] = "notification";
+				event["request"] = request;
+				event["service"] = key.first;
+				event["characteristic"] = key.second;
+				event["hex"] = hex;
+				std::string reply;
+				NPL::NPLHelper::NPLTableToString("msg", event, reply);
+				mainState->Activate_async("script/ide/System/os/BluetoothDiscovery.lua", reply.c_str(), (int)reply.size());
+			});
+			if (AwaitGatt(ch.WriteClientCharacteristicConfigurationDescriptorAsync(mode), deadline) != GattCommunicationStatus::Success) return false;
+			subscriptions.emplace(key, std::move(listener));
+			return true;
+		}
+
 		bool Write(NPL::NPLObjectProxy& msg)
 		{
 			if (!device || session != (double)msg["request"] || device.ConnectionStatus() != BluetoothConnectionStatus::Connected)
 				return false;
 			const std::string service = msg["service"], characteristic = msg["characteristic"], hex = msg["hex"];
-			auto target = writable.find({service, characteristic});
-			if (target == writable.end() || hex.empty() || hex.size() > 1024 || hex.size() % 2) return false;
+			auto target = characteristics.find({service, characteristic});
+			if (target == characteristics.end() || hex.empty() || hex.size() > 1024 || hex.size() % 2) return false;
 			winrt::Windows::Storage::Streams::DataWriter writer;
 			for (size_t i = 0; i < hex.size(); i += 2) {
 				unsigned byte = 0;
@@ -223,11 +262,15 @@ namespace
 			}
 			auto mode = GattWriteOption::WriteWithResponse;
 			if ((target->second.CharacteristicProperties() & GattCharacteristicProperties::Write) == GattCharacteristicProperties::None) {
+				if ((target->second.CharacteristicProperties() & GattCharacteristicProperties::WriteWithoutResponse) == GattCharacteristicProperties::None) return false;
 				if (msg["allowWithoutResponse"].GetType() != NPL::NPLObjectBase::NPLObjectType_Bool || !(bool)msg["allowWithoutResponse"]) return false;
 				mode = GattWriteOption::WriteWithoutResponse;
 			}
+			const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(5);
+			if (msg["notifyCharacteristic"].GetType() == NPL::NPLObjectBase::NPLObjectType_String &&
+				!Subscribe({service, (std::string)msg["notifyCharacteristic"]}, deadline)) return false;
 			auto op = target->second.WriteValueAsync(writer.DetachBuffer(), mode);
-			return AwaitGatt(op, std::chrono::steady_clock::now() + std::chrono::seconds(5)) == GattCommunicationStatus::Success;
+			return AwaitGatt(op, deadline) == GattCommunicationStatus::Success;
 		}
 	};
 }

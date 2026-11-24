@@ -873,22 +873,50 @@ class EmscriptenBlueTooth {
     static ReleaseGatt(session) {
         if (this.gattSession !== session) return;
         this.gattSession = null;
+        for (const [ch, listener] of session.subscriptions) ch.removeEventListener("characteristicvaluechanged", listener);
+        session.subscriptions.clear();
         session.device.removeEventListener("gattserverdisconnected", session.onLost);
         session.device.gatt.disconnect();
     }
 
-    static async WriteGatt(current, { request, service, characteristic, operation, hex, allowWithoutResponse }) {
-        const target = current?.writable.get(service + "/" + characteristic);
+    static async SubscribeGatt(session, service, characteristic) {
+        const ch = session.characteristics.get(service + "/" + characteristic);
+        if (!ch || !(ch.properties.notify || ch.properties.indicate)) return false;
+        if (session.subscriptions.has(ch)) return true;
+        const listener = event => {
+            if (this.gattSession !== session) return;
+            const view = event.target.value;
+            const bytes = new Uint8Array(view.buffer, view.byteOffset, view.byteLength);
+            const hex = Array.from(bytes, byte => byte.toString(16).padStart(2, "0")).join("");
+            this.GattReply(session, "notification", { service, characteristic, hex });
+        };
+        ch.addEventListener("characteristicvaluechanged", listener);
+        session.subscriptions.set(ch, listener);
+        try {
+            await ch.startNotifications();
+            return this.gattSession === session;
+        } catch {
+            ch.removeEventListener("characteristicvaluechanged", listener);
+            session.subscriptions.delete(ch);
+            return false;
+        }
+    }
+
+    static async WriteGatt(current, { request, service, characteristic, operation, hex, allowWithoutResponse, notifyCharacteristic }) {
+        const target = current?.characteristics.get(service + "/" + characteristic);
         let status = "writeFailed";
         if (current && current.request === request && current.device.gatt.connected && target && !current.writing &&
             (target.properties.write || (allowWithoutResponse === true && target.properties.writeWithoutResponse)) &&
             typeof hex === "string" && hex.length <= 1024 && /^(?:[0-9a-f]{2})+$/i.test(hex)) {
             current.writing = true;
             try {
-                const bytes = Uint8Array.from(hex.match(/../g), pair => parseInt(pair, 16));
-                if (target.properties.write) await target.writeValueWithResponse(bytes);
-                else await target.writeValueWithoutResponse(bytes);
-                status = "written";
+                const ready = !notifyCharacteristic || await this.SubscribeGatt(current, service, notifyCharacteristic);
+                if (ready && this.gattSession === current) {
+                    const bytes = Uint8Array.from(hex.match(/../g), pair => parseInt(pair, 16));
+                    if (target.properties.write) await target.writeValueWithResponse(bytes);
+                    else await target.writeValueWithoutResponse(bytes);
+                    status = "written";
+                }
             } catch {
                 // The caller keeps track of the last acknowledged packet.
             } finally {
@@ -911,7 +939,7 @@ class EmscriptenBlueTooth {
         const device = this.selectedDevices.get(id);
         if (!device?.gatt) return this.GattReply({ request }, "unavailable");
         if (current) this.ReleaseGatt(current);
-        const session = { request, device, writable: new Map() };
+        const session = { request, device, characteristics: new Map(), subscriptions: new Map() };
         session.onLost = () => {
             if (this.gattSession !== session || device.gatt.connected) return;
             this.ReleaseGatt(session);
@@ -940,7 +968,7 @@ class EmscriptenBlueTooth {
                     try {
                         for (const ch of await service.getCharacteristics()) {
                             const p = ch.properties;
-                            if (p.write || p.writeWithoutResponse) session.writable.set(service.uuid + "/" + ch.uuid, ch);
+                            session.characteristics.set(service.uuid + "/" + ch.uuid, ch);
                             const flags = [p.broadcast, p.read, p.writeWithoutResponse, p.write, p.notify, p.indicate, p.authenticatedSignedWrites, p.reliableWrite || p.writableAuxiliaries];
                             row.characteristics.push({ uuid: ch.uuid, properties: flags.reduce((bits, set, i) => set ? bits | (1 << i) : bits, 0) });
                         }
