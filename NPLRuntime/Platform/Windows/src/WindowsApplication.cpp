@@ -862,9 +862,14 @@ namespace ParaEngine
 					m_cfg.screenHeight = pWinDelegate->GetHeight();
 				}
 			}
-			else if (!pWinDelegate->GetHandle())
+			else if (!pWinDelegate->GetHandle() &&
+				pWinDelegate->Create(m_hInst, m_cfg.screenWidth, m_cfg.screenHeight, hParentWnd) &&
+				!pWinDelegate->IsChildWindow())
 			{
-				pWinDelegate->Create(m_hInst, m_cfg.screenWidth, m_cfg.screenHeight, hParentWnd);
+				m_cfg.screenWidth = pWinDelegate->GetWidth();
+				m_cfg.screenHeight = pWinDelegate->GetHeight();
+				m_nCreationWidth = static_cast<int>(m_cfg.screenWidth);
+				m_nCreationHeight = static_cast<int>(m_cfg.screenHeight);
 			}
 
 			HWND hCreated = pWinDelegate->GetHandle();
@@ -1099,12 +1104,12 @@ namespace ParaEngine
 		if ((pField = settings.GetDynamicField("ScreenWidth")))
 			m_cfg.screenWidth = static_cast<int>(*pField);
 		else
-			m_cfg.screenWidth = 1020;
+			m_cfg.screenWidth = 1280;
 
 		if ((pField = settings.GetDynamicField("ScreenHeight")))
 			m_cfg.screenHeight = static_cast<int>(*pField);
 		else
-			m_cfg.screenHeight = 680;
+			m_cfg.screenHeight = 720;
 
 		if ((pField = settings.GetDynamicField("MultiSampleType")))
 			SetMultiSampleType(static_cast<int>(*pField));
