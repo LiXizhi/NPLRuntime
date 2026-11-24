@@ -1109,6 +1109,13 @@ texture/aries/common/themeteen/others/mark5_32bits.png
 texture/aries/common/themeteen/others/mark7_32bits.png
 texture/aries/common/unlock_32bits.png
 texture/aries/creator/border_bg_32bits.png
+texture/aries/creator/keepwork/community/kongbai_200x150_32bits.png
+texture/aries/creator/keepwork/community/mini_200x150_32bits.png
+texture/aries/creator/keepwork/community/pingtan_200x150_32bits.png
+texture/aries/creator/keepwork/community/suiji_200x150_32bits.png
+texture/aries/creator/keepwork/community_32bits.png
+texture/aries/creator/keepwork/corner/corner10_32x32_32bit.png
+texture/aries/creator/paracraft/educate/guanbi_14x14_32bits.png
 texture/aries/desktop/combatcharacterframe/common/arrow_left.png
 texture/aries/desktop/combatcharacterframe/common/arrow_right.png
 texture/aries/desktop/combatcharacterframe/inventory/addonleveleffect_off_32bits.png

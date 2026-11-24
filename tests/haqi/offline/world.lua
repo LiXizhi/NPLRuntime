@@ -86,5 +86,14 @@ do
             end)
         end
     end
-    auth({username = profile.nickname}, "local-test-login", loggedIn)
+    -- Creative Space uses the WorldShare filters registered by the stock login stage.
+    local keepwork = NPL.load("(gl)Mod/WorldShare/api/Keepwork/KeepworkKeepworksApi.lua")
+    function keepwork:CurrentTime(reply)
+        reply({timestamp = os.time() * 1000}, 200)
+    end
+    MyCompany.Aries.MainLogin.LoadPackages({
+        next_step = function()
+            auth({username = profile.nickname}, "local-test-login", loggedIn)
+        end,
+    })
 end
