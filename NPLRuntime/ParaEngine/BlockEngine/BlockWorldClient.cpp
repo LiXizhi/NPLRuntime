@@ -321,6 +321,8 @@ namespace ParaEngine
 			m_nBufferRebuildCountThisTick = 0;
 
 			CheckRebuildVisibleChunks(IsAsyncChunkMode(), bIsShadowPass);
+			if (!bIsShadowPass && m_nBufferRebuildCountThisTick > 0)
+				m_nextZigZagScan = {};
 			ClearVisibleChunksToByteLimit(bIsShadowPass);
 
 #ifdef PRINT_CHUNK_LOG

@@ -616,8 +616,9 @@ float3 ViewPosition(float2 coord, float depth)
 {
 	float2 ndc = (coord - viewportOffset) / viewportScale * 2.0f - 1.0f;
 	float invP11 = (abs(matProjection._11) > 1e-5f) ? (1.0f / matProjection._11) : (TanHalfFOV * ViewAspect);
-	float invP22 = (abs(matProjection._22) > 1e-5f) ? (1.0f / abs(matProjection._22)) : TanHalfFOV;
-	return float3((ndc.x - matProjection._31) * invP11, (-ndc.y - abs(matProjection._32)) * invP22, 1.0f) * depth;
+	float invP22 = (abs(matProjection._22) > 1e-5f) ? (1.0f / matProjection._22) : TanHalfFOV;
+	float p32 = (abs(matProjection._22) > 1e-5f) ? matProjection._32 : 0.0f;
+	return float3((ndc.x - matProjection._31) * invP11, (-ndc.y - p32) * invP22, 1.0f) * depth;
 }
 
 float3 DecodeSurfaceAlbedo(float3 rawLinear)
@@ -936,7 +937,42 @@ void ApplyTerrainZigZagBlend(inout SurfaceStruct surface, float3 rawColorSRGB, f
 		surface.albedo *= (1.0f - 0.075f * fade * lip);
 }
 
-// Round convex 2-face edges, 3-face corners, cliff silhouettes, and protruding corner tips near the camera.
+float GetCardinalFaceBitVal(float3 dir)
+{
+	if (dir.y > 0.5f) return 1.0f;
+	if (dir.y < -0.5f) return 2.0f;
+	if (dir.x > 0.5f) return 4.0f;
+	if (dir.x < -0.5f) return 8.0f;
+	if (dir.z > 0.5f) return 16.0f;
+	return 32.0f;
+}
+
+float SafeInvScalar(float v)
+{
+	return 1.0f / ((abs(v) > 1e-6f) ? v : ((v >= 0.0f) ? 1e-6f : -1e-6f));
+}
+
+bool GetCardinalExposure(float3 dir, bool expNX, bool expPX, bool expNY, bool expPY, bool expNZ, bool expPZ)
+{
+	if (dir.x < -0.5f) return expNX;
+	if (dir.x > 0.5f)  return expPX;
+	if (dir.y < -0.5f) return expNY;
+	if (dir.y > 0.5f)  return expPY;
+	if (dir.z < -0.5f) return expNZ;
+	return expPZ;
+}
+
+void ClearCardinalExposure(float3 dir, inout bool expNX, inout bool expPX, inout bool expNY, inout bool expPY, inout bool expNZ, inout bool expPZ)
+{
+	if (dir.x < -0.5f) expNX = false;
+	else if (dir.x > 0.5f) expPX = false;
+	else if (dir.y < -0.5f) expNY = false;
+	else if (dir.y > 0.5f) expPY = false;
+	else if (dir.z < -0.5f) expNZ = false;
+	else expPZ = false;
+}
+
+// 3D Round-Box ray-intersected bevels & silhouettes using true world-space voxel topology (view-consistent at all camera angles).
 float ApplyRoundedBlockBorders(inout SurfaceStruct surface, inout float sun_light_strength, inout float torch_light_strength, float2 pixelPhase)
 {
 	float3 rawFace = surface.normal;
@@ -946,231 +982,390 @@ float ApplyRoundedBlockBorders(inout SurfaceStruct surface, inout float sun_ligh
 		return 1.0f;
 
 	float3 face = GetCardinalFaceNormal(rawFace);
-	float fade = 1.0f - smoothstep(9.0f, 16.0f, surface.depth);
-	float width = 0.21f * fade;
+	float fade = 1.0f - smoothstep(9.5f, 15.5f, surface.depth);
 	float3 faceVS = mul(face, (float3x3)matView);
-	float3 bend = 0.0f;
+	float3 bend = float3(0.0f, 0.0f, 0.0f);
 	float creaseAO = 1.0f;
 	float convexRim = 0.0f;
-	bool cornerTrimmed = false;
+	bool handledByVoxelGrid = false;
 
 	[branch] if (BlockGridOrigin.w > 0.0f)
 	{
 		float blockSize = 1.0f / BlockGridOrigin.w;
-		float3 exactPosVS = ViewPosition(surface.texCoord, surface.depth);
+		float2 origTexCoord = surface.texCoord;
+		float3 rayVS1 = ViewPosition(origTexCoord, 1.0f);
+		float3 exactPosVS = rayVS1 * surface.depth;
 		float3 worldRel = mul(float4(exactPosVS, 1.0f), matViewInverse).xyz;
 		float3 voxelPos = (worldRel - BlockGridOrigin.xyz) * BlockGridOrigin.w;
+
 		float3 axisU, axisV;
 		GetVoxelFaceBasis(face, axisU, axisV);
+		float3 axisW = abs(face);
+
 		float u = dot(voxelPos, axisU);
 		float v = dot(voxelPos, axisV);
-		float fu = u - floor(u);
-		float fv = v - floor(v);
+		float w = dot(voxelPos - face * 0.5f, axisW);
+		float iu = floor(u);
+		float iv = floor(v);
+		float iw = floor(w);
+		float fu = u - iu;
+		float fv = v - iv;
 		float du = (fu < 0.5f) ? fu : (1.0f - fu);
 		float dv = (fv < 0.5f) ? fv : (1.0f - fv);
 		float su = (fu < 0.5f) ? -1.0f : 1.0f;
 		float sv = (fv < 0.5f) ? -1.0f : 1.0f;
+		float3 selfVoxel = axisU * iu + axisV * iv + axisW * iw;
 
-		bool convexU = false;
-		bool convexV = false;
-		bool silU = false;
-		bool silV = false;
-		bool concaveFloorV = false;
+		float3 edgeMargin = min(selfVoxel - 0.5f, 30.5f - selfVoxel);
+		float volFade = saturate(min(edgeMargin.x, min(edgeMargin.y, edgeMargin.z)) * 0.5f);
+		float voxFade = fade * volFade;
 
-		if (min(du, dv) < width)
+		if (voxFade > 0.005f)
 		{
-			[loop] for (int a = 0; a < 2; ++a)
+			float faceBitVal = GetCardinalFaceBitVal(face);
+			float selfMask = floor(SampleZigZagVoxel(selfVoxel).b * 255.0f + 0.5f);
+			bool validSelf = (selfMask >= 63.5f) && IsVoxelFaceExposed(selfMask, faceBitVal);
+
+			// Snap depth-reconstruction jitter on steep grazing seams & corner tips to the owning solid voxel
+			if (!validSelf)
 			{
-				float dist = (a == 0) ? du : dv;
-				if (dist < width)
+				if (du < 0.16f)
 				{
-					float3 edgeDirWS = (a == 0) ? (axisU * su) : (axisV * sv);
-					float3 seamWS = worldRel + edgeDirWS * (dist * blockSize);
-
-					// 1) Check upward step for concave inner crease (wall rising above current face, or floor beneath vertical face)
-					float3 upWS = seamWS + face * (0.055f * blockSize);
-					float3 upVS = mul(float4(upWS, 1.0f), matView).xyz;
-					bool isConcave = false;
-					if (upVS.z > 0.05f)
+					float3 cand = selfVoxel + axisU * su;
+					float candMask = floor(SampleZigZagVoxel(cand).b * 255.0f + 0.5f);
+					if (candMask >= 63.5f && IsVoxelFaceExposed(candMask, faceBitVal))
 					{
-						float2 upUV = SnapTexelUV(convertCameraSpaceToScreenSpace(upVS), pixelPhase);
-						float upDepth = tex2Dlod(depthSampler, float4(upUV, 0, 0)).r;
-						float3 upNorm = tex2Dlod(normalSampler, float4(upUV, 0, 0)).rgb * 2.0f - 1.0f;
-						if (upDepth > 0.01f && abs(upDepth - upVS.z) < 0.10f && dot(upNorm, -edgeDirWS) > 0.80f)
-						{
-							isConcave = true;
-							float cw = saturate(1.0f - dist / max(width * 0.68f, 0.001f));
-							creaseAO = min(creaseAO, 1.0f - 0.11f * cw * cw);
-							if (a == 1 && sv < 0.0f && abs(face.y) < 0.1f)
-								concaveFloorV = true;
-						}
+						selfVoxel = cand;
+						selfMask = candMask;
+						validSelf = true;
 					}
-
-					if (!isConcave)
+				}
+				if (!validSelf && dv < 0.16f)
+				{
+					float3 cand = selfVoxel + axisV * sv;
+					float candMask = floor(SampleZigZagVoxel(cand).b * 255.0f + 0.5f);
+					if (candMask >= 63.5f && IsVoxelFaceExposed(candMask, faceBitVal))
 					{
-						// 2) Check coplanar neighbor vs cliff drop-off / visible orthogonal side face
-						float3 acrossWS = seamWS + edgeDirWS * (0.055f * blockSize);
-						float3 acrossVS = mul(float4(acrossWS, 1.0f), matView).xyz;
-						bool isFlush = false;
-						bool isSil = false;
-						if (acrossVS.z > 0.05f)
-						{
-							float2 acrossUV = SnapTexelUV(convertCameraSpaceToScreenSpace(acrossVS), pixelPhase);
-							float acrossDepth = tex2Dlod(depthSampler, float4(acrossUV, 0, 0)).r;
-							float3 acrossNorm = tex2Dlod(normalSampler, float4(acrossUV, 0, 0)).rgb * 2.0f - 1.0f;
-							float3 acrossActualWS = mul(float4(ViewPosition(acrossUV, acrossDepth), 1.0f), matViewInverse).xyz;
-							if (acrossDepth > 0.01f && abs(dot(face, acrossActualWS - worldRel)) < 0.04f && dot(face, acrossNorm) > 0.90f)
-							{
-								isFlush = true;
-							}
-							else if (acrossDepth < 0.01f || acrossDepth > acrossVS.z + max(0.20f, surface.depth * 0.025f))
-							{
-								isSil = true;
-							}
-						}
-
-						bool isVisSide = false;
-						if (!isFlush && !isSil)
-						{
-							float3 sideWS = seamWS - face * (0.055f * blockSize);
-							float3 sideVS = mul(float4(sideWS, 1.0f), matView).xyz;
-							if (sideVS.z > 0.05f)
-							{
-								float2 sideUV = SnapTexelUV(convertCameraSpaceToScreenSpace(sideVS), pixelPhase);
-								float sideDepth = tex2Dlod(depthSampler, float4(sideUV, 0, 0)).r;
-								float3 sideNorm = tex2Dlod(normalSampler, float4(sideUV, 0, 0)).rgb * 2.0f - 1.0f;
-								if (sideDepth > 0.01f && abs(sideDepth - sideVS.z) < 0.14f && dot(sideNorm, edgeDirWS) > 0.80f)
-									isVisSide = true;
-							}
-						}
-
-						if (isSil || isVisSide)
-						{
-							float t = saturate(1.0f - dist / max(width, 0.001f));
-							// Exact 1.0 limit on shared visible seams so orthogonal faces meet continuously at 45 deg (and (1,1,1)/sqrt(3) at 3-face corners)
-							float filletW = isSil ? (t * t * (3.0f - 2.0f * t) * 1.25f) : (t * (0.72f + 0.28f * t));
-							bend += edgeDirWS * filletW;
-							convexRim = max(convexRim, t * t * (3.0f - 2.0f * t));
-							if (a == 0) { convexU = true; silU = isSil; }
-							else        { convexV = true; silV = isSil; }
-						}
+						selfVoxel = cand;
+						selfMask = candMask;
+						validSelf = true;
+					}
+				}
+				if (!validSelf && du < 0.16f && dv < 0.16f)
+				{
+					float3 cand = selfVoxel + axisU * su + axisV * sv;
+					float candMask = floor(SampleZigZagVoxel(cand).b * 255.0f + 0.5f);
+					if (candMask >= 63.5f && IsVoxelFaceExposed(candMask, faceBitVal))
+					{
+						selfVoxel = cand;
+						selfMask = candMask;
+						validSelf = true;
 					}
 				}
 			}
 
-			if (convexU && convexV)
+			if (validSelf)
 			{
-				float2 c2 = max(float2(width - du, width - dv), 0.0f) / max(width, 0.001f);
-				convexRim = saturate(length(c2));
-			}
+				handledByVoxelGrid = true;
 
-			float pxBlock = clamp(surface.depth * TanHalfFOV * 2.0f / max(screenParam.y, 1.0f), 0.003f, 0.022f);
+				float3 eyeWS = matViewInverse[3].xyz;
+				float3 eyeLocal = (eyeWS - BlockGridOrigin.xyz) * BlockGridOrigin.w - selfVoxel;
+				float3 rayStepWS = mul(rayVS1, (float3x3)matViewInverse);
+				float3 rayDirWS = normalize(rayStepWS);
+				float3 invDir = float3(SafeInvScalar(rayDirWS.x), SafeInvScalar(rayDirWS.y), SafeInvScalar(rayDirWS.z));
 
-			// 3) Quarter-cylinder base rounding where a protruding 2-face vertical corner meets a flat floor
-			float rBase = 0.21f * fade;
-			if (convexU && !silU && concaveFloorV && du < rBase && dv < rBase)
-			{
-				float R = rBase * blockSize;
-				float3 edgeU = axisU * su;
-				float3 rayDirWS = normalize(worldRel - matViewInverse[3].xyz);
-				float2 q = float2(R, R - du * blockSize);
-				float2 d2 = float2(dot(rayDirWS, face), dot(rayDirWS, edgeU));
-				if (d2.x < -0.05f && d2.y < -0.05f)
+				float3 t0Box = (float3(0.0f, 0.0f, 0.0f) - eyeLocal) * invDir;
+				float3 t1Box = (float3(1.0f, 1.0f, 1.0f) - eyeLocal) * invDir;
+				float3 tMin3 = min(t0Box, t1Box);
+				float3 tMax3 = max(t0Box, t1Box);
+				float tmin = max(max(tMin3.x, max(tMin3.y, tMin3.z)), 0.0f);
+				float tmax = min(tMax3.x, min(tMax3.y, tMax3.z));
+				if (tmin - tmax > 0.03f)
+					return 1.0f;
+				tmax = max(tmax, tmin);
+
+				float3 p0 = clamp(eyeLocal + rayDirWS * tmin, 0.0f, 1.0f);
+				float trel = tmax - tmin;
+				float pu = dot(p0, axisU);
+				float pv = dot(p0, axisV);
+				du = (pu < 0.5f) ? pu : (1.0f - pu);
+				dv = (pv < 0.5f) ? pv : (1.0f - pv);
+				su = (pu < 0.5f) ? -1.0f : 1.0f;
+				sv = (pv < 0.5f) ? -1.0f : 1.0f;
+
+				float R = 0.115f * voxFade;
+				float wAO = 0.16f * voxFade;
+				if (min(du, dv) >= wAO)
+					return 1.0f;
+
+				bool expNX = IsVoxelFaceExposed(selfMask, 8.0f);
+				bool expPX = IsVoxelFaceExposed(selfMask, 4.0f);
+				bool expNY = IsVoxelFaceExposed(selfMask, 2.0f);
+				bool expPY = IsVoxelFaceExposed(selfMask, 1.0f);
+				bool expNZ = IsVoxelFaceExposed(selfMask, 32.0f);
+				bool expPZ = IsVoxelFaceExposed(selfMask, 16.0f);
+
+				float3 dirU = axisU * su;
+				float3 dirV = axisV * sv;
+
+				// 1) Concave inner crease AO & suppression of convex rounding into adjacent rising walls
+				if (du < wAO)
 				{
-					float a2 = max(dot(d2, d2), 1e-4f);
-					float b2 = dot(q, d2);
-					float c2 = q.y * q.y;
-					float disc = b2 * b2 - a2 * c2;
-					if (disc > 0.0f)
+					float upMaskU = floor(SampleZigZagVoxel(selfVoxel + dirU + face).b * 255.0f + 0.5f);
+					if (upMaskU >= 63.5f)
 					{
-						float tCyl = max(0.0f, (-b2 - sqrt(disc)) / a2);
-						float hitCylY = dv * blockSize + rayDirWS.y * tCyl;
-						if (hitCylY < pxBlock * blockSize)
+						ClearCardinalExposure(dirU, expNX, expPX, expNY, expPY, expNZ, expPZ);
+						float cw = saturate(1.0f - du / max(wAO, 0.001f));
+						creaseAO = min(creaseAO, 1.0f - 0.11f * cw * cw);
+					}
+				}
+				if (dv < wAO)
+				{
+					float upMaskV = floor(SampleZigZagVoxel(selfVoxel + dirV + face).b * 255.0f + 0.5f);
+					if (upMaskV >= 63.5f)
+					{
+						ClearCardinalExposure(dirV, expNX, expPX, expNY, expPY, expNZ, expPZ);
+						float cw = saturate(1.0f - dv / max(wAO, 0.001f));
+						creaseAO = min(creaseAO, 1.0f - 0.11f * cw * cw);
+					}
+				}
+
+				if (min(du, dv) >= R)
+					return creaseAO;
+
+				bool expU = GetCardinalExposure(dirU, expNX, expPX, expNY, expPY, expNZ, expPZ);
+				bool expV = GetCardinalExposure(dirV, expNX, expPX, expNY, expPY, expNZ, expPZ);
+				if (!expU && !expV)
+					return creaseAO;
+
+				// 2) Smoothly taper fillet radius to 0 where a convex lip meets a coplanar L-wall / staircase / window frame
+				float rU = R;
+				float rV = R;
+				if (du < R && dv < R)
+				{
+					float bitU = GetCardinalFaceBitVal(dirU);
+					float bitV = GetCardinalFaceBitVal(dirV);
+					if (expU && !expV)
+					{
+						float nvMask = floor(SampleZigZagVoxel(selfVoxel + dirV).b * 255.0f + 0.5f);
+						if (nvMask >= 63.5f && IsVoxelFaceExposed(nvMask, faceBitVal) && !IsVoxelFaceExposed(nvMask, bitU))
+							rU = R * smoothstep(0.0f, R, dv);
+					}
+					if (expV && !expU)
+					{
+						float nuMask = floor(SampleZigZagVoxel(selfVoxel + dirU).b * 255.0f + 0.5f);
+						if (nuMask >= 63.5f && IsVoxelFaceExposed(nuMask, faceBitVal) && !IsVoxelFaceExposed(nuMask, bitV))
+							rV = R * smoothstep(0.0f, R, du);
+					}
+				}
+				float rLocal = min(rU, rV);
+				if (rLocal <= 0.001f)
+					return creaseAO;
+
+				// 3) Exact 3D Round-Box ray intersection inside [0, 1]^3
+				float3 bmin = float3(
+					expNX ? rLocal : -rLocal,
+					expNY ? rLocal : -rLocal,
+					expNZ ? rLocal : -rLocal);
+				float3 bmax = float3(
+					expPX ? (1.0f - rLocal) : (1.0f + rLocal),
+					expPY ? (1.0f - rLocal) : (1.0f + rLocal),
+					expPZ ? (1.0f - rLocal) : (1.0f + rLocal));
+
+				float3 s0 = p0 - clamp(p0, bmin, bmax);
+				float sdf0 = length(s0) - rLocal;
+				float minSdf = sdf0;
+				float tHit = 0.0f;
+
+				if (sdf0 > 0.0f)
+				{
+					float3 tcA = (bmin - p0) * invDir;
+					float3 tcB = (bmax - p0) * invDir;
+					float3 tcMin3 = min(tcA, tcB);
+					float3 tcMax3 = max(tcA, tcB);
+					float tc0 = max(tcMin3.x, max(tcMin3.y, tcMin3.z));
+					float tc1 = min(tcMax3.x, min(tcMax3.y, tcMax3.z));
+
+					float tc = 0.0f;
+					if (tc1 >= max(tc0, 0.0f) && tc0 <= trel)
+					{
+						tc = max(tc0, 0.0f);
+						minSdf = -rLocal;
+					}
+					else if (dot(s0, rayDirWS) >= 0.0f)
+					{
+						tc = 0.0f;
+						minSdf = sdf0;
+					}
+					else
+					{
+						float3 pEnd = p0 + rayDirWS * trel;
+						float3 sEnd = pEnd - clamp(pEnd, bmin, bmax);
+						if (dot(sEnd, rayDirWS) <= 0.0f)
 						{
-							float3 floorWS = worldRel - float3(0.0f, dv * blockSize, 0.0f) + face * (0.065f * blockSize);
-							float3 floorVS = mul(float4(floorWS, 1.0f), matView).xyz;
-							if (floorVS.z > 0.05f)
+							tc = trel;
+							minSdf = length(sEnd) - rLocal;
+						}
+						else
+						{
+							float lo = 0.0f;
+							float hi = trel;
+							float t = 0.5f * trel;
+							[loop] for (int k = 0; k < 5; ++k)
 							{
-								float2 rawFloorUV = convertCameraSpaceToScreenSpace(floorVS);
-								if (all(rawFloorUV > viewportOffset) && all(rawFloorUV < viewportOffset + viewportScale))
+								float3 pt = p0 + rayDirWS * t;
+								float3 st = pt - clamp(pt, bmin, bmax);
+								float gp = dot(st, rayDirWS);
+								if (gp < 0.0f) lo = t;
+								else hi = t;
+								float gpp = ((abs(st.x) > 1e-6f) ? (rayDirWS.x * rayDirWS.x) : 0.0f)
+									+ ((abs(st.y) > 1e-6f) ? (rayDirWS.y * rayDirWS.y) : 0.0f)
+									+ ((abs(st.z) > 1e-6f) ? (rayDirWS.z * rayDirWS.z) : 0.0f);
+								float tn = (gpp > 1e-6f) ? (t - gp / gpp) : (0.5f * (lo + hi));
+								t = (tn > lo && tn < hi) ? tn : (0.5f * (lo + hi));
+							}
+							tc = t;
+							float3 sClose = (p0 + rayDirWS * tc) - clamp(p0 + rayDirWS * tc, bmin, bmax);
+							minSdf = length(sClose) - rLocal;
+						}
+					}
+
+					if (minSdf > 0.0f)
+					{
+						tHit = tc;
+					}
+					else
+					{
+						float rlo = 0.0f;
+						float rhi = tc;
+						float rt = 0.5f * tc;
+						float r2 = rLocal * rLocal;
+						[loop] for (int rStep = 0; rStep < 6; ++rStep)
+						{
+							float3 pt = p0 + rayDirWS * rt;
+							float3 st = pt - clamp(pt, bmin, bmax);
+							float val = dot(st, st) - r2;
+							if (val > 0.0f) rlo = rt;
+							else rhi = rt;
+							float deriv = 2.0f * dot(st, rayDirWS);
+							float rn = (deriv < -1e-6f) ? (rt - val / deriv) : (0.5f * (rlo + rhi));
+							rt = (rn > rlo && rn < rhi) ? rn : (0.5f * (rlo + rhi));
+						}
+						tHit = rt;
+					}
+				}
+
+				float3 pHit = p0 + rayDirWS * tHit;
+				float3 sHit = pHit - clamp(pHit, bmin, bmax);
+				float sLen = length(sHit);
+				float3 nRB = (sLen > 1e-5f) ? (sHit / sLen) : face;
+
+				// 4) Silhouette miss: jump to exact back-facing silhouette plane of [0,1]^3 + 1.25..3.75 px
+				if (minSdf > 0.0f)
+				{
+					float pxBlock = clamp(surface.depth * TanHalfFOV * 2.0f / max(screenParam.y, 1.0f), 0.001f, 0.025f);
+					float sxSil = (rayDirWS.x >= 0.0f) ? 1.0f : -1.0f;
+					float sySil = (rayDirWS.y >= 0.0f) ? 1.0f : -1.0f;
+					float szSil = (rayDirWS.z >= 0.0f) ? 1.0f : -1.0f;
+					float txSil = (nRB.x * sxSil > 1e-4f) ? ((((sxSil > 0.0f) ? 1.0f : 0.0f) - pHit.x) / nRB.x) : 1e6f;
+					float tySil = (nRB.y * sySil > 1e-4f) ? ((((sySil > 0.0f) ? 1.0f : 0.0f) - pHit.y) / nRB.y) : 1e6f;
+					float tzSil = (nRB.z * szSil > 1e-4f) ? ((((szSil > 0.0f) ? 1.0f : 0.0f) - pHit.z) / nRB.z) : 1e6f;
+					float tSil = min(txSil, min(tySil, tzSil));
+
+					float3 marchDir = nRB;
+					float3 silExitLocal = pHit;
+					if (tSil < 10.0f)
+					{
+						silExitLocal = clamp(pHit + nRB * max(0.0f, tSil), 0.0f, 1.0f);
+					}
+					else
+					{
+						// Protruding 2-visible-face vertical corner base sitting on a floor/ceiling
+						silExitLocal = float3(pHit.x, (sySil > 0.0f) ? 1.0f : 0.0f, pHit.z);
+						marchDir = normalize(float3(nRB.x, sySil, nRB.z));
+					}
+					float3 silExitWS = BlockGridOrigin.xyz + (selfVoxel + silExitLocal) * blockSize;
+					float fgTol = max(0.03f, pxBlock * 2.0f * blockSize);
+
+					[loop] for (int pxStep = 1; pxStep <= 3; ++pxStep)
+					{
+						float extraBlocks = pxBlock * (1.25f * (float)pxStep);
+						float3 probeVS = mul(float4(silExitWS + marchDir * (extraBlocks * blockSize), 1.0f), matView).xyz;
+						if (probeVS.z <= 0.05f)
+							break;
+						float2 bgUV = SnapTexelUV(convertCameraSpaceToScreenSpace(probeVS), pixelPhase);
+						float bgDepth = tex2Dlod(depthSampler, float4(bgUV, 0, 0)).r;
+						if (bgDepth >= 0.01f && bgDepth < surface.depth - fgTol)
+						{
+							// Hit a foreground occluder in front of selfVoxel; do not jump across it
+							break;
+						}
+						bool validBg = (bgDepth < 0.01f);
+						float3 bgPosWS = float3(0.0f, 0.0f, 0.0f);
+						if (!validBg)
+						{
+							bgPosWS = mul(float4(ViewPosition(bgUV, bgDepth), 1.0f), matViewInverse).xyz;
+							float3 candLocal = (bgPosWS - BlockGridOrigin.xyz) * BlockGridOrigin.w - selfVoxel;
+							validBg = any(candLocal < -0.015f) || any(candLocal > 1.015f);
+						}
+						if (validBg)
+						{
+							float3 bgColorSRGB = tex2Dlod(colorSampler, float4(bgUV, 0, 0)).rgb;
+							float3 bgLinear = pow(max(bgColorSRGB, 0.0f), 2.2f);
+							float4 bgInfo = tex2Dlod(matInfoSampler, float4(bgUV, 0, 0));
+							float3 bgNorm = tex2Dlod(normalSampler, float4(bgUV, 0, 0)).rgb * 2.0f - 1.0f;
+
+							surface.sky.albedo = bgLinear;
+							surface.albedo = DecodeSurfaceAlbedo(bgLinear);
+							surface.normal = bgNorm;
+							surface.category_id = (int)(bgInfo.r * 255.0f + 0.4f);
+							sun_light_strength = bgInfo.g;
+							torch_light_strength = bgInfo.b;
+
+							if (bgDepth < 0.01f)
+							{
+								surface.depth = bgDepth;
+								surface.cameraSpacePos = rayVS1 * bgDepth;
+							}
+							else
+							{
+								float denomBg = dot(rayStepWS, bgNorm);
+								float zPlane = (abs(denomBg) > 0.15f) ? (dot(bgPosWS - eyeWS, bgNorm) / denomBg) : bgDepth;
+								if (abs(denomBg) > 0.15f && abs(zPlane - bgDepth) < 0.35f && zPlane >= surface.depth - 0.02f)
 								{
-									float2 floorUV = SnapTexelUV(rawFloorUV, pixelPhase);
-									float floorDepth = tex2Dlod(depthSampler, float4(floorUV, 0, 0)).r;
-									if (floorDepth > 0.01f && abs(floorDepth - floorVS.z) < 0.14f)
-									{
-										float baseTrim = saturate((-hitCylY / blockSize) / pxBlock + 0.5f);
-										float3 floorRaw = pow(max(tex2Dlod(colorSampler, float4(floorUV, 0, 0)).rgb, 0.0f), 2.2f);
-										surface.albedo = lerp(surface.albedo, DecodeSurfaceAlbedo(floorRaw), baseTrim);
-										if (baseTrim > 0.5f)
-										{
-											float4 floorInfo = tex2Dlod(matInfoSampler, float4(floorUV, 0, 0));
-											surface.depth = floorDepth;
-											surface.cameraSpacePos = ViewPosition(floorUV, floorDepth);
-											surface.normal = tex2Dlod(normalSampler, float4(floorUV, 0, 0)).rgb * 2.0f - 1.0f;
-											surface.category_id = (int)(floorInfo.r * 255.0f + 0.4f);
-											sun_light_strength = floorInfo.g;
-											torch_light_strength = floorInfo.b;
-											cornerTrimmed = true;
-										}
-									}
+									surface.depth = zPlane;
+									surface.cameraSpacePos = rayVS1 * zPlane;
+									surface.texCoord = origTexCoord;
 								}
-							}
-						}
-					}
-				}
-			}
-
-			// 4) Round-Box SDF protruding silhouette corner rounding against background
-			float rCorner = 0.18f * fade;
-			if (!cornerTrimmed && convexU && convexV && (silU || silV) && du < rCorner && dv < rCorner)
-			{
-				float2 cVec = max(float2(rCorner - du, rCorner - dv), 0.0f);
-				float cornerOut = length(cVec) - rCorner;
-				if (cornerOut > -pxBlock)
-				{
-					float3 cornerSeamWS = worldRel + (axisU * (su * du) + axisV * (sv * dv)) * blockSize;
-					float3 diagWS = cornerSeamWS + normalize(axisU * su + axisV * sv) * (0.065f * blockSize);
-					float3 diagVS = mul(float4(diagWS, 1.0f), matView).xyz;
-					if (diagVS.z > 0.05f)
-					{
-						float2 rawBgUV = convertCameraSpaceToScreenSpace(diagVS);
-						if (all(rawBgUV > viewportOffset) && all(rawBgUV < viewportOffset + viewportScale))
-						{
-							float2 bgUV = SnapTexelUV(rawBgUV, pixelPhase);
-							float bgDepth = tex2Dlod(depthSampler, float4(bgUV, 0, 0)).r;
-							if (bgDepth < 0.01f || bgDepth > diagVS.z + max(0.24f, surface.depth * 0.025f))
-							{
-								float trim = saturate(cornerOut / pxBlock + 0.5f);
-								float3 bgRaw = pow(max(tex2Dlod(colorSampler, float4(bgUV, 0, 0)).rgb, 0.0f), 2.2f);
-								bool bgSky = bgDepth < 0.01f;
-								float3 bgSurfAlbedo = bgSky ? float3(0.0f, 0.0f, 0.0f) : DecodeSurfaceAlbedo(bgRaw);
-								float3 bgSkyAlbedo = bgSky ? bgRaw : float3(0.0f, 0.0f, 0.0f);
-								surface.albedo = lerp(surface.albedo, bgSurfAlbedo, trim);
-								surface.sky.albedo = lerp(surface.sky.albedo, bgSkyAlbedo, trim);
-								if (trim > 0.5f)
+								else
 								{
-									float4 bgInfo = tex2Dlod(matInfoSampler, float4(bgUV, 0, 0));
 									surface.depth = bgDepth;
 									surface.cameraSpacePos = ViewPosition(bgUV, bgDepth);
-									surface.normal = tex2Dlod(normalSampler, float4(bgUV, 0, 0)).rgb * 2.0f - 1.0f;
-									surface.category_id = (int)(bgInfo.r * 255.0f + 0.4f);
-									sun_light_strength = bgInfo.g;
-									torch_light_strength = bgInfo.b;
-									cornerTrimmed = true;
+									surface.texCoord = bgUV;
 								}
+								CalculateMasks(surface);
+								float bgBlendCode = floor(bgInfo.a * 255.0f + 0.5f);
+								ApplyTerrainZigZagBlend(surface, bgColorSRGB, bgBlendCode);
 							}
+							return 1.0f;
 						}
 					}
 				}
+
+				surface.normal = nRB;
+				float rimAmount = saturate(1.0f - dot(nRB, face));
+				float upBias = saturate(nRB.y * 0.5f + 0.5f);
+				float bevelSheen = 1.0f + rimAmount * voxFade * (0.06f + 0.05f * upBias);
+				return creaseAO * bevelSheen;
 			}
 		}
 	}
 
 	// Screen-space fallback for non-grid convex steps (e.g. stairs/slabs at half-block offsets)
-	if (!cornerTrimmed && dot(bend, bend) < 0.0001f)
+	if (!handledByVoxelGrid)
 	{
-		float subWidth = 0.07f * fade;
-		float2 radius = min(12.0f / screenParam, viewportScale * float2(1.0f / ViewAspect, 1.0f)
+		float subWidth = 0.06f * fade;
+		float2 radius = min(10.0f / screenParam, viewportScale * float2(1.0f / ViewAspect, 1.0f)
 			* subWidth / max(2.0f * surface.depth * TanHalfFOV, 0.01f));
 		[loop] for (int i = 0; i < 4; ++i)
 		{
@@ -1185,19 +1380,18 @@ float ApplyRoundedBlockBorders(inout SurfaceStruct surface, inout float sun_ligh
 			{
 				float sw = saturate(1.0f - across / max(subWidth, 0.001f));
 				bend += other * sw;
-				convexRim = max(convexRim, sw * 0.6f);
+				convexRim = max(convexRim, sw * 0.5f);
 			}
+		}
+		if (dot(bend, bend) > 0.0001f)
+		{
+			surface.normal = normalize(face + bend);
+			float upBias = saturate(surface.normal.y * 0.5f + 0.5f);
+			float bevelSheen = 1.0f + convexRim * fade * (0.05f + 0.04f * upBias);
+			return bevelSheen;
 		}
 	}
 
-	if (!cornerTrimmed)
-	{
-		surface.normal = normalize(face + bend);
-		// Soft molded bevel highlight on sunlit/sky-exposed convex block lips & vertical corners
-		float upBias = saturate(surface.normal.y * 0.5f + 0.5f);
-		float bevelSheen = 1.0f + convexRim * fade * (0.09f + 0.08f * upBias);
-		return creaseAO * bevelSheen;
-	}
 	return 1.0f;
 }
 
