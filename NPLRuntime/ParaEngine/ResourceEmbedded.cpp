@@ -39,6 +39,7 @@ CStaticInitRes::CStaticInitRes()
 	ADD_RESOURCE(":IDR_FX_CHARACTER_SKINNED_LOW", character_skinned_low_fx);
 	ADD_RESOURCE(":IDR_FX_COLOR_EFFECT", ColorEffect_fx);
 	ADD_RESOURCE(":IDR_FX_COMPOSITE", composite_fx);
+	ADD_RESOURCE(":IDR_FX_COMPOSITE_TERRAIN", compositeTerrain_fx);
 	ADD_RESOURCE(":IDR_FX_COMPOSITE_LITE", compositeLite_fx);
 	ADD_RESOURCE(":IDR_FX_DEFERRED_DIRECTIONAL_LIGHTING", DeferredShadingDirectionalLighting_fx);
 	ADD_RESOURCE(":IDR_FX_DEFERRED_POINT_LIGHTING", DeferredShadingPointLighting_fx);

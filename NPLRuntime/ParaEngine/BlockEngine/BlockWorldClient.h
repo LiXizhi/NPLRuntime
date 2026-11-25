@@ -225,6 +225,12 @@ namespace ParaEngine
 		ATTRIBUTE_METHOD1(BlockWorldClient, CanTraceBlockSky_s, bool*) { *p1 = cls->CanTraceBlockSky(); return S_OK; }
 		ATTRIBUTE_METHOD1(BlockWorldClient, UpdateRayTracedSky_s, Vector4*) { *p1 = cls->UpdateRayTracedSky(); return S_OK; }
 		ATTRIBUTE_METHOD1(BlockWorldClient, GetNearBlockGridOrigin_s, Vector4*) { *p1 = cls->GetNearBlockGridOrigin(); return S_OK; }
+		ATTRIBUTE_METHOD1(BlockWorldClient, SetTerrainZigZagEnabled_s, bool) {
+			if (cls->m_terrainZigZagEnabled != p1) cls->m_nextZigZagScan = {};
+			cls->m_terrainZigZagEnabled = p1;
+			return S_OK;
+		}
+		ATTRIBUTE_METHOD1(BlockWorldClient, SetBlockBevelEnabled_s, bool) { cls->m_blockBevelEnabled = p1; return S_OK; }
 		ATTRIBUTE_METHOD1(BlockWorldClient, UpdateTerrainZigZagVolume_s, Vector4*) { *p1 = cls->UpdateTerrainZigZagVolume(); return S_OK; }
 
 		/** whether to use sun light shadow map */
@@ -370,6 +376,8 @@ namespace ParaEngine
 		IRHITexture* m_lastSkyTexture = nullptr;
 		Uint16x3 m_skyOrigin;
 		std::vector<BlockSkySpan> m_skySpans;
+		bool m_terrainZigZagEnabled = false;
+		bool m_blockBevelEnabled = false;
 		asset_ptr<TextureEntity> m_terrainZigZagTex;
 		std::vector<uint8_t> m_terrainZigZagPixels;
 		std::unordered_map<uint32_t, uint8_t> m_zigzagTileSlotCache;

@@ -46,16 +46,22 @@ float2 screenParam;
 float centerDepthSmooth = 15.f;
 // between [0,1]
 float rainStrength = 0.f;
+// Display-referred photographic controls: warmth, saturation offset, lifted blacks and split tone.
+float4 PhotoGrade = float4(0, 0, 0, 0);
 float EyeBrightness = 0.2f;
 float EyeContrast = 0.5f;
 float BloomEnabled = 1.0f;
+// Ambient occlusion, contact shadows, light shafts and bloom intensity.
+float4 LightingStrength = float4(1, 1, 1, 1);
 float4 BlockSkyVolume;
 float BlockReflectionEnabled = 0;
 float QualityLevel = 4.0f;
 float SkyVisibilityView = 0.0f;
+#ifdef BLOCK_SURFACE_EFFECTS
 float BevelEnabled = 0.0f;
 float ZigZagEnabled = 0.0f;
 float4 BlockGridOrigin = float4(0.0f, 0.0f, 0.0f, 0.0f);
+#endif
 float BounceEnabled = 0.0f;
 float MaxDOFBlur = 0.00045f;
 float ViewAspect;
@@ -627,6 +633,7 @@ float3 DecodeSurfaceAlbedo(float3 rawLinear)
 	return lerp(a, dot(a, float1(0.3333f).xxx), 0.035f);
 }
 
+#ifdef BLOCK_SURFACE_EFFECTS
 float2 SnapTexelUV(float2 coord, float2 pixelPhase)
 {
 	float2 clamped = ClampViewUV(coord);
@@ -1462,9 +1469,11 @@ float ApplyRoundedBlockBorders(inout SurfaceStruct surface, inout float sun_ligh
 	return 1.0f;
 }
 
+#endif
+
 float AmbientVisibility(SurfaceStruct surface)
 {
-	if (QualityLevel < 5 || surface.mask_sky || surface.mask_water) return 1.0;
+	if (QualityLevel < 5 || LightingStrength.x <= 0 || surface.mask_sky || surface.mask_water) return 1.0;
 	float3 normal = normalize(mul(surface.normal, (float3x3)matView));
 	float2 radius = min(32.0 / screenParam, float2(0.8 / ViewAspect, 0.8) / max(surface.depth * TanHalfFOV, 0.1)) * viewportScale;
 	float total = 0;
@@ -1480,12 +1489,12 @@ float AmbientVisibility(SurfaceStruct surface)
 		if (depth > 0.01 && distanceToSample > 0.02)
 			total += saturate(dot(normal, delta / distanceToSample) - 0.12) * saturate(1.0 - distanceToSample / 1.6);
 	}
-	return saturate(1.0 - total * 2.0 / count);
+	return saturate(1.0 - total * 2.0 * LightingStrength.x / count);
 }
 
 float ContactVisibility(SurfaceStruct surface)
 {
-	if (QualityLevel < 4 || RenderOptions.x < 0.5 || surface.mask_sky || surface.mask_water || surface.category_id == 255 || surface.NdotL <= 0 || rainStrength >= 0.99) return 1.0;
+	if (QualityLevel < 4 || LightingStrength.y <= 0 || RenderOptions.x < 0.5 || surface.mask_sky || surface.mask_water || surface.category_id == 255 || surface.NdotL <= 0 || rainStrength >= 0.99) return 1.0;
 	float3 direction = normalize(mul(sunDirection, (float3x3)matView));
 	float count = (QualityLevel >= 6) ? 12.0 : ((QualityLevel >= 5) ? 8.0 : 4.0);
 	float ign = InterleavedGradientNoise(surface.texCoord * screenParam);
@@ -1502,7 +1511,7 @@ float ContactVisibility(SurfaceStruct surface)
 		float depth = tex2Dlod(depthSampler, float4(coord, 0, 0)).r;
 		float difference = position.z - depth;
 		if (depth > 0.01 && difference > minThickness && difference < maxThickness)
-			return lerp(0.40, 1.0, t);
+			return saturate(1.0 - 0.60 * LightingStrength.y * (1.0 - t));
 	}
 	return 1.0;
 }
@@ -1551,14 +1560,16 @@ PSOut CompositePS0(VSOutput input)
 	surface.category_id = (int)(block_info.r * 255.0 + 0.4);
 	float sun_light_strength = block_info.g;
 	float torch_light_strength = block_info.b;
+	CalculateMasks(surface);
+#ifdef BLOCK_SURFACE_EFFECTS
 	float selfBlendCode = floor(block_info.a * 255.0 + 0.5);
 	float2 pixelPhase = frac(texCoord * screenParam);
 
-	CalculateMasks(surface);
 	ApplyTerrainZigZagBlend(surface, rawColorSRGB, selfBlendCode);
 	float borderCreaseAO = ApplyRoundedBlockBorders(surface, sun_light_strength, torch_light_strength, pixelPhase);
 	CalculateMasks(surface);
 	surface.albedo *= borderCreaseAO;
+#endif
 	float skyOpenness = BlockSkyOpenness(surface);
 	if (SkyVisibilityView > 0.5f)
 	{
@@ -1775,7 +1786,7 @@ void CalculateSpecularHighlight(inout SurfaceStruct2 surface)
 void CalculateCrepuscularLightShafts(inout SurfaceStruct2 surface)
 {
 	float clearSky = (1.0f - rainStrength) * (1.0f - CloudThickness * 0.9f);
-	if (clearSky <= 0.02f) return;
+	if (clearSky <= 0.02f || LightingStrength.z <= 0) return;
 
 	float3 sunDirVS = normalize(mul(sunDirection, (float3x3)matView).xyz);
 	if (sunDirVS.z <= 0.10f) return;
@@ -1814,7 +1825,7 @@ void CalculateCrepuscularLightShafts(inout SurfaceStruct2 surface)
 	float3 dayShaftColor = SunColor * lerp(float3(1.0f, 0.95f, 0.85f), float3(1.30f, 0.75f, 0.40f), horizonBoost) * (0.20f + 0.25f * horizonBoost) * saturate(1.0f - timeMidnight * 1.5f);
 	float3 nightShaftColor = float3(0.16f, 0.28f, 0.50f) * (0.14f * smoothstep(0.08f, 0.55f, timeMidnight));
 
-	surface.color.xyz += shaftFactor * (dayShaftColor + nightShaftColor);
+	surface.color.xyz += shaftFactor * LightingStrength.z * (dayShaftColor + nightShaftColor);
 }
 
 // Gather outgoing radiance from nearby, mutually facing surfaces in the lit opaque buffer.
@@ -2199,7 +2210,7 @@ float4 FinalPS(VSOutput input) :COLOR
 	if (BloomEnabled > 0.5f || rainStrength > 0.01f)
 		GetBloom(texCoord, bloomData);
 	if (BloomEnabled > 0.5f)
-		color += bloomData.bloom*0.006f;
+		color += bloomData.bloom * (0.006f * LightingStrength.w);
 
 	if (rainStrength > 0.01f)
 		AddRainFogScatter(texCoord, color, bloomData);
@@ -2217,6 +2228,16 @@ float4 FinalPS(VSOutput input) :COLOR
 #endif
 
 	color = TonemapReinhard_Good(color);
+	if (any(PhotoGrade != 0.0f))
+	{
+		float luma = dot(color, float3(0.2126f, 0.7152f, 0.0722f));
+		color = lerp(luma.xxx, color, 1.0f + PhotoGrade.y);
+		float midtones = 4.0f * saturate(luma) * (1.0f - saturate(luma));
+		color += midtones * PhotoGrade.x * float3(0.14f, 0.025f, -0.16f);
+		float3 tone = lerp(float3(-0.14f, 0.045f, 0.12f), float3(0.16f, 0.035f, -0.13f), smoothstep(0.2f, 0.8f, luma));
+		color += midtones * PhotoGrade.w * tone;
+		color = saturate(color * (1.0f - 0.18f * PhotoGrade.z) + 0.13f * PhotoGrade.z);
+	}
 
 	return float4(color, 1.0f);
 }

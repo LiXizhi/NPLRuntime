@@ -321,7 +321,7 @@ namespace ParaEngine
 			m_nBufferRebuildCountThisTick = 0;
 
 			CheckRebuildVisibleChunks(IsAsyncChunkMode(), bIsShadowPass);
-			if (!bIsShadowPass && m_nBufferRebuildCountThisTick > 0)
+			if ((m_terrainZigZagEnabled || m_blockBevelEnabled) && !bIsShadowPass && m_nBufferRebuildCountThisTick > 0)
 				m_nextZigZagScan = {};
 			ClearVisibleChunksToByteLimit(bIsShadowPass);
 
@@ -645,6 +645,7 @@ namespace ParaEngine
 				time = (int)(time * 1000) % 1000000;
 				Vector4 v4((float)time, 0.f, 0.f, 0.f);
 				pEffect->setParameter(CEffectFile::k_ConstVector1, v4.ptr());
+				const bool writeBlendCodes = m_terrainZigZagEnabled && dwRenderMethod == BLOCK_RENDER_FANCY_SHADER && nRenderPass == BlockRenderPass_Opaque;
 				int32_t curZigZagBlendCode = 0;
 
 				if (dwRenderMethod == BLOCK_RENDER_FANCY_SHADER)
@@ -1031,7 +1032,7 @@ namespace ParaEngine
 						pEffect->setParameter(CEffectFile::k_worldPos, &vWorldPos);
 					}
 
-					if (dwRenderMethod == BLOCK_RENDER_FANCY_SHADER && nRenderPass == BlockRenderPass_Opaque)
+					if (writeBlendCodes)
 					{
 						const int32_t blendCode = (int32_t)ComputeTerrainZigZagBlendCode(pTemplate, curMaterialId, pRenderTask->GetUserData());
 						if (blendCode != curZigZagBlendCode)
@@ -2825,6 +2826,9 @@ namespace ParaEngine
 
 	Vector4 BlockWorldClient::UpdateTerrainZigZagVolume()
 	{
+		if (!m_terrainZigZagEnabled && !m_blockBevelEnabled)
+			return Vector4(0.f, 0.f, 0.f, 0.f);
+
 		const float fBlockSize = BlockConfig::g_blockSize;
 		if (!IsInBlockWorld() || !CGlobals::GetScene() || !CGlobals::GetAssetManager() || fBlockSize <= 0.f)
 			return Vector4(0.f, 0.f, 0.f, 0.f);
@@ -2885,7 +2889,7 @@ namespace ParaEngine
 
 							solidPad[((size_t)(dy + 1) * kPad + (size_t)(dz + 1)) * kPad + (size_t)(dx + 1)] = 1;
 
-							if (dx >= 0 && dx < kZigZagVolSide && dy >= 0 && dy < kZigZagVolSide && dz >= 0 && dz < kZigZagVolSide)
+							if (m_terrainZigZagEnabled && dx >= 0 && dx < kZigZagVolSide && dy >= 0 && dy < kZigZagVolSide && dz >= 0 && dz < kZigZagVolSide)
 							{
 								const uint8_t code = ComputeTerrainZigZagBlendCode(tpl, 0, 0);
 								if (code > 0)
@@ -4238,6 +4242,8 @@ namespace ParaEngine
 		pClass->AddField("UpdateRayTracedReflections", FieldType_Bool, NULL, (void*)UpdateRayTracedReflections_s, NULL, NULL, bOverride);
 		pClass->AddField("UpdateRayTracedSky", FieldType_Vector4, NULL, (void*)UpdateRayTracedSky_s, NULL, NULL, bOverride);
 		pClass->AddField("NearBlockGridOrigin", FieldType_Vector4, NULL, (void*)GetNearBlockGridOrigin_s, NULL, NULL, bOverride);
+		pClass->AddField("TerrainZigZagEnabled", FieldType_Bool, (void*)SetTerrainZigZagEnabled_s, NULL, NULL, NULL, bOverride);
+		pClass->AddField("BlockBevelEnabled", FieldType_Bool, (void*)SetBlockBevelEnabled_s, NULL, NULL, NULL, bOverride);
 		pClass->AddField("UpdateTerrainZigZagVolume", FieldType_Vector4, NULL, (void*)UpdateTerrainZigZagVolume_s, NULL, NULL, bOverride);
 		pClass->AddField("CanUseAdvancedShading", FieldType_Bool, NULL, (void*)CanUseAdvancedShading_s, NULL, NULL, bOverride);
 		pClass->AddField("MovieOutputMode", FieldType_Bool, (void*)EnableMovieOutputMode_s, (void*)IsMovieOutputMode_s, NULL, NULL, bOverride);

@@ -133,6 +133,7 @@ namespace ParaEngine
 				{ "supermultiviewstereo", ":IDR_FX_SUPER_MULTIVIEW_STEREO" },
 				{ "vignetting", ":IDR_FX_VIGNETTING" },
 				{ "composite", ":IDR_FX_COMPOSITE" },
+				{ "compositeterrain", ":IDR_FX_COMPOSITE_TERRAIN" },
 				{ "compositelite", ":IDR_FX_COMPOSITE_LITE" },
 				{ "final", ":IDR_FX_FINAL" },
 				{ "mrt_blocks", ":IDR_FX_MRT_BLOCKS" },
@@ -185,6 +186,9 @@ namespace ParaEngine
 				size_t slash = incLower.find_last_of("/\\");
 				if (slash != std::string::npos)
 					incLower = incLower.substr(slash + 1);
+
+				if (incLower == "composite.fx" && TryReadParaFile(":IDR_FX_COMPOSITE", outContent))
+					return true;
 
 				if (incLower == "simple_mesh_normal_low.fx" && TryReadParaFile(":IDR_FX_SIMPLE_MESH_NORMAL_LOW", outContent))
 					return true;
