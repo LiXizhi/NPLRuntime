@@ -299,6 +299,7 @@ namespace ParaEngine
 		const CSoftwareOcclusionBuffer& GetSoftwareOccluder() const { return m_softwareOccluder; }
 	protected:
 		virtual void UpdateActiveChunk();
+		virtual void UpdateRegionCache();
 
 	private:
 		//Get shared index buffer which will be reused for all render task

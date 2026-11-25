@@ -773,10 +773,7 @@ void ParaTerrain::ApplyColumnLightHeights(uint32_t x, uint32_t z, uint32_t heigh
 	Scoped_WriteLock<BlockReadWriteLock> lock(world->GetReadWriteLock());
 	auto* region = world->GetRegion(x >> 9, z >> 9);
 	if (!region || region->IsLocked()) return;
-	auto* height = region->GetHighestBlock(x & 511, z & 511);
-	auto previous = *height;
-	*height = ChunkMaxHeight(solid, top);
-	if (previous.m_nSolidHeight != solid) world->NotifyBlockHeightMapChanged(x, z, previous);
+	region->SetColumnHeight(x & 511, z & 511, ChunkMaxHeight(solid, top));
 }
 
 std::string ParaTerrain::GetMapSectionData(uint32_t x, uint32_t z, const object& sections)

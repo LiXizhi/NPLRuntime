@@ -828,12 +828,8 @@ namespace ParaEngine
 	{
 		uint16 rx, ry, rz;
 		UnpackBlockIndex(nBlockIndex, rx, ry, rz);
-		ChunkMaxHeight* pBlockHeight = m_ownerBlockRegion->GetHighestBlock(m_minBlockId_rs.x + rx, m_minBlockId_rs.z + rz);
-		int rs_y = m_minBlockId_rs.y + ry;
-		if (pBlockHeight)
-		{
-			pBlockHeight->AddBlockHeight(rs_y, isTransparent);
-		}
+		m_ownerBlockRegion->WritableHeight(m_minBlockId_rs.x + rx, m_minBlockId_rs.z + rz)
+			.AddBlockHeight(m_minBlockId_rs.y + ry, isTransparent);
 	}
 
 	Block& BlockChunk::GetBlockByIndex(uint16_t nBlockIndex)
@@ -933,7 +929,7 @@ namespace ParaEngine
 
 	bool BlockChunk::CanBlockSeeTheSkyWS(uint16 x, int16_t y, uint16 z)
 	{
-		ChunkMaxHeight* pHeight = m_ownerBlockRegion->GetHighestBlock(x & 0x1ff, z & 0x1ff);
+		const auto* pHeight = m_ownerBlockRegion->GetHighestBlock(x & 0x1ff, z & 0x1ff);
 		if (pHeight)
 			return pHeight->GetMaxSolidHeight() < y;
 		else

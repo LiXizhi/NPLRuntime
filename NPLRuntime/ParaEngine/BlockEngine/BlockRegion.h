@@ -3,6 +3,7 @@
 #include <vector>
 #include <array>
 #include <map>
+#include <memory>
 #include <unordered_map>
 #include <luabind/luabind.hpp>
 #include <luabind/object.hpp>
@@ -115,7 +116,8 @@ namespace ParaEngine
 		inline int16_t GetRegionZ() { return m_regionZ; }
 
 		//Get the height of highest soiled block
-		ChunkMaxHeight* GetHighestBlock(uint16_t blockIdX_rs, uint16_t blockIdZ_rs);
+		const ChunkMaxHeight* GetHighestBlock(uint16_t blockIdX_rs, uint16_t blockIdZ_rs) const;
+		void SetColumnHeight(uint16_t x, uint16_t z, const ChunkMaxHeight& height);
 
 		//return neighbor state as a 32bit mask value.
 		//if neighbor is not in current region we'll set the neighbor state as empty
@@ -269,7 +271,9 @@ namespace ParaEngine
 
 		//store the highest block 
 		//first is highest block,second is highest solid block
-		std::vector<ChunkMaxHeight> m_blockHeightMap;
+		using HeightColumn = std::array<ChunkMaxHeight, 16 * 16>;
+		std::array<std::unique_ptr<HeightColumn>, 32 * 32> m_heightColumns;
+		ChunkMaxHeight& WritableHeight(uint16_t x, uint16_t z);
 
 		/** total number of bytes that this region occupies */
 		int m_nTotalBytes;

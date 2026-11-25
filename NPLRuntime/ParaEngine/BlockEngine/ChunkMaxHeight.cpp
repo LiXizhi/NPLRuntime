@@ -17,12 +17,12 @@ ParaEngine::ChunkMaxHeight::ChunkMaxHeight(int16_t nSolidHeight, int16_t nMaxHei
 
 }
 
-int16_t ChunkMaxHeight::GetMaxHeight()
+int16_t ChunkMaxHeight::GetMaxHeight() const
 {
 	return m_nMaxHeight;
 }
 
-int16_t ChunkMaxHeight::GetMaxSolidHeight()
+int16_t ChunkMaxHeight::GetMaxSolidHeight() const
 {
 	return m_nSolidHeight;
 }

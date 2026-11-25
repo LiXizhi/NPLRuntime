@@ -3678,7 +3678,14 @@ namespace ParaEngine
 
 	void BlockWorldClient::UpdateActiveChunk()
 	{
-		CBlockWorld::UpdateActiveChunk();
+		UpdateActiveChunkRange(m_activeChunkDim / 2 > 32 && !IsServerWorld());
+		UpdateRegionCache();
+	}
+
+	void BlockWorldClient::UpdateRegionCache()
+	{
+		// Release old terrain over successive frames after travel or a radius change.
+		m_trimRegionCache = !IsServerWorld();
 	}
 
 	int BlockWorldClient::GetVertexBufferSizeLimit() const

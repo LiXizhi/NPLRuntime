@@ -106,6 +106,30 @@ namespace
 		TEST_CHECK(rotationWeight.getValue(1, 30) == 40.f);
 	}
 
+	void TestLongRenderDistance()
+	{
+		CBlockWorld world;
+		const auto originalCacheLimit = world.GetMaxCacheRegionCount();
+		world.SetRenderDist(2000);
+		TEST_CHECK(world.GetRenderDist() == 2000);
+		world.SetRenderDist(100000);
+		TEST_CHECK(world.GetRenderDist() == 2048);
+		world.SetRenderDist(32);
+		TEST_CHECK(world.GetActiveChunkDim() < 16);
+		TEST_CHECK(world.GetMaxCacheRegionCount() == originalCacheLimit);
+
+		BlockRegion region(0, 0, &world);
+		const int emptyBytes = region.GetTotalBytes();
+		const ChunkMaxHeight roof(12, 14);
+		region.SetColumnHeight(15, 15, roof);
+		region.SetColumnHeight(16, 16, ChunkMaxHeight());
+		TEST_CHECK(region.GetHighestBlock(15, 15)->GetMaxHeight() == 14);
+		TEST_CHECK(region.GetHighestBlock(31, 31)->GetMaxHeight() == BlockConfig::MinBlockY - 1);
+		TEST_CHECK(region.GetTotalBytes() == emptyBytes + 256 * sizeof(ChunkMaxHeight));
+		region.DeleteAllBlocks();
+		TEST_CHECK(region.GetTotalBytes() == emptyBytes);
+	}
+
 	void TestBlockHeightRange()
 	{
 		CBlockWorld world;
@@ -901,6 +925,7 @@ int main()
 
 	CParaEngineAppBase application;
 	TestAnimationKeyIntervals();
+	TestLongRenderDistance();
 	TestBlockHeightRange();
 	TestSparseSkyLight();
 	TestSavedSectionValidity();

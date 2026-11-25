@@ -64,9 +64,6 @@ namespace ParaEngine
 		m_maxBlockId_ws.z = m_minBlockId_ws.z + BlockConfig::g_regionBlockDimZ;
 
 
-
-		m_blockHeightMap.resize(BlockConfig::g_regionBlockDimX * BlockConfig::g_regionBlockDimZ, ChunkMaxHeight());
-
 		// TODO:
 		// m_biomes.resize(BlockConfig::g_regionBlockDimX * BlockConfig::g_regionBlockDimZ, 0);
 
@@ -579,9 +576,31 @@ namespace ParaEngine
 		return -1;
 	}
 
-	ChunkMaxHeight* BlockRegion::GetHighestBlock(uint16_t blockIdX_rs, uint16_t blockIdZ_rs)
+	const ChunkMaxHeight* BlockRegion::GetHighestBlock(uint16_t x, uint16_t z) const
 	{
-		return &m_blockHeightMap[blockIdX_rs + (blockIdZ_rs << 9)];
+		static const ChunkMaxHeight empty;
+		const auto& column = m_heightColumns[PackChunkColumnIndex(x >> 4, z >> 4)];
+		return column ? &(*column)[(z & 15) * 16 + (x & 15)] : &empty;
+	}
+
+	ChunkMaxHeight& BlockRegion::WritableHeight(uint16_t x, uint16_t z)
+	{
+		auto& column = m_heightColumns[PackChunkColumnIndex(x >> 4, z >> 4)];
+		if (!column)
+		{
+			column.reset(new HeightColumn());
+			m_nTotalBytes = 0;
+		}
+		return (*column)[(z & 15) * 16 + (x & 15)];
+	}
+
+	void BlockRegion::SetColumnHeight(uint16_t x, uint16_t z, const ChunkMaxHeight& height)
+	{
+		auto previous = *GetHighestBlock(x, z);
+		if (previous.m_nSolidHeight == height.m_nSolidHeight && previous.m_nMaxHeight == height.m_nMaxHeight) return;
+		WritableHeight(x, z) = height;
+		if (previous.m_nSolidHeight != height.m_nSolidHeight)
+			m_pBlockWorld->NotifyBlockHeightMapChanged(m_minBlockId_ws.x + x, m_minBlockId_ws.z + z, previous);
 	}
 
 
@@ -977,7 +996,7 @@ namespace ParaEngine
 
 	void BlockRegion::UpdateBlockHeightMap(Uint16x3& blockId_rs, bool isRemove, bool isTransparent)
 	{
-		ChunkMaxHeight& blockHeight = m_blockHeightMap[blockId_rs.x + (blockId_rs.z << 9)];
+		ChunkMaxHeight& blockHeight = WritableHeight(blockId_rs.x, blockId_rs.z);
 		ChunkMaxHeight prevHeight = blockHeight;
 
 		if (isRemove)
@@ -1963,7 +1982,8 @@ namespace ParaEngine
 		m_savedLightInputs.clear();
 		m_occupiedRows.clear();
 		for (auto& sections : m_columnSections) sections.clear();
-		std::fill(m_blockHeightMap.begin(), m_blockHeightMap.end(), ChunkMaxHeight());
+		for (auto& column : m_heightColumns) column.reset();
+		m_nTotalBytes = 0;
 
 		std::fill(m_biomes.begin(), m_biomes.end(), 0);
 
@@ -2395,16 +2415,7 @@ namespace ParaEngine
 		{
 			for (int z = 0; z < 16; ++z)
 				for (int x = 0; x < 16; ++x)
-				{
-					auto* height = GetHighestBlock(chunkX_rs * 16 + x, chunkZ_rs * 16 + z);
-					const auto previous = *height;
-					*height = sky[z * 16 + x];
-					if (previous.m_nSolidHeight != height->m_nSolidHeight)
-					{
-						auto oldHeight = previous;
-						m_pBlockWorld->NotifyBlockHeightMapChanged(chunkX * 16 + x, chunkZ * 16 + z, oldHeight);
-					}
-				}
+					SetColumnHeight(chunkX_rs * 16 + x, chunkZ_rs * 16 + z, sky[z * 16 + x]);
 		}
 	}
 
@@ -2577,7 +2588,7 @@ namespace ParaEngine
 			{
 				for (uint16 cz = m_minChunkId_ws.z; cz < m_maxChunkId_ws.z; cz++)
 				{
-					if (m_pBlockWorld->IsChunkColumnInActiveRange(cx, cz) && !m_pBlockWorld->GetLightGrid().IsChunkColumnLoaded(cx, cz))
+					if (GetChunkColumnTimeStamp((cx & 31) * 16, (cz & 31) * 16) && m_pBlockWorld->IsChunkColumnInActiveRange(cx, cz) && !m_pBlockWorld->GetLightGrid().IsChunkColumnLoaded(cx, cz))
 					{
 						m_pBlockWorld->GetLightGrid().AddDirtyColumn(cx, cz);
 						bHasDirtyColumns = true;
@@ -2650,12 +2661,13 @@ namespace ParaEngine
 				nBytes += pChunk->GetTotalBytes();
 			}
 		}
+		for (const auto& column : m_heightColumns)
+			if (column) nBytes += sizeof(HeightColumn);
 		m_nTotalBytes = nBytes
 			+ sizeof(BlockRegion)
 			+ sizeof(BlockChunkPtr) * m_chunks.size()
 			+ sizeof(unsigned char) * m_chunkTimestamp.size()
 			+ sizeof(unsigned char) * m_biomes.size()
-			+ sizeof(ChunkMaxHeight) * m_blockHeightMap.size()
 			;
 	}
 

@@ -136,6 +136,13 @@ namespace ParaEngine
 		m_maxLightBlockIdX = m_minLightBlockIdX + m_nLightGridChunkSize * BlockConfig::g_chunkBlockDim;
 		m_maxLightBlockIdZ = m_minLightBlockIdZ + m_nLightGridChunkSize * BlockConfig::g_chunkBlockDim;
 
+		// Region load and first generation both enqueue lighting. Avoid polling
+		// columns whose block data has yet to arrive at a long view distance.
+		auto queueLoadedColumn = [this](int x, int z) {
+			if (x < 0 || z < 0 || x >= 64 * 32 || z >= 64 * 32) return;
+			if (m_pBlockWorld->ChunkColumnExists(x, z) && !IsChunkColumnLoaded(x, z))
+				AddDirtyColumn(x, z);
+		};
 		if (abs(deltaChunkX) >= m_nLightGridChunkSize || abs(deltaChunkZ) >= m_nLightGridChunkSize)
 		{
 			for (int32_t x = 0; x < m_nLightGridChunkSize; x++)
@@ -148,8 +155,7 @@ namespace ParaEngine
 					if (curChunkIdX_ws >= 0 && curChunkIdX_ws < 0xffff
 						&& curChunkIdZ_ws >= 0 && curChunkIdZ_ws < 0xffff)
 					{
-						if (!IsChunkColumnLoaded(curChunkIdX_ws, curChunkIdZ_ws))
-							AddDirtyColumn(curChunkIdX_ws, curChunkIdZ_ws);
+						queueLoadedColumn(curChunkIdX_ws, curChunkIdZ_ws);
 					}
 				}
 			}
@@ -172,8 +178,7 @@ namespace ParaEngine
 				for (int16_t z = 0; z < m_nLightGridChunkSize; z++)
 				{
 					int32_t curChunkZ_ws = m_minChunkIdZ_ws + z;
-					if (!IsChunkColumnLoaded(curChunkX_ws, curChunkZ_ws))
-						AddDirtyColumn(curChunkX_ws, curChunkZ_ws);
+					queueLoadedColumn(curChunkX_ws, curChunkZ_ws);
 				}
 			}
 			startChunkX_ws = m_minChunkIdX_ws;
@@ -185,8 +190,7 @@ namespace ParaEngine
 				for (int x = 0; x < m_nLightGridChunkSize; x++)
 				{
 					int32_t curChunkX_ws = m_minChunkIdX_ws + x;
-					if (!IsChunkColumnLoaded(curChunkX_ws, curChunkZ_ws))
-						AddDirtyColumn(curChunkX_ws, curChunkZ_ws);
+					queueLoadedColumn(curChunkX_ws, curChunkZ_ws);
 				}
 			}
 		}
@@ -813,7 +817,7 @@ exit_function:
 	// blocks higher than the highest solid block in the height map can sky. Note, the top most opaque block can not see the sky. 
 	bool CBlockLightGridClient::CanBlockSeeTheSky(uint16 x, int16_t y, uint16 z)
 	{
-		ChunkMaxHeight* pHeight = m_pBlockWorld->GetHighestBlock(x, z);
+		const auto* pHeight = m_pBlockWorld->GetHighestBlock(x, z);
 		if (pHeight)
 			return y >= m_nSkyHeight || pHeight->GetMaxSolidHeight() < y;
 		else

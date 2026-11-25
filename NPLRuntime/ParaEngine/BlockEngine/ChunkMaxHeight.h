@@ -14,11 +14,11 @@ namespace ParaEngine
 		ChunkMaxHeight(int16_t nSolidHeight=BlockConfig::MinBlockY - 1, int16_t nMaxHeight=BlockConfig::MinBlockY - 1);
 
 		// y pos of the highest block
-		int16_t GetMaxHeight();
+		int16_t GetMaxHeight() const;
 
 		/* y pos of the first block whose opacity is bigger than 1 (first non-transparent block).
 		*/
-		int16_t GetMaxSolidHeight();
+		int16_t GetMaxSolidHeight() const;
 
 		void SetHeight(int16_t nHeight, bool bIsTransparent = false);
 

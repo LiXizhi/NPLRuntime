@@ -32,6 +32,8 @@ using namespace ParaEngine;
 
 namespace ParaEngine
 {
+	constexpr int MaxRenderChunkRadius = 128;
+
 	float CBlockWorld::g_verticalOffset = 0;
 
 	inline int64_t GetBlockSparseIndex(uint16_t bx, uint16_t by, uint16_t bz)
@@ -376,6 +378,8 @@ void ParaEngine::CBlockWorld::LeaveWorld()
 	}
 
 	m_renderChunksByPosition.clear();
+	m_pendingRegionLoads.clear();
+	m_trimRegionCache = false;
 	m_freeRenderChunks = m_activeChunks;
 	for (auto* chunk : m_activeChunks) chunk->OnLeaveWorld();
 	m_visibleChunks.clear();
@@ -434,7 +438,7 @@ void ParaEngine::CBlockWorld::UpdateAllActiveChunks()
 
 void ParaEngine::CBlockWorld::SetActiveChunkRadius(int nActiveChunkRadius)
 {
-	if (nActiveChunkRadius < 3 || nActiveChunkRadius > 64 || m_activeChunkDim == 2 * (nActiveChunkRadius + 1) + 1) return;
+	if (nActiveChunkRadius < 3 || nActiveChunkRadius > MaxRenderChunkRadius || m_activeChunkDim == 2 * (nActiveChunkRadius + 1) + 1) return;
 	m_activeChunkDim = 2 * (nActiveChunkRadius + 1) + 1;
 	m_activeChunkDimY = m_activeChunkDim;
 	if (IsInBlockWorld()) UpdateAllActiveChunks();
@@ -442,16 +446,10 @@ void ParaEngine::CBlockWorld::SetActiveChunkRadius(int nActiveChunkRadius)
 
 void CBlockWorld::SetRenderDist(int nValue)
 {
-	nValue = (std::max)(0, nValue);
-	SetActiveChunkRadius((int)((float)nValue / (float)BlockConfig::g_chunkBlockDim + 0.5f));
+	nValue = (std::max)(0, (std::min)(MaxRenderChunkRadius * BlockConfig::g_chunkBlockDim, nValue));
+	SetActiveChunkRadius((std::max)(3, (nValue + BlockConfig::g_chunkBlockDim / 2) / BlockConfig::g_chunkBlockDim));
 	m_nRenderDistance = min(nValue, m_activeChunkDim * BlockConfig::g_chunkBlockDim / 2);
 	GetLightGrid().SetLightGridSize((int)(m_nRenderDistance * 2 / BlockConfig::g_chunkBlockDim) + 2);
-
-	int regionWidth = m_nRenderDistance / 512 + 2;
-	int nMinRegionCount = regionWidth * regionWidth;
-
-	if (m_maxCacheRegionCount < nMinRegionCount)
-		m_maxCacheRegionCount = nMinRegionCount;
 }
 
 int ParaEngine::CBlockWorld::GetRenderDist()
@@ -1255,7 +1253,7 @@ void ParaEngine::CBlockWorld::SetChunkLightDirty(Uint16x3& chunkId_ws)
 }
 
 
-ChunkMaxHeight* CBlockWorld::GetHighestBlock(uint16_t blockX_ws, uint16_t blockZ_ws)
+const ChunkMaxHeight* CBlockWorld::GetHighestBlock(uint16_t blockX_ws, uint16_t blockZ_ws)
 {
 	uint16_t lx, lz;
 	int16_t ly;
@@ -1270,7 +1268,7 @@ ChunkMaxHeight* CBlockWorld::GetHighestBlock(uint16_t blockX_ws, uint16_t blockZ
 
 void CBlockWorld::GetMaxBlockHeightWatchingSky(uint16_t blockX_ws, uint16_t blockZ_ws, ChunkMaxHeight* pResult)
 {
-	ChunkMaxHeight* pBlockHeight = NULL;
+	const ChunkMaxHeight* pBlockHeight = NULL;
 	pBlockHeight = GetHighestBlock(blockX_ws, blockZ_ws);
 	if (pBlockHeight)
 		pResult[0] = *pBlockHeight;
@@ -1317,6 +1315,11 @@ bool CBlockWorld::RefreshChunkColumn(int16_t curChunkWX, int16_t curChunkWZ)
 
 void CBlockWorld::UpdateActiveChunk()
 {
+	UpdateActiveChunkRange(false);
+}
+
+void CBlockWorld::UpdateActiveChunkRange(bool streamRegions)
+{
 	const int radius = m_activeChunkDim / 2;
 	m_minActiveChunkId_ws = Int16x3(m_curChunkIdW.x - radius, m_curChunkIdW.y - radius, m_curChunkIdW.z - radius);
 	for (auto it = m_renderChunksByPosition.begin(); it != m_renderChunksByPosition.end(); )
@@ -1331,9 +1334,27 @@ void CBlockWorld::UpdateActiveChunk()
 		}
 		else ++it;
 	}
-	for (int rz = (std::max)(0, int(m_minActiveChunkId_ws.z)) >> 5; rz <= (m_curChunkIdW.z + radius) >> 5; ++rz)
-		for (int rx = (std::max)(0, int(m_minActiveChunkId_ws.x)) >> 5; rx <= (m_curChunkIdW.x + radius) >> 5; ++rx)
-			CreateGetRegion(rx, rz);
+	m_pendingRegionLoads.clear();
+	const int firstX = (std::max)(int(m_minRegionX), int(m_minActiveChunkId_ws.x) >> 5);
+	const int firstZ = (std::max)(int(m_minRegionZ), int(m_minActiveChunkId_ws.z) >> 5);
+	const int lastX = (std::min)(int(m_maxRegionX), (m_curChunkIdW.x + radius) >> 5);
+	const int lastZ = (std::min)(int(m_maxRegionZ), (m_curChunkIdW.z + radius) >> 5);
+	for (int rz = firstZ; rz <= lastZ; ++rz)
+	{
+		for (int rx = firstX; rx <= lastX; ++rx)
+		{
+			if (GetRegion(rx, rz)) continue;
+			// Distance to the closest column includes border regions at a region crossing.
+			const int dx = (std::max)(0, (std::max)(rx * 32 - m_curChunkIdW.x, m_curChunkIdW.x - (rx * 32 + 31)));
+			const int dz = (std::max)(0, (std::max)(rz * 32 - m_curChunkIdW.z, m_curChunkIdW.z - (rz * 32 + 31)));
+			const int distanceSq = dx * dx + dz * dz;
+			if (!streamRegions || distanceSq <= 4 * 4)
+				CreateGetRegion(rx, rz);
+			else if (distanceSq <= (radius + 2) * (radius + 2))
+				m_pendingRegionLoads.emplace_back(distanceSq, rx + (rz << 6));
+		}
+	}
+	std::sort(m_pendingRegionLoads.rbegin(), m_pendingRegionLoads.rend());
 }
 
 bool CBlockWorld::RefreshAllLightsInColumn(uint16_t chunkX_ws, uint16_t chunkZ_ws)
@@ -1946,71 +1967,41 @@ void CBlockWorld::GenerateLightBrightnessTable(bool bUseLinearBrightness)
 	}
 }
 
-void CBlockWorld::UpdateRegionCache()
+bool CBlockWorld::UnloadUnusedRegion()
 {
-	if (!IsServerWorld())
+	if (m_regionCache.size() <= GetMaxCacheRegionCount()) return false;
+
+	BlockRegion* farthest = nullptr;
+	int farthestDist = 0;
+	// Keep the neighboring columns needed to mesh the edge of the visible range.
+	const int keepDistance = BlockConfig::g_regionBlockDimX / 2 + (m_activeChunkDim / 2 + 1) * BlockConfig::g_chunkBlockDim;
+	for (const auto& entry : m_regionCache)
 	{
-		int nDeltaChunkMoved = Math::Max(abs(m_curChunkIdW.x - m_lastChunkIdW_RegionCache.x), abs(m_curChunkIdW.z - m_lastChunkIdW_RegionCache.z));
-		// at least walk cross one chunk to update region cache. 
-		if (nDeltaChunkMoved >= 2)
+		auto* region = entry.second;
+		if (region->IsLocked() || (!IsRemote() && region->IsModified())) continue;
+		Uint16x3 center;
+		region->GetCenterBlockWs(&center);
+		const int dist = (std::max)(abs(int(m_curCenterBlockId.x) - center.x), abs(int(m_curCenterBlockId.z) - center.z));
+		if (dist >= keepDistance && dist > farthestDist)
 		{
-			m_lastChunkIdW_RegionCache = m_curChunkIdW;
-
-			std::map<int, BlockRegion*>::iterator iter;
-
-			bool bHasUnloadedRegion = true;
-			int nRegionUnloaded = 0;
-			while (m_regionCache.size() > m_maxCacheRegionCount && bHasUnloadedRegion)
-			{
-				BlockRegion* pFarthestRegion = NULL;
-				int nFarthestRegionDist = 0;
-				bHasUnloadedRegion = false;
-				for (iter = m_regionCache.begin(); iter != m_regionCache.end(); iter++)
-				{
-					BlockRegion* pRegion = iter->second;
-					if (pRegion)
-					{
-						// int nDistToCurrent = Math::Max(abs(m_curRegionIdX - pRegion->GetRegionX()), abs(m_curRegionIdZ - pRegion->GetRegionZ()));
-						// all nine regions need to be in cache, regardless of m_maxCacheRegionCount
-						// if (nDistToCurrent > 1)
-
-						Uint16x3 center;
-						pRegion->GetCenterBlockWs(&center);
-						int nDistToCurrent = Math::Max(abs((int)m_curCenterBlockId.x - (int)center.x), abs((int)m_curCenterBlockId.z - (int)center.z));
-						if (nDistToCurrent >= 256 + GetRenderDist())
-						{
-							// only remove unmodified region or remote region. 
-							if (IsRemote() || !(pRegion->IsModified()))
-							{
-								if (nDistToCurrent > nFarthestRegionDist)
-								{
-									nFarthestRegionDist = nDistToCurrent;
-									pFarthestRegion = pRegion;
-								}
-							}
-						}
-					}
-				}
-				if (pFarthestRegion)
-				{
-					OUTPUT_LOG("unload out of range region: %d %d\n", pFarthestRegion->GetRegionX(), pFarthestRegion->GetRegionZ());
-					const auto previousCount = m_regionCache.size();
-					UnloadRegion(pFarthestRegion);
-					if (m_regionCache.size() == previousCount) break;
-					bHasUnloadedRegion = true;
-					nRegionUnloaded++;
-				}
-			}
-
-			if (nRegionUnloaded > 0)
-			{
-				OUTPUT_LOG("%d region unloaded. Current region in memory: %d\n", nRegionUnloaded, (int)m_regionCache.size());
-			}
+			farthestDist = dist;
+			farthest = region;
 		}
 	}
-	else
-	{
+	if (!farthest) return false;
+	const auto previousCount = m_regionCache.size();
+	UnloadRegion(farthest);
+	return m_regionCache.size() < previousCount;
+}
 
+void CBlockWorld::UpdateRegionCache()
+{
+	if (IsServerWorld()) return;
+	const int delta = (std::max)(abs(m_curChunkIdW.x - m_lastChunkIdW_RegionCache.x), abs(m_curChunkIdW.z - m_lastChunkIdW_RegionCache.z));
+	if (delta >= 2)
+	{
+		m_lastChunkIdW_RegionCache = m_curChunkIdW;
+		while (UnloadUnusedRegion()) {}
 	}
 }
 
@@ -2410,6 +2401,14 @@ void ParaEngine::CBlockWorld::SetUseAsyncLoadWorld(bool val)
 
 void ParaEngine::CBlockWorld::OnFrameMove()
 {
+	if (m_trimRegionCache && m_pendingRegionLoads.empty() && GetNumOfLockedBlockRegion() == 0)
+		m_trimRegionCache = UnloadUnusedRegion();
+	if (!m_pendingRegionLoads.empty() && GetNumOfLockedBlockRegion() < 2)
+	{
+		const int index = m_pendingRegionLoads.back().second;
+		m_pendingRegionLoads.pop_back();
+		CreateGetRegion(index & 63, index >> 6);
+	}
 	for (auto& iter : m_regionCache)
 	{
 		iter.second->OnFrameMove();
@@ -2496,7 +2495,8 @@ void ParaEngine::CBlockWorld::SetMaxWorldPos(const ParaEngine::Int32x3& val)
 
 uint16_t ParaEngine::CBlockWorld::GetMaxCacheRegionCount() const
 {
-	return m_maxCacheRegionCount;
+	const int width = m_nRenderDistance / 512 + 2;
+	return (std::max)(int(m_maxCacheRegionCount), width * width);
 }
 
 void ParaEngine::CBlockWorld::SetMaxCacheRegionCount(uint16_t val)

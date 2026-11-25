@@ -334,7 +334,7 @@ namespace ParaEngine
 		const char* GetTemplatePhysicsProperty(uint16_t id);
 		//get highest block, null if block not exist;
 		//@return:first is highest soiled block, second is highest transparent block,second>= first
-		ChunkMaxHeight* GetHighestBlock(uint16_t blockX_ws, uint16_t blockZ_ws);
+		const ChunkMaxHeight* GetHighestBlock(uint16_t blockX_ws, uint16_t blockZ_ws);
 
 		//get highest y values of current and neighbor blocks above terrain.
 		//return terrain height if no block above ground.
@@ -598,15 +598,20 @@ namespace ParaEngine
 
 		//load/unload region on center view position
 		virtual void UpdateRegionCache();
+		bool UnloadUnusedRegion();
 
 		//load/unload chunk on center view position
 		virtual void UpdateActiveChunk();
+		void UpdateActiveChunkRange(bool streamRegions);
 
 		virtual void ClearOutOfRangeActiveChunkData();
 	protected:
 		std::string m_sName;
 		int32_t m_activeChunkDim;
 		int32_t m_activeChunkDimY;
+		// Squared distance and packed region index, nearest pending load at the back.
+		std::vector<std::pair<int, int>> m_pendingRegionLoads;
+		bool m_trimRegionCache = false;
 		static float g_verticalOffset;
 		// 自动物理地形
 		bool m_bAutoPhysics;
