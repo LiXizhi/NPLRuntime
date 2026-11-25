@@ -17,6 +17,7 @@
 #include "Core/ParaEngineAppBase.h"
 #include "ParaWorldAsset.h"
 #include "ViewportManager.h"
+#include "SceneObject.h"
 #include "Framework/Interface/Render/IRenderContext.h"
 #include "Framework/Interface/Render/IRenderDevice.h"
 #include "2dengine/GUIRoot.h"
@@ -61,7 +62,7 @@ namespace
     class CTestAppOSX : public CParaEngineAppBase
     {
     public:
-        explicit CTestAppOSX(IRenderWindow* win)
+        CTestAppOSX(IRenderWindow* win, bool withScene)
         {
             m_pRenderWindow = win;
             g_pCurrentApp = this;
@@ -79,7 +80,9 @@ namespace
             m_pParaWorldAsset.reset(new CParaWorldAsset());
             m_pViewportManager.reset(new CViewportManager());
             m_pGUIRoot.reset(CGUIRoot::CreateInstance());
-            m_pViewportManager->SetLayout(VIEW_LAYOUT_DEFAULT, nullptr, m_pGUIRoot.get());
+            if (withScene)
+                m_pRootScene.reset(new CSceneObject());
+            m_pViewportManager->SetLayout(VIEW_LAYOUT_DEFAULT, m_pRootScene.get(), m_pGUIRoot.get());
             if (m_pGUIRoot.get())
             {
                 m_pGUIRoot->OneTimeGUIInit();
@@ -88,6 +91,7 @@ namespace
         }
         ~CTestAppOSX() override
         {
+            m_pRootScene.reset();
             m_pRenderWindow = nullptr;
             if (m_pGUIRoot.get())
             {
@@ -174,7 +178,9 @@ namespace
     }
 }
 
-int main()
+int RunMacTrackpadDragTest(RenderView* view, RenderWindowOSX& window);
+
+int main(int argc, char** argv)
 {
     @autoreleasepool
     {
@@ -189,13 +195,17 @@ int main()
         [nsWin makeFirstResponder:view];
 
         RenderWindowOSX renderWin(nsWin);
-        CTestAppOSX app(&renderWin);
+        bool testTrackpad = argc == 2 && std::string(argv[1]) == "--trackpad";
+        CTestAppOSX app(&renderWin, testTrackpad);
 
         CGUIRoot* root = CGUIRoot::GetInstance();
         TEST_CHECK(root != nullptr);
         root->SetEnabled(true);
         root->SetVisible(true);
         root->SetKeyFocus(nullptr);
+
+        if (testTrackpad)
+            return RunMacTrackpadDragTest(view, renderWin);
 
         // 1. Scene startup: no edit box has focus -> IME must be disabled and WASD must not invoke interpretKeyEvents:.
         renderWin.SyncIMEState();

@@ -382,7 +382,13 @@ void CDirectMouse::Update()
     ReadImmediateData();
     ReadBufferedData();
 
-    if (m_bLastMouseReset)
+    auto* window = static_cast<RenderWindowOSX*>(CGlobals::GetApp()->GetRenderWindow());
+    if (window && window->SampleTrackpadDrag(m_dims2))
+    {
+        // Keep the hardware baseline from ReadImmediateData for the next physical move.
+        m_bLastMouseReset = false;
+    }
+    else if (m_bLastMouseReset)
     {
         m_bLastMouseReset = false;
         m_lastMouseState.x = m_curMouseState.x;

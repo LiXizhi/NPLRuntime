@@ -58,6 +58,12 @@ static WindowDelegate* sInstance = nil;
     }
 }
 
+- (void) windowDidResignKey:(NSNotification *)notification
+{
+    if (_renderWindow)
+        _renderWindow->CancelScrollGesture();
+}
+
 - (void) windowDidBecomeKey:(NSNotification *)notification
 {
     if (_renderWindow)

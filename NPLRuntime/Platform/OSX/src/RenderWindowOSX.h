@@ -41,6 +41,8 @@ namespace ParaEngine
         void OnKey(EKeyState state, NSEvent* event);
         void OnFlagsChanged(NSEvent* event);
         void OnScrollWheel(NSEvent* event);
+        void CancelScrollGesture();
+        bool SampleTrackpadDrag(DeviceMouseState& frame);
         void OnInsertText(NSString* string);
         bool ShouldAcceptTextInput() const;
         bool ShouldEnableIME() const;
@@ -48,11 +50,13 @@ namespace ParaEngine
         
         NSRect GetCharacterRect();
     private:
+        NSPoint GetMousePosition(NSEvent* event) const;
+        void EndTrackpadDrag();
         void OnMouseEvent(EMouseButton button, EKeyState state, NSEvent* event);
-        void OnMouseButton(EMouseButton button, EKeyState state,uint32_t x,uint32_t y);
+        void OnMouseButton(EMouseButton button, EKeyState state, int x, int y);
         void OnKey(EVirtualKey key, EKeyState state);
         
-        void OnMouseMove(uint32_t x, uint32_t y);
+        void OnMouseMove(int x, int y);
         void SendWheel(float deltaX, float deltaY, bool precise = false);
                
         void OnChar(unsigned int character);
@@ -60,8 +64,10 @@ namespace ParaEngine
         bool m_shouldClose;
         NSWindow* m_window;
         bool m_scrollGestureOverUI = false;
-        float m_scrollMouseX;
-        float m_scrollMouseY;
+        enum class TrackpadDrag { Idle, Active, Released };
+        TrackpadDrag m_trackpadDrag = TrackpadDrag::Idle;
+        NSPoint m_dragPosition = NSZeroPoint;
+        NSPoint m_lastDragSample = NSZeroPoint;
         float m_lastAutoUIScale = 0.0f;
         uint32_t m_lastPhysicalWidth = 0;
         uint32_t m_lastPhysicalHeight = 0;

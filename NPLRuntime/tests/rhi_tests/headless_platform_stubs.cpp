@@ -20,6 +20,7 @@ extern "C" NPL::NPLReturnCode NPL_activate_LuaObjcBridge_cpp(NPL::INPLRuntimeSta
 	return NPL::NPL_Error;
 }
 std::vector<std::string> ParaEngine::SerialPortMac::GetPortNames() { return {}; }
+#ifndef NPL_TEST_PLATFORM_RENDER_WINDOW
 ParaEngine::CDirectKeyboard::CDirectKeyboard() {}
 ParaEngine::CDirectMouse::CDirectMouse() : m_bUseDirectInput(false) { m_bShowCursor = true; }
 ParaEngine::CDirectMouse::~CDirectMouse() {}
@@ -30,6 +31,7 @@ void ParaEngine::CDirectMouse::SetLock(bool) {}
 void ParaEngine::CDirectMouse::ShowCursor(bool) {}
 void ParaEngine::CDirectMouse::SetMousePosition(int, int) {}
 void ParaEngine::CDirectMouse::Reset() {}
+#endif
 #endif
 
 // Minimal headless platform stubs for linking ParaEngine static library without a GUI application target

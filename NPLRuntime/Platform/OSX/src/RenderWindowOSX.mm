@@ -175,8 +175,6 @@ RenderWindowOSX::RenderWindowOSX(const int width, const int height)
 :m_shouldClose(false)
 ,m_window(nullptr)
 ,currentBackingScaleFactor(1)
-,m_scrollMouseX(0)
-,m_scrollMouseY(0)
 {
     [NSApplication sharedApplication];
     
@@ -247,8 +245,6 @@ RenderWindowOSX::RenderWindowOSX(NSWindow* existingWindow)
 :m_shouldClose(false)
 ,m_window([existingWindow retain])
 ,currentBackingScaleFactor(1)
-,m_scrollMouseX(0)
-,m_scrollMouseY(0)
 {
     if (m_window && [m_window.contentView isKindOfClass:[RenderView class]])
     {
@@ -461,6 +457,7 @@ bool RenderWindowOSX::ShouldClose() const
 
 void RenderWindowOSX::OnMouseDown(EMouseButton button, NSEvent* event)
 {
+    EndTrackpadDrag();
     OnMouseEvent(button, EKeyState::PRESS, event);
 }
 
@@ -469,29 +466,26 @@ void RenderWindowOSX::OnMouseUp(EMouseButton button, NSEvent* event)
     OnMouseEvent(button, EKeyState::RELEASE, event);
 }
 
+NSPoint RenderWindowOSX::GetMousePosition(NSEvent* event) const
+{
+    NSView* view = m_window.contentView;
+    NSPoint point = [view convertPointToBacking:[view convertPoint:event.locationInWindow fromView:nil]];
+    return NSMakePoint(point.x, GetHeight() - point.y);
+}
+
 void RenderWindowOSX::OnMouseMove(NSEvent* event)
 {
-    auto mousePoint = NSMakePoint([event locationInWindow].x, [event locationInWindow].y);
-    auto backingPoint = [m_window.contentView convertPointToBacking:mousePoint];
-    
-    uint32_t mx = (uint32_t)backingPoint.x;
-    uint32_t my = GetHeight() - (uint32_t)backingPoint.y;
-    
-    OnMouseMove(mx, my);
-    
-    m_scrollMouseX = mx;
-    m_scrollMouseY = my;
+    if (m_trackpadDrag != TrackpadDrag::Active)
+    {
+        NSPoint point = GetMousePosition(event);
+        OnMouseMove(point.x, point.y);
+    }
 }
 
 void RenderWindowOSX::OnMouseEvent(EMouseButton button, EKeyState state, NSEvent* event)
 {
-    auto mousePoint = NSMakePoint([event locationInWindow].x, [event locationInWindow].y);
-    auto backingPoint = [m_window.contentView convertPointToBacking:mousePoint];
-    
-    uint32_t mx = (uint32_t)backingPoint.x;
-    uint32_t my = GetHeight() - (uint32_t)backingPoint.y;
-    
-    OnMouseButton(button, state, mx, my);
+    NSPoint point = GetMousePosition(event);
+    OnMouseButton(button, state, point.x, point.y);
 }
 
 void RenderWindowOSX::OnKey(EKeyState state, NSEvent* event)
@@ -631,8 +625,11 @@ void RenderWindowOSX::OnScrollWheel(NSEvent* event)
         SendWheel(dx, overUI ? dy : [event deltaY], precise && overUI);
         return;
     }
-    if (phase == NSEventPhaseMayBegin || phase == NSEventPhaseBegan)
+    if (phase == NSEventPhaseBegan)
+    {
+        EndTrackpadDrag();
         m_scrollGestureOverUI = overUI;
+    }
     // Position updates stop while fingers are held still. Expose contact separately
     // so an elastic pane can wait for lift even when there is no final wheel delta.
     if (phase == NSEventPhaseBegan || phase == NSEventPhaseEnded || phase == NSEventPhaseCancelled)
@@ -650,27 +647,67 @@ void RenderWindowOSX::OnScrollWheel(NSEvent* event)
             m_scrollGestureOverUI = false;
         return;
     }
-    if (phase != NSEventPhaseNone)
+    if (phase == NSEventPhaseBegan && [NSEvent pressedMouseButtons] == 0)
     {
-        m_scrollMouseX += [event deltaX] * 4;
-        m_scrollMouseY += [event deltaY] * 4;
-
-        switch (phase)
+        m_dragPosition = GetMousePosition(event);
+        m_lastDragSample = m_dragPosition;
+        m_trackpadDrag = TrackpadDrag::Active;
+        OnMouseButton(EMouseButton::RIGHT, EKeyState::PRESS, m_dragPosition.x, m_dragPosition.y);
+    }
+    if (m_trackpadDrag != TrackpadDrag::Active)
+        return;
+    if (phase == NSEventPhaseBegan || phase == NSEventPhaseChanged)
+    {
+        // A precise scroll delta is in points. Keep fractions between frames.
+        const CGFloat dragX = precise ? event.scrollingDeltaX : event.deltaX * 4;
+        const CGFloat dragY = precise ? event.scrollingDeltaY : event.deltaY * 4;
+        if (dragX || dragY)
         {
-            case NSEventPhaseBegan:
-                OnMouseButton(EMouseButton::RIGHT, EKeyState::PRESS, m_scrollMouseX, m_scrollMouseY);
-                break;
-            case NSEventPhaseChanged:
-                OnMouseMove(m_scrollMouseX, m_scrollMouseY);
-                break;
-            case NSEventPhaseEnded:
-            case NSEventPhaseCancelled:
-                OnMouseButton(EMouseButton::RIGHT, EKeyState::RELEASE, m_scrollMouseX, m_scrollMouseY);
-                break;
-            default:
-                break;
+            m_dragPosition.x += dragX;
+            m_dragPosition.y += dragY;
+            OnMouseMove(m_dragPosition.x, m_dragPosition.y);
         }
     }
+    else if (phase == NSEventPhaseEnded || phase == NSEventPhaseCancelled)
+        EndTrackpadDrag();
+}
+
+void RenderWindowOSX::EndTrackpadDrag()
+{
+    if (m_trackpadDrag == TrackpadDrag::Active)
+    {
+        OnMouseButton(EMouseButton::RIGHT, EKeyState::RELEASE, m_dragPosition.x, m_dragPosition.y);
+        m_trackpadDrag = TrackpadDrag::Released;
+    }
+}
+
+void RenderWindowOSX::CancelScrollGesture()
+{
+    EndTrackpadDrag();
+    if (m_scrollGestureOverUI)
+    {
+        m_scrollGestureOverUI = false;
+        CVariable tracking;
+        tracking = false;
+        CGUIRoot::GetInstance()->SetDynamicField("TrackpadScrollActive", tracking);
+    }
+}
+
+bool RenderWindowOSX::SampleTrackpadDrag(DeviceMouseState& frame)
+{
+    if (m_trackpadDrag == TrackpadDrag::Idle)
+        return false;
+
+    // Camera motion is relative to the preceding frame, independent of cursor lock
+    // and of how many Cocoa events arrived between the two samples.
+    frame.x = std::lround(m_dragPosition.x) - std::lround(m_lastDragSample.x);
+    frame.y = std::lround(m_dragPosition.y) - std::lround(m_lastDragSample.y);
+    m_lastDragSample = m_dragPosition;
+    if (m_trackpadDrag == TrackpadDrag::Active)
+        frame.buttons[(int)EMouseButton::RIGHT] = EKeyState::PRESS;
+    else
+        m_trackpadDrag = TrackpadDrag::Idle;
+    return true;
 }
 
  void RenderWindowOSX::OnInsertText(NSString* string)
@@ -808,7 +845,7 @@ bool RenderWindowOSX::OnShouldClose()
     return true;
 }
 
-void RenderWindowOSX::OnMouseButton(ParaEngine::EMouseButton button, ParaEngine::EKeyState state, uint32_t x, uint32_t y)
+void RenderWindowOSX::OnMouseButton(ParaEngine::EMouseButton button, ParaEngine::EKeyState state, int x, int y)
 {
  
     if (CGlobals::GetApp()->GetAppState() != PEAppState_Ready)
@@ -873,7 +910,7 @@ void RenderWindowOSX::SendWheel(float deltaX, float deltaY, bool precise)
 }
 
 
-void RenderWindowOSX::OnMouseMove(uint32_t x, uint32_t y)
+void RenderWindowOSX::OnMouseMove(int x, int y)
 {
     //NSLog(@"OnMouseMove: %d,%d",x,y);
     if (CGlobals::GetApp()->GetAppState() != PEAppState_Ready)

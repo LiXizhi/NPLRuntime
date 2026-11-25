@@ -390,6 +390,8 @@ if (NPLRUNTIME_BUILD_TESTS AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tests/rhi_tes
 
 		add_executable(MacIMETextInputFocusTest
 			tests/MacIMETextInputFocusTest.mm
+			tests/MacTrackpadDragTest.mm
+			Platform/OSX/src/2dengine/GUIDirectInput.mm
 			tests/rhi_tests/headless_platform_stubs.cpp
 			Platform/OSX/src/RenderViewOSX.mm
 			Platform/OSX/src/RenderWindowOSX.mm)
@@ -400,6 +402,7 @@ if (NPLRUNTIME_BUILD_TESTS AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tests/rhi_tes
 		target_link_libraries(MacIMETextInputFocusTest PRIVATE ParaEngine "-framework Cocoa" "-framework Carbon")
 		target_link_options(MacIMETextInputFocusTest PRIVATE "-Wl,-dead_strip")
 		add_test(NAME mac_ime_text_input_focus COMMAND MacIMETextInputFocusTest)
+		add_test(NAME mac_trackpad_camera_drag COMMAND MacIMETextInputFocusTest --trackpad)
 	endif()
 	if (APPLE AND NOT IOS AND TARGET luajit21)
 		add_executable(MacLuaJITSmoke tests/MacLuaJITSmoke.c)
