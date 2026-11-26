@@ -1,6 +1,7 @@
 """Run Haqi with this checkout's built WASM engine and an external webparacraft shell."""
 
 import argparse
+from functools import lru_cache
 import hashlib
 import http.server
 import json
@@ -53,7 +54,7 @@ def main():
         if not (root / name).is_file():
             parser.error(f"Missing {root / name}. Set --web-root to a webparacraft checkout with Haqi packages.")
 
-    configuration = {"version": 2, "web_root": str(root), "engine_dir": str(engine)}
+    configuration = {"version": 3, "web_root": str(root), "engine_dir": str(engine)}
     default_port = 8093 if args.test_gui_batching else (8092 if args.test_missing_region else 8091)
     port = args.port if args.port is not None else default_port
     base_url = f"http://127.0.0.1:{port}"
@@ -71,10 +72,16 @@ def main():
         query.update(searchroot=fixture.as_posix(), searchpath="script/apps/Aries/main_loop.lua,Texture/bench", mcp=base_url)
     url = f"{base_url}{web_server.PREFIX}haqi1.html?" + urllib.parse.urlencode(query, quote_via=urllib.parse.quote)
 
+    # Share the digest across launches while the file revision is unchanged.
+    @lru_cache(maxsize=4)
+    def engine_digest(path, revision):
+        return hashlib.md5(path.read_bytes()).hexdigest()
+
     def engine_manifest():
         text = (root / MANIFEST.lstrip("/")).read_text(encoding="utf-8")
         for name in ENGINE_FILES:
-            digest = hashlib.md5((engine / name).read_bytes()).hexdigest()
+            path = engine / name
+            digest = engine_digest(path, web_server.file_revision(path.stat()))
             pattern = r'(\["auto_generate_files/' + re.escape(name) + r'"\]:\s*")[^"]+'
             text, count = re.subn(pattern, lambda match: match.group(1) + digest, text)
             if count != 1:

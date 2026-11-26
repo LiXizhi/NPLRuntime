@@ -35,7 +35,7 @@ NPLRuntimeUnified/
 ├── web/                         # Lightweight (~560 KB) self-contained WebParacraft shell
 │   ├── index.html               # Entry HTML (/npl/webparacraft/index.html)
 │   ├── keepwork/local.html      # Keepwork local-dev compatible entry HTML
-│   ├── ServiceWorker.js         # Embedded NPL WebServer route bridge (no .wasm/.js CacheStorage caching)
+│   ├── ServiceWorker.js         # Embedded NPL WebServer route bridge and revalidated WASM / large-file cache
 │   ├── src/local_disk_fs.js     # Local-disk -> Emscripten MEMFS driver (?searchroot=...&searchpath=...)
 │   ├── src/                     # index.js, emscripten.js, emscripten_api.js, webview.js, NPL.js
 │   ├── libs/                    # Runtime JS libs (isLoading, tone, socket.io, mqtt)

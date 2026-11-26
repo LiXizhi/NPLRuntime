@@ -1,7 +1,4 @@
-// Local-dev ServiceWorker for NPLRuntimeUnified WebParacraft.
-// Bridges embedded NPL WebServer routes to the active WebParacraft page via MessageChannel,
-// while bypassing CacheStorage for all engine/static/local-disk (/fs/*) requests so edits
-// and rebuilt WASM binaries always take effect immediately without stale cache issues.
+// Local WebParacraft asset caching and embedded NPL WebServer bridge.
 
 const NPL_WEBSERVER_ROUTE = "/__npl_webserver__";
 let nplWebserverClientId = "";
@@ -11,11 +8,7 @@ self.addEventListener("install", event => {
 });
 
 self.addEventListener("activate", event => {
-    event.waitUntil((async () => {
-        const keys = await caches.keys();
-        await Promise.all(keys.map(key => caches.delete(key)));
-        await self.clients.claim();
-    })());
+    event.waitUntil(self.clients.claim());
 });
 
 self.addEventListener("message", event => {
@@ -174,9 +167,49 @@ async function proxyNplWebserver(event, route) {
     return new Response(responseBody, { status: status, headers: responseHeaders });
 }
 
+// Large WASM/package responses can exceed the browser HTTP cache's per-entry limit.
+async function serveLargeFile(event, key, revision) {
+    let cache, cached;
+    try {
+        cache = await caches.open("WebParacraft-local-large-v1");
+        cached = await cache.match(key);
+    } catch (error) {
+        return fetch(event.request);
+    }
+    const headers = new Headers(event.request.headers);
+    if (cached) {
+        const etag = cached.headers.get("ETag");
+        if (revision && etag === '"' + revision + '"') return cached;
+        headers.set("If-None-Match", etag);
+    }
+    const response = await fetch(event.request, { headers, cache: "no-store" });
+    if (response.status === 304 && cached) return cached;
+    if (response.status === 200 && response.headers.has("ETag")) {
+        try {
+            if (cached) await cache.delete(key);
+            await cache.put(key, response.clone());
+        } catch (error) {
+            console.warn("WebParacraft could not retain", key.pathname, error.name);
+        }
+    }
+    return response;
+}
+
 self.addEventListener("fetch", event => {
     const requestUrl = new URL(event.request.url);
     if (requestUrl.origin !== self.location.origin) return;
+
+    if (event.request.method === "GET" && !event.request.headers.has("Range")) {
+        const revision = requestUrl.searchParams.get("rev");
+        const size = revision && parseInt(revision.split("-").pop(), 16);
+        const largeDiskFile = requestUrl.pathname === "/fs/file" && size >= 8 * 1024 * 1024;
+        if (largeDiskFile || /\/auto_generate_files\/ParaCraft(?:SingleThread)?\.wasm$/.test(requestUrl.pathname)) {
+            const key = new URL(requestUrl);
+            key.searchParams.delete("rev");
+            event.respondWith(serveLargeFile(event, key, largeDiskFile && revision));
+            return;
+        }
+    }
 
     if (requestUrl.pathname.endsWith("/manifest.json")) {
         const baseUrl = getWorkerDirectory();

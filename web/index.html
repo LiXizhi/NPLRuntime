@@ -87,10 +87,11 @@
             const isLocalHost = hostname === "localhost" || hostname === "127.0.0.1";
             const basePrefix = isLocalHost ? "/npl/webparacraft/" : "/";
 
-            window.WEBPARACRAFT_VERSION = "dev-" + Date.now();
+            window.WEBPARACRAFT_VERSION = "dev";
             window.WEBPARACRAFT_ORIGIN = window.location.origin + basePrefix;
             window.chrome_webview = window.chrome && window.chrome.webview;
 
+            let bootCacheReady;
             if ("serviceWorker" in navigator) {
                 const useRelativeSw = !isLocalHost;
                 const currentUrl = new URL(window.location.href);
@@ -100,7 +101,23 @@
                 const workerScope = useRelativeSw ? new URL("./", currentUrl).pathname : "/";
                 window.WEBPARACRAFT_SERVICE_WORKER_URL = workerUrl.href;
                 window.WEBPARACRAFT_SERVICE_WORKER_SCOPE = workerScope;
-                navigator.serviceWorker.register(workerUrl.href).catch(function () {});
+                const sw = navigator.serviceWorker;
+                const registration = sw.register(workerUrl.href);
+                if (!sw.controller) {
+                    // Give the first install a chance to retain the large initial downloads.
+                    bootCacheReady = new Promise(resolve => {
+                        function finish() {
+                            clearTimeout(timer);
+                            sw.removeEventListener("controllerchange", finish);
+                            resolve();
+                        }
+                        const timer = setTimeout(finish, 1500);
+                        sw.addEventListener("controllerchange", finish);
+                        registration.catch(finish);
+                    });
+                } else {
+                    registration.catch(() => {});
+                }
             }
 
             const cssLink = document.createElement("link");
@@ -130,7 +147,8 @@
                         console.error("Failed to load script:", s.src, err);
                         next();
                     };
-                    document.body.appendChild(s);
+                    if (rel === engineJs && bootCacheReady) bootCacheReady.then(() => document.body.appendChild(s));
+                    else document.body.appendChild(s);
                 }
                 next();
             }
