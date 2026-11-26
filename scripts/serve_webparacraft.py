@@ -24,6 +24,7 @@ import re
 import socket
 import socketserver
 import ssl
+import stat
 import struct
 import threading
 import time
@@ -432,7 +433,18 @@ def matches_searchpath(rel_posix: str, prefixes) -> bool:
     return False
 
 
-def cached_asset_entries(root_real: str):
+def file_revision(st):
+    return f"{st.st_ino:x}-{st.st_mtime_ns:x}-{st.st_ctime_ns:x}-{st.st_size:x}"
+
+
+def manifest_entry(path, st, revisions):
+    entry = [path, st.st_size, st.st_mtime_ns // 1_000_000]
+    if revisions and not stat.S_ISLNK(st.st_mode):
+        entry.append(file_revision(st))
+    return entry
+
+
+def cached_asset_entries(root_real: str, revisions=False):
     """Expose desktop cache payloads referenced by this installation's asset manifest."""
     cache = os.path.join(root_real, "temp", "cache")
     if not os.path.isdir(cache):
@@ -472,7 +484,7 @@ def cached_asset_entries(root_real: str):
                 except OSError:
                     continue
                 if st.st_size:
-                    yield [rel, st.st_size, int(st.st_mtime * 1000)]
+                    yield manifest_entry(rel, st, revisions)
             if not available:
                 break
 
@@ -491,7 +503,7 @@ def detect_macos_assets_fallback(root_real: str) -> str:
     return ""
 
 
-def build_disk_manifest(root_real: str, prefixes, fallback_font_path: str, latin_fonts: dict = None):
+def build_disk_manifest(root_real: str, prefixes, fallback_font_path: str, latin_fonts: dict = None, revisions=False):
     entries = []
     seen_lower = set()
 
@@ -543,18 +555,22 @@ def build_disk_manifest(root_real: str, prefixes, fallback_font_path: str, latin
                     if rel_posix.lower() in seen_lower:
                         continue
                     try:
-                        st = entry.stat(follow_symlinks=False)
+                        # Windows DirEntry.stat may omit the inode used by the GET validator.
+                        if revisions and os.name == "nt":
+                            st = os.stat(entry.path, follow_symlinks=False)
+                        else:
+                            st = entry.stat(follow_symlinks=False)
                     except OSError:
                         continue
                     seen_lower.add(rel_posix.lower())
-                    entries.append([rel_posix, st.st_size, int(st.st_mtime * 1000)])
+                    entries.append(manifest_entry(rel_posix, st, revisions))
 
     walk_dir(root_real, "", 0)
-    entries.extend(cached_asset_entries(root_real))
+    entries.extend(cached_asset_entries(root_real, revisions))
     fallback_assets = detect_macos_assets_fallback(root_real)
     if fallback_assets:
         walk_dir(fallback_assets, "", 0)
-        entries.extend(cached_asset_entries(fallback_assets))
+        entries.extend(cached_asset_entries(fallback_assets, revisions))
 
     virtual_fonts = []
     if fallback_font_path:
@@ -567,7 +583,7 @@ def build_disk_manifest(root_real: str, prefixes, fallback_font_path: str, latin
         if v_rel.lower() not in seen_lower and v_abs and os.path.isfile(v_abs):
             try:
                 st = os.stat(v_abs)
-                entries.append([v_rel, st.st_size, int(st.st_mtime * 1000)])
+                entries.append(manifest_entry(v_rel, st, revisions))
                 seen_lower.add(v_rel.lower())
             except OSError:
                 pass
@@ -613,8 +629,44 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self.send_header("Cross-Origin-Opener-Policy", "same-origin")
             self.send_header("Cross-Origin-Resource-Policy", "cross-origin")
         self.send_header("Access-Control-Allow-Origin", "*")
-        self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
+        self.send_header("Cache-Control", getattr(self, "cache_policy", "no-store"))
         super().end_headers()
+
+    def _file_headers(self, st, revision=""):
+        token = file_revision(st)
+        etag = f'"{token}"'
+        self.cache_policy = "private, no-cache"
+        if revision and revision == token:
+            self.cache_policy = "private, max-age=31536000, immutable"
+        validators = {tag.strip() for tag in self.headers.get("If-None-Match", "").split(",")}
+        if validators.intersection(("*", etag, "W/" + etag)):
+            self.send_response(304)
+            self.send_header("ETag", etag)
+            self.end_headers()
+            return None
+        return etag
+
+    def send_head(self):
+        # The stdlib's Last-Modified validator rounds rebuilds to whole seconds.
+        path = self.translate_path(self.path)
+        if not os.path.isfile(path) or urllib.parse.urlsplit(self.path).path.endswith("/"):
+            return super().send_head()
+        try:
+            stream = open(path, "rb")
+        except OSError:
+            return super().send_head()
+        st = os.fstat(stream.fileno())
+        etag = self._file_headers(st)
+        if not etag:
+            stream.close()
+            return None
+        self.send_response(200)
+        self.send_header("Content-Type", self.guess_type(path))
+        self.send_header("Content-Length", str(st.st_size))
+        self.send_header("Last-Modified", self.date_time_string(st.st_mtime))
+        self.send_header("ETag", etag)
+        self.end_headers()
+        return stream
 
     def _send_json(self, status: int, payload: dict, compress_gzip: bool = False):
         raw = json.dumps(payload, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
@@ -666,6 +718,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             prefixes,
             self.server_config.font_file,
             self.server_config.latin_fonts_display,
+            revisions=query_params.get("revisions") == ["1"],
         )
         display_root = root_real.replace("\\", "/")
         if not display_root.endswith("/"):
@@ -760,7 +813,6 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         body_len = 8 + sum(6 + len(p) + len(d) for p, d in packed_items)
         self.send_response(200)
         self.send_header("Content-Type", "application/octet-stream")
-        self.send_header("Cache-Control", "no-store")
         self.send_header("Content-Length", str(body_len))
         self.end_headers()
         if self.command != "HEAD":
@@ -793,74 +845,79 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return
 
         try:
-            file_size = os.path.getsize(target_file)
-            range_header = self.headers.get("Range")
-            start = 0
-            end = file_size - 1
-            status = 200
-
-            if range_header and range_header.startswith("bytes=") and file_size > 0:
-                m = re.match(r"^bytes=(\d*)-(\d*)$", range_header.strip())
-                if m:
-                    s_str, e_str = m.group(1), m.group(2)
-                    if s_str:
-                        start = int(s_str)
-                        end = int(e_str) if e_str else file_size - 1
-                    elif e_str:
-                        suffix = int(e_str)
-                        start = max(0, file_size - suffix)
-                    if start > end or start >= file_size:
-                        self.send_response(416)
-                        self.send_header("Content-Range", f"bytes */{file_size}")
-                        self.end_headers()
-                        return
-                    end = min(end, file_size - 1)
-                    status = 206
-
-            enc = (query_params.get("enc", [""])[0] or "").strip().lower()
-            length = (end - start + 1) if file_size > 0 else 0
-            if enc == "b64":
-                raw_bytes = b""
-                if length > 0:
-                    with open(target_file, "rb") as f:
-                        if start > 0:
-                            f.seek(start)
-                        raw_bytes = f.read(length)
-                b64_bytes = base64.b64encode(raw_bytes) if raw_bytes else b""
-                self.send_response(status)
-                self.send_header("Content-Type", "text/plain; charset=ascii")
-                self.send_header("Cache-Control", "no-store")
-                self.send_header("Content-Length", str(len(b64_bytes)))
-                self.end_headers()
-                if self.command != "HEAD" and b64_bytes:
-                    self.wfile.write(b64_bytes)
-                return
-
-            self.send_response(status)
-            self.send_header("Content-Type", "application/octet-stream")
-            self.send_header("Cache-Control", "no-store")
-            self.send_header("Accept-Ranges", "bytes")
-            if status == 206:
-                self.send_header("Content-Range", f"bytes {start}-{end}/{file_size}")
-            self.send_header("Content-Length", str(length))
-            self.end_headers()
-
-            if self.command != "HEAD" and length > 0:
-                with open(target_file, "rb") as f:
-                    if start > 0:
-                        f.seek(start)
-                    remaining = length
-                    chunk_size = 256 * 1024
-                    while remaining > 0:
-                        chunk = f.read(min(chunk_size, remaining))
-                        if not chunk:
-                            break
-                        self.wfile.write(chunk)
-                        remaining -= len(chunk)
+            with open(target_file, "rb") as stream:
+                self._send_fs_file(stream, query_params)
         except (BrokenPipeError, ConnectionResetError):
             pass
         except OSError as exc:
             self._send_json(500, {"ok": False, "error": str(exc)})
+
+    def _send_fs_file(self, stream, query_params):
+        st = os.fstat(stream.fileno())
+        file_size = st.st_size
+        range_header = self.headers.get("Range")
+        start = 0
+        end = file_size - 1
+        status = 200
+
+        if range_header and range_header.startswith("bytes=") and file_size > 0:
+            m = re.match(r"^bytes=(\d*)-(\d*)$", range_header.strip())
+            if m:
+                s_str, e_str = m.group(1), m.group(2)
+                if s_str:
+                    start = int(s_str)
+                    end = int(e_str) if e_str else file_size - 1
+                elif e_str:
+                    suffix = int(e_str)
+                    start = max(0, file_size - suffix)
+                if start > end or start >= file_size:
+                    self.send_response(416)
+                    self.send_header("Content-Range", f"bytes */{file_size}")
+                    self.end_headers()
+                    return
+                end = min(end, file_size - 1)
+                status = 206
+
+        enc = (query_params.get("enc", [""])[0] or "").strip().lower()
+        length = (end - start + 1) if file_size > 0 else 0
+        etag = self._file_headers(st, (query_params.get("rev") or [""])[0])
+        if not etag:
+            return
+        if enc == "b64":
+            if status == 206:
+                self.cache_policy = "no-store"
+            raw_bytes = b""
+            if self.command != "HEAD" and length > 0:
+                stream.seek(start)
+                raw_bytes = stream.read(length)
+            b64_bytes = base64.b64encode(raw_bytes) if raw_bytes else b""
+            self.send_response(status)
+            self.send_header("Content-Type", "text/plain; charset=ascii")
+            self.send_header("ETag", etag)
+            self.send_header("Content-Length", str(4 * ((length + 2) // 3)))
+            self.end_headers()
+            if self.command != "HEAD" and b64_bytes:
+                self.wfile.write(b64_bytes)
+            return
+
+        self.send_response(status)
+        self.send_header("Content-Type", "application/octet-stream")
+        self.send_header("ETag", etag)
+        self.send_header("Accept-Ranges", "bytes")
+        if status == 206:
+            self.send_header("Content-Range", f"bytes {start}-{end}/{file_size}")
+        self.send_header("Content-Length", str(length))
+        self.end_headers()
+
+        if self.command != "HEAD" and length > 0:
+            stream.seek(start)
+            remaining = length
+            while remaining > 0:
+                chunk = stream.read(min(256 * 1024, remaining))
+                if not chunk:
+                    break
+                self.wfile.write(chunk)
+                remaining -= len(chunk)
 
     def _handle_fs_log(self):
         if not self._check_fs_access():
@@ -887,7 +944,6 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         self.send_response(200)
         self.send_header("Content-Type", content_type)
         self.send_header("Content-Length", str(len(body)))
-        self.send_header("Cache-Control", "no-store")
         self.end_headers()
         if self.command != "HEAD":
             self.wfile.write(body)

@@ -72,6 +72,7 @@
         fsOrigin: window.location.origin,
         resolvedRoot: "",
         searchpath: "",
+        revisions: new Map(),
         deferredEntries: [],
         stats: {
             manifestEntries: 0,
@@ -91,7 +92,8 @@
             "/fs/file?root=" +
             encodeURIComponent(state.resolvedRoot) +
             "&path=" +
-            encodeURIComponent(relPath)
+            encodeURIComponent(relPath) +
+            (state.revisions.has(relPath) ? "&rev=" + encodeURIComponent(state.revisions.get(relPath)) : "")
         );
     }
 
@@ -403,8 +405,8 @@
         for (let i = 0; i < limit; i++) {
             runners.push((async function () {
                 while (index < items.length) {
-                    const current = items[index++];
-                    await workerFn(current);
+                    const current = index++;
+                    await workerFn(items[current], current);
                 }
             })());
         }
@@ -418,16 +420,58 @@
         return lower.endsWith(".lua") || lower.endsWith(".npl") || lower.endsWith(".xml");
     }
 
-    async function fetchBatchPack(relPaths, preloadedMap, onChunkBytes) {
-        if (!relPaths.length) return true;
-        const res = await fetch(state.fsOrigin + "/fs/batch", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ root: state.resolvedRoot, paths: relPaths }),
-            cache: "no-store",
-        });
-        if (!res.ok) return false;
-        const buf = await res.arrayBuffer();
+    async function discardRemovedBootFiles(chunkCount, entries) {
+        try {
+            const paths = new Set(entries.map(entry => entry[0]));
+            for (const name of ["WebParacraft-local-batches-v1", "WebParacraft-local-large-v1"]) {
+                if (!await caches.has(name)) continue;
+                const cache = await caches.open(name);
+                for (const request of await cache.keys()) {
+                    const url = new URL(request.url);
+                    if (url.searchParams.get("root") !== state.resolvedRoot) continue;
+                    const path = url.searchParams.get("path");
+                    const removedFile = path && shouldPrestageAtBoot(path, 0) && !paths.has(path);
+                    const removedChunk = url.pathname === "/fs/batch" &&
+                        url.searchParams.get("searchpath") === state.searchpath &&
+                        Number(url.searchParams.get("chunk")) >= chunkCount;
+                    if (removedFile || removedChunk) await cache.delete(request);
+                }
+            }
+        } catch (err) {
+            // Cache Storage is optional, including on insecure LAN origins.
+        }
+    }
+
+    async function fetchBatchPack(entries, index, preloadedMap, onChunkBytes) {
+        const relPaths = entries.map(entry => entry[0]);
+        // One replaceable slot per chunk. The fresh manifest covers membership, order and edits.
+        const key = state.fsOrigin + "/fs/batch?root=" + encodeURIComponent(state.resolvedRoot) +
+            "&searchpath=" + encodeURIComponent(state.searchpath) + "&chunk=" + index;
+        let cache, revision, buf, cacheHit = false;
+        try {
+            if (window.caches && crypto.subtle && entries.every(entry => entry[3])) {
+                const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(JSON.stringify(entries)));
+                revision = Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, "0")).join("");
+                cache = await caches.open("WebParacraft-local-batches-v1");
+                const cached = await cache.match(key);
+                if (cached && cached.headers.get("X-Pack-Revision") === revision) {
+                    buf = await cached.arrayBuffer();
+                    cacheHit = true;
+                }
+            }
+        } catch (err) {
+            // Storage can be disabled or evicted between launches.
+        }
+        if (!buf) {
+            const res = await fetch(state.fsOrigin + "/fs/batch", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ root: state.resolvedRoot, paths: relPaths }),
+                cache: "no-store",
+            });
+            if (!res.ok) return false;
+            buf = await res.arrayBuffer();
+        }
         if (buf.byteLength < 8) return false;
         const view = new DataView(buf);
         // "NPB1" = 0x3142504e little-endian
@@ -452,6 +496,15 @@
             state.stats.prestagedFiles += 1;
             state.stats.prestagedBytes += dataLen;
             unpackedBytes += dataLen;
+        }
+        // Keep only complete, successfully decoded packs. A failed write must not block boot.
+        if (!cacheHit && cache && count === entries.length && offset === buf.byteLength &&
+            relPaths.every(path => preloadedMap.has(path))) {
+            try {
+                await cache.put(key, new Response(buf, { headers: { "X-Pack-Revision": revision } }));
+            } catch (err) {
+                console.warn("[local_disk_fs] Could not retain boot pack", index, err.name);
+            }
         }
         if (onChunkBytes && unpackedBytes > 0) onChunkBytes(unpackedBytes);
         return true;
@@ -493,7 +546,7 @@
 
         const manifestUrl =
             state.fsOrigin +
-            "/fs/manifest?root=" +
+            "/fs/manifest?revisions=1&root=" +
             encodeURIComponent(rawSearchRoot) +
             "&searchpath=" +
             encodeURIComponent(rawSearchPath);
@@ -530,6 +583,7 @@
             const entry = entries[i];
             const relPath = entry[0];
             const size = Number(entry[1]) || 0;
+            if (entry[3]) state.revisions.set(relPath, entry[3]);
             if (shouldPrestageAtBoot(relPath, size)) {
                 if (size > 0 && size <= 512 * 1024) {
                     bootBatchEntries.push(entry);
@@ -570,12 +624,13 @@
             batchChunks.push(bootBatchEntries.slice(i, i + batchChunkSize));
         }
 
+        await discardRemovedBootFiles(batchChunks.length, entries);
         let batchFallbackEntries = [];
         await Promise.all([
             fetchConcurrencyPool(bootLargeItems, 6, async function (entry) {
                 const relPath = entry[0];
                 try {
-                    const res = await fetch(buildFileUrl(relPath), { cache: "no-store" });
+                    const res = await fetch(buildFileUrl(relPath));
                     if (!res.ok) throw new Error("HTTP " + res.status);
                     const buf = await res.arrayBuffer();
                     const bytes = new Uint8Array(buf);
@@ -588,10 +643,9 @@
                     console.warn("[local_disk_fs] Prestage skipped for", relPath, err);
                 }
             }),
-            fetchConcurrencyPool(batchChunks, 2, async function (chunk) {
-                const paths = chunk.map(function (e) { return e[0]; });
+            fetchConcurrencyPool(batchChunks, 2, async function (chunk, index) {
                 try {
-                    const ok = await fetchBatchPack(paths, preloadedMap, function (added) {
+                    const ok = await fetchBatchPack(chunk, index, preloadedMap, function (added) {
                         completedBytes += added;
                         updateBootStatus();
                     });
@@ -613,7 +667,7 @@
                 const relPath = entry[0];
                 if (preloadedMap.has(relPath)) return;
                 try {
-                    const res = await fetch(buildFileUrl(relPath), { cache: "no-store" });
+                    const res = await fetch(buildFileUrl(relPath));
                     if (!res.ok) throw new Error("HTTP " + res.status);
                     const bytes = new Uint8Array(await res.arrayBuffer());
                     preloadedMap.set(relPath, bytes);
