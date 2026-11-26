@@ -401,7 +401,8 @@ BlockPSOut WaterPS(WaterBlockVSOut input)
 	BlockPSOut o;
 	float4 albedoColor = tex2D(tex0Sampler,input.texcoord.xy);
 	o.Color = albedoColor * input.color;
-	o.BlockInfo = float4(input.depth.rgb, 0);
+	// Source-alpha blending must replace the material ID even when the water color is translucent.
+	o.BlockInfo = float4(input.depth.rgb, 1);
 	o.Depth = float4(input.depth.a,0,0,1);
 
 #ifdef WATER_USEBUMPMAP

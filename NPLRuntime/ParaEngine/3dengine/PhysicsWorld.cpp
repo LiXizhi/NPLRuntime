@@ -75,6 +75,41 @@ const char* PHYSICS_DLL_FILE_PATH = ("PhysicsBT_d." DLL_FILE_EXT);
 const char* PHYSICS_DLL_FILE_PATH = ("PhysicsBT." DLL_FILE_EXT);
 #endif
 
+/** btCollisionObject::CF_NO_CONTACT_RESPONSE (the engine does not include bullet headers) */
+#define PHYSICS_CF_NO_CONTACT_RESPONSE 4
+
+namespace
+{
+	/** read {x,y,z} or {x=,y=,z=} NPL table into a vector. */
+	bool PhysicsWorld_ReadVector3(NPL::NPLObjectProxy& v, ParaEngine::Vector3& out)
+	{
+		if (v.GetType() != NPL::NPLObjectBase::NPLObjectType_Table)
+			return false;
+		NPL::NPLObjectProxy x = v.GetField("x");
+		if (x.GetType() == NPL::NPLObjectBase::NPLObjectType_Number)
+		{
+			NPL::NPLObjectProxy y = v.GetField("y");
+			NPL::NPLObjectProxy z = v.GetField("z");
+			out.x = (float)(double)x;
+			out.y = (y.GetType() == NPL::NPLObjectBase::NPLObjectType_Number) ? (float)(double)y : 0.f;
+			out.z = (z.GetType() == NPL::NPLObjectBase::NPLObjectType_Number) ? (float)(double)z : 0.f;
+			return true;
+		}
+		float c[3] = { 0.f, 0.f, 0.f };
+		int n = 0;
+		for (auto it = v.index_begin(); it != v.index_end() && n < 3; ++it)
+		{
+			if (it->second.GetType() != NPL::NPLObjectBase::NPLObjectType_Number)
+				return false;
+			c[n++] = (float)(double)it->second;
+		}
+		if (n == 0)
+			return false;
+		out = ParaEngine::Vector3(c[0], c[1], c[2]);
+		return true;
+	}
+}
+
 
 std::shared_ptr<CPhysicsBlockShape> CPhysicsBlock::GetShape(BlockModel& model, IParaPhysics* world)
 {
@@ -614,8 +649,136 @@ void CPhysicsWorld::SetActorPhysicsProperty(IParaPhysicsActor* actor, const char
 						km.m_mode = KinematicMotion_PingPong;
 					else if (modeStr == "pendulum")
 						km.m_mode = KinematicMotion_Pendulum;
+					else if (modeStr == "path")
+					{
+						km.m_mode = KinematicMotion_Path;
+						std::vector<Vector3> pts;
+						if (msg["Points"].GetType() == NPL::NPLObjectBase::NPLObjectType_String)
+						{
+							ParsePathPoints(((const std::string&)msg["Points"]).c_str(), pts);
+						}
+						else if (msg["Points"].GetType() == NPL::NPLObjectBase::NPLObjectType_Table)
+						{
+							NPL::NPLObjectProxy& tPts = msg["Points"];
+							for (auto it = tPts.index_begin(); it != tPts.index_end(); ++it)
+							{
+								Vector3 v;
+								if (PhysicsWorld_ReadVector3(it->second, v))
+									pts.push_back(v);
+							}
+						}
+						const size_t kMaxPathPoints = 64;
+						km.m_pathPoints.clear();
+						km.m_pathPoints.push_back(Vector3::ZERO); // path always starts at the base pose
+						for (size_t i = 0; i < pts.size() && km.m_pathPoints.size() < kMaxPathPoints; ++i)
+						{
+							if (i == 0 && pts[i].squaredLength() < 1e-8f)
+								continue; // explicit origin point is not duplicated
+							km.m_pathPoints.push_back(pts[i]);
+						}
+						std::string loopStr = (msg["Loop"].GetType() == NPL::NPLObjectBase::NPLObjectType_String) ? (const std::string&)msg["Loop"] : "pingpong";
+						km.m_pathLoop = (loopStr == "loop") ? KinematicPathLoop_Loop : ((loopStr == "once") ? KinematicPathLoop_Once : KinematicPathLoop_PingPong);
+						std::string easeStr = (msg["Easing"].GetType() == NPL::NPLObjectBase::NPLObjectType_String) ? (const std::string&)msg["Easing"] : "smooth";
+						km.m_pathEasing = (easeStr == "linear") ? KinematicEasing_Linear : ((easeStr == "bounce") ? KinematicEasing_Bounce : KinematicEasing_Smooth);
+						if (msg["SegmentPause"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number)
+							km.m_segmentPause = (std::max)(0.f, (float)(double)msg["SegmentPause"]);
+						else
+							km.m_segmentPause = km.m_pauseTime;
+					}
+
+					// per-controller clock: StartOnTrigger / ControllerEnabled=false hold the base (t=0) pose until started
+					bool bStartOnTrigger = (msg["StartOnTrigger"].GetType() == NPL::NPLObjectBase::NPLObjectType_Bool) && (bool)msg["StartOnTrigger"];
+					bool bEnabled = (msg["ControllerEnabled"].GetType() == NPL::NPLObjectBase::NPLObjectType_Bool) ? (bool)msg["ControllerEnabled"] : true;
+					if (bStartOnTrigger || !bEnabled)
+					{
+						km.m_useLocalClock = true;
+						km.m_running = false;
+						km.m_frozenLocalT = 0.f;
+						km.m_clockStart = m_dSimulationTime;
+						km.m_startOnTrigger = bStartOnTrigger;
+					}
 
 					m_mapKinematicMotions[actor] = km;
+					if (m_bRunDynamicSimulation)
+					{
+						bool bFrozen = false;
+						float tNow = GetKinematicLocalTime(km, m_dSimulationTime, &bFrozen);
+						Vector3 o, lv, av;
+						Quaternion q;
+						if (EvaluateKinematicMotion(km, tNow, o, q, lv, av))
+						{
+							if (bFrozen)
+							{
+								lv = Vector3::ZERO;
+								av = Vector3::ZERO;
+							}
+							Matrix4 worldMat;
+							q.ToRotationMatrix(worldMat, o);
+							actor->SetWorldTransform((const PARAMATRIX*)&worldMat);
+							actor->SetLinearVelocity(PARAVECTOR3(lv.x, lv.y, lv.z));
+							actor->SetAngularVelocity(PARAVECTOR3(av.x, av.y, av.z));
+							CBaseObject* pOwner = (CBaseObject*)actor->GetUserData();
+							if (pOwner)
+								SyncActorTransformToObject(actor, pOwner);
+						}
+					}
+				}
+			}
+			else if (method == "StartKinematicMotion" || method == "StopKinematicMotion" || method == "SetKinematicControllerEnabled")
+			{
+				auto itKm = m_mapKinematicMotions.find(actor);
+				if (itKm != m_mapKinematicMotions.end())
+				{
+					KinematicMotionDesc& km = itKm->second;
+					bool bStart = (method == "StartKinematicMotion");
+					if (method == "SetKinematicControllerEnabled")
+						bStart = (msg["Enabled"].GetType() == NPL::NPLObjectBase::NPLObjectType_Bool) ? (bool)msg["Enabled"] : true;
+					if (bStart)
+					{
+						bool bRestart = (msg["Restart"].GetType() == NPL::NPLObjectBase::NPLObjectType_Bool) && (bool)msg["Restart"];
+						if (!km.m_useLocalClock)
+						{
+							// legacy global-clock controller already running: only an explicit restart switches clocks
+							if (bRestart)
+							{
+								km.m_useLocalClock = true;
+								km.m_running = true;
+								km.m_clockStart = m_dSimulationTime;
+							}
+						}
+						else if (!km.m_running || bRestart)
+						{
+							float resumeT = bRestart ? 0.f : km.m_frozenLocalT;
+							km.m_clockStart = m_dSimulationTime - (double)resumeT;
+							km.m_running = true;
+						}
+					}
+					else
+					{
+						bool bReset = (msg["Reset"].GetType() == NPL::NPLObjectBase::NPLObjectType_Bool) && (bool)msg["Reset"];
+						float curT = GetKinematicLocalTime(km, m_dSimulationTime);
+						km.m_useLocalClock = true;
+						km.m_running = false;
+						km.m_frozenLocalT = bReset ? 0.f : curT;
+					}
+					// apply immediately so raycasts/visuals reflect the new state this frame
+					bool bFrozen = false;
+					float t = GetKinematicLocalTime(km, m_dSimulationTime, &bFrozen);
+					Vector3 o, lv, av;
+					Quaternion q;
+					if (EvaluateKinematicMotion(km, t, o, q, lv, av))
+					{
+						if (bFrozen)
+						{
+							lv = Vector3::ZERO;
+							av = Vector3::ZERO;
+						}
+						Matrix4 worldMat;
+						q.ToRotationMatrix(worldMat, o);
+						actor->SetWorldTransform((const PARAMATRIX*)&worldMat);
+						actor->SetLinearVelocity(PARAVECTOR3(lv.x, lv.y, lv.z));
+						actor->SetAngularVelocity(PARAVECTOR3(av.x, av.y, av.z));
+					}
 				}
 			}
 			else if (method == "ResetSimulationTime")
@@ -653,6 +816,33 @@ void CPhysicsWorld::SetActorPhysicsProperty(IParaPhysicsActor* actor, const char
 		if (msg["CollisionFlags"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number) actor->SetCollisionFlags((int)(double)msg["CollisionFlags"]);
 		if (msg["CcdSweptSphereRadius"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number) actor->SetCcdSweptSphereRadius((float)(double)msg["CcdSweptSphereRadius"]);
 		if (msg["CcdMotionThreshold"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number) actor->SetCcdMotionThreshold((float)(double)msg["CcdMotionThreshold"]);
+
+		// contraption v2: sensors, collision filtering and automatic CCD
+		if (msg["Sensor"].GetType() == NPL::NPLObjectBase::NPLObjectType_Bool)
+		{
+			int flags = actor->GetCollisionFlags();
+			if ((bool)msg["Sensor"])
+				flags |= PHYSICS_CF_NO_CONTACT_RESPONSE;
+			else
+				flags &= ~PHYSICS_CF_NO_CONTACT_RESPONSE;
+			actor->SetCollisionFlags(flags);
+		}
+		if (msg["CollisionGroup"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number ||
+			msg["CollisionMask"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number)
+		{
+			short group = actor->GetCollisionGroup();
+			short mask = actor->GetCollisionMask();
+			if (msg["CollisionGroup"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number)
+				group = (short)(std::min)(15, (std::max)(0, (int)(double)msg["CollisionGroup"]));
+			if (msg["CollisionMask"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number)
+				mask = (short)(((int64_t)(double)msg["CollisionMask"]) & 0xffff);
+			actor->SetCollisionFilter(group, mask);
+		}
+		if (msg["AutoCCD"].GetType() == NPL::NPLObjectBase::NPLObjectType_Bool)
+		{
+			ApplyAutoCCD(actor, (bool)msg["AutoCCD"]);
+		}
+		UpdateSensorRegistration(actor);
 	}
 }
 
@@ -721,6 +911,26 @@ const char* CPhysicsWorld::GetActorPhysicsProperty(IParaPhysicsActor* actor, con
 					msg["AngVelZ"] = (double)av.z;
 					msg["IsKinematic"] = actor->IsKinematicObject();
 					msg["IsStatic"] = actor->IsStaticObject();
+					NPL::NPLHelper::NPLTableToString(NULL, msg, sCode);
+					return sCode.c_str();
+				}
+				else if (method == "KinematicState")
+				{
+					auto itKm = m_mapKinematicMotions.find(actor);
+					msg["HasController"] = (itKm != m_mapKinematicMotions.end());
+					if (itKm != m_mapKinematicMotions.end())
+					{
+						const KinematicMotionDesc& km = itKm->second;
+						static const char* s_modeNames[] = { "none", "rotate", "pingpong", "pendulum", "path" };
+						int nMode = (int)km.m_mode;
+						msg["Mode"] = (nMode >= 0 && nMode <= 4) ? s_modeNames[nMode] : "none";
+						bool bFrozen = false;
+						msg["LocalTime"] = (double)GetKinematicLocalTime(km, m_dSimulationTime, &bFrozen);
+						msg["Running"] = !bFrozen;
+						msg["UseLocalClock"] = km.m_useLocalClock;
+						msg["StartOnTrigger"] = km.m_startOnTrigger;
+						msg["PathPointCount"] = (double)km.m_pathPoints.size();
+					}
 					NPL::NPLHelper::NPLTableToString(NULL, msg, sCode);
 					return sCode.c_str();
 				}
@@ -812,6 +1022,9 @@ const char* CPhysicsWorld::GetActorPhysicsProperty(IParaPhysicsActor* actor, con
 	msg["CollisionFlags"] = (double)actor->GetCollisionFlags();
 	msg["CcdSweptSphereRadius"] = actor->GetCcdSweptSphereRadius();
 	msg["CcdMotionThreshold"] = actor->GetCcdMotionThreshold();
+	msg["Sensor"] = ((actor->GetCollisionFlags() & PHYSICS_CF_NO_CONTACT_RESPONSE) != 0);
+	msg["CollisionGroup"] = (double)actor->GetCollisionGroup();
+	msg["CollisionMask"] = (double)actor->GetCollisionMask();
 	NPL::NPLHelper::NPLTableToString(NULL, msg, sCode);
 	return sCode.c_str();
 }
@@ -854,6 +1067,11 @@ void CPhysicsWorld::ExitPhysics()
 	m_mapKinematicMotions.clear();
 	m_mapActorFramePoses.clear();
 	m_mapDynamicActors.clear();
+	m_brokenConstraints.clear();
+	m_sensorActors.clear();
+	m_sensorOverlaps.clear();
+	m_contactPairs.clear();
+	m_physicsEvents.clear();
 	// 清空块
 	m_mapPhysicsBlocks.clear();
 	CPhysicsBlock::GetShapeIndexMap()->clear();
@@ -892,23 +1110,231 @@ void CPhysicsWorld::SyncActorTransformToObject(IParaPhysicsActor* actor, CBaseOb
 	obj->SetPitch(0);
 }
 
-void CPhysicsWorld::StepKinematicControllers(double dTime)
+namespace
 {
-	if (m_mapKinematicMotions.empty())
-		return;
-
-	const float t = (float)m_dSimulationTime;
-	for (auto& kv : m_mapKinematicMotions)
+	/** easing u(s) and du/ds for s in [0,1] */
+	void EvaluateKinematicEasing(int easing, float s, float& u, float& duDs)
 	{
-		IParaPhysicsActor* actor = kv.first;
-		const KinematicMotionDesc& km = kv.second;
-		if (!actor || km.m_mode == KinematicMotion_None)
-			continue;
+		if (s <= 0.f) { s = 0.f; }
+		if (s >= 1.f) { s = 1.f; }
+		if (easing == ParaEngine::CPhysicsWorld::KinematicEasing_Linear)
+		{
+			u = s;
+			duDs = 1.f;
+		}
+		else if (easing == ParaEngine::CPhysicsWorld::KinematicEasing_Bounce)
+		{
+			// standard easeOutBounce (Penner)
+			const float n1 = 7.5625f;
+			const float d1 = 2.75f;
+			if (s < 1.f / d1)
+			{
+				u = n1 * s * s;
+				duDs = 2.f * n1 * s;
+			}
+			else if (s < 2.f / d1)
+			{
+				float x = s - 1.5f / d1;
+				u = n1 * x * x + 0.75f;
+				duDs = 2.f * n1 * x;
+			}
+			else if (s < 2.5f / d1)
+			{
+				float x = s - 2.25f / d1;
+				u = n1 * x * x + 0.9375f;
+				duDs = 2.f * n1 * x;
+			}
+			else
+			{
+				float x = s - 2.625f / d1;
+				u = n1 * x * x + 0.984375f;
+				duDs = 2.f * n1 * x;
+			}
+		}
+		else
+		{
+			// smooth cosine ease-in-out (same curve as legacy pingpong)
+			u = 0.5f * (1.f - std::cos(s * MATH_PI));
+			duDs = 0.5f * MATH_PI * std::sin(s * MATH_PI);
+		}
+	}
 
+	/** Analytic multi-waypoint path: returns offset and velocity relative to base origin. */
+	void EvaluateKinematicPath(const ParaEngine::CPhysicsWorld::KinematicMotionDesc& km, float t, ParaEngine::Vector3& outOffset, ParaEngine::Vector3& outVel)
+	{
+		using namespace ParaEngine;
+		outOffset = Vector3::ZERO;
+		outVel = Vector3::ZERO;
+		const std::vector<Vector3>& pts = km.m_pathPoints;
+		const int n = (int)pts.size();
+		if (n < 2 || km.m_speed <= 1e-4f)
+		{
+			if (n > 0)
+				outOffset = pts[0];
+			return;
+		}
+		const float pause = (std::max)(0.f, km.m_segmentPause);
+		const float invSpeed = 1.f / km.m_speed;
+
+		// Build the leg sequence for one cycle as index pairs into pts.
+		// loop: 0->1->...->n-1->0 ; pingpong: 0->...->n-1->...->0 ; once: 0->...->n-1 then hold.
+		int legCount = 0;
+		if (km.m_pathLoop == CPhysicsWorld::KinematicPathLoop_Loop)
+			legCount = n;
+		else if (km.m_pathLoop == CPhysicsWorld::KinematicPathLoop_Once)
+			legCount = n - 1;
+		else
+			legCount = 2 * (n - 1);
+
+		auto legEndpoints = [&](int leg, int& ia, int& ib) {
+			if (km.m_pathLoop == CPhysicsWorld::KinematicPathLoop_Loop)
+			{
+				ia = leg;
+				ib = (leg + 1) % n;
+			}
+			else if (leg < n - 1)
+			{
+				ia = leg;
+				ib = leg + 1;
+			}
+			else
+			{
+				// returning half of pingpong
+				int back = leg - (n - 1);
+				ia = (n - 1) - back;
+				ib = ia - 1;
+			}
+		};
+
+		float cycle = 0.f;
+		for (int leg = 0; leg < legCount; ++leg)
+		{
+			int ia, ib;
+			legEndpoints(leg, ia, ib);
+			cycle += (pts[ib] - pts[ia]).length() * invSpeed + pause;
+		}
+		if (cycle <= 1e-5f)
+		{
+			outOffset = pts[0];
+			return;
+		}
+
+		float localT = t + km.m_phaseOffset * cycle;
+		if (km.m_pathLoop == CPhysicsWorld::KinematicPathLoop_Once)
+		{
+			if (localT <= 0.f)
+			{
+				outOffset = pts[0];
+				return;
+			}
+			if (localT >= cycle)
+			{
+				outOffset = pts[n - 1];
+				return;
+			}
+		}
+		else
+		{
+			localT = std::fmod(localT, cycle);
+			if (localT < 0.f)
+				localT += cycle;
+		}
+
+		for (int leg = 0; leg < legCount; ++leg)
+		{
+			int ia, ib;
+			legEndpoints(leg, ia, ib);
+			Vector3 delta = pts[ib] - pts[ia];
+			float dur = delta.length() * invSpeed;
+			if (localT < dur)
+			{
+				float s = localT / dur;
+				float u = 0.f, duDs = 0.f;
+				EvaluateKinematicEasing(km.m_pathEasing, s, u, duDs);
+				outOffset = pts[ia] + delta * u;
+				outVel = delta * (duDs / dur);
+				return;
+			}
+			localT -= dur;
+			if (localT < pause)
+			{
+				outOffset = pts[ib];
+				return;
+			}
+			localT -= pause;
+		}
+		// numerical fall-through: end of cycle
+		int ia, ib;
+		legEndpoints(legCount - 1, ia, ib);
+		outOffset = pts[ib];
+	}
+}
+
+float CPhysicsWorld::GetKinematicLocalTime(const KinematicMotionDesc& km, double simTime, bool* pFrozen)
+{
+	if (pFrozen)
+		*pFrozen = false;
+	if (!km.m_useLocalClock)
+		return (float)simTime;
+	if (km.m_running)
+		return (float)(simTime - km.m_clockStart);
+	if (pFrozen)
+		*pFrozen = true;
+	return km.m_frozenLocalT;
+}
+
+int CPhysicsWorld::ParsePathPoints(const char* str, std::vector<Vector3>& outPoints)
+{
+	outPoints.clear();
+	if (!str)
+		return 0;
+	const char* p = str;
+	while (*p)
+	{
+		float v[3] = { 0.f, 0.f, 0.f };
+		int nComp = 0;
+		while (*p && *p != ';' && nComp < 3)
+		{
+			while (*p == ' ' || *p == '\t' || *p == ',' || *p == '{' || *p == '}')
+				++p;
+			if (!*p || *p == ';')
+				break;
+			char* pEnd = nullptr;
+			float f = (float)strtod(p, &pEnd);
+			if (pEnd == p)
+			{
+				++p; // skip garbage
+				continue;
+			}
+			v[nComp++] = f;
+			p = pEnd;
+		}
+		// skip to the end of this point record
+		while (*p && *p != ';')
+			++p;
+		if (*p == ';')
+			++p;
+		if (nComp == 3)
+			outPoints.push_back(Vector3(v[0], v[1], v[2]));
+	}
+	return (int)outPoints.size();
+}
+
+bool CPhysicsWorld::EvaluateKinematicMotion(const KinematicMotionDesc& km, float t, Vector3& outOrigin, Quaternion& outRot, Vector3& outLinVel, Vector3& outAngVel)
+{
+	{
 		Vector3 newOrigin = km.m_baseOrigin;
 		Quaternion newRot = km.m_baseRot;
 		Vector3 linVel = Vector3::ZERO;
 		Vector3 angVel = Vector3::ZERO;
+		if (km.m_mode == KinematicMotion_None)
+		{
+			outOrigin = newOrigin;
+			outRot = newRot;
+			outLinVel = linVel;
+			outAngVel = angVel;
+			return false;
+		}
 
 		if (km.m_mode == KinematicMotion_Rotate)
 		{
@@ -996,6 +1422,45 @@ void CPhysicsWorld::StepKinematicControllers(double dTime)
 			newOrigin = worldAnchor + rNow;
 			linVel = angVel.crossProduct(rNow);
 		}
+		else if (km.m_mode == KinematicMotion_Path)
+		{
+			Vector3 offset, vel;
+			EvaluateKinematicPath(km, t, offset, vel);
+			newOrigin = km.m_baseOrigin + offset;
+			linVel = vel;
+		}
+
+		outOrigin = newOrigin;
+		outRot = newRot;
+		outLinVel = linVel;
+		outAngVel = angVel;
+		return true;
+	}
+}
+
+void CPhysicsWorld::StepKinematicControllers(double dTime)
+{
+	if (m_mapKinematicMotions.empty())
+		return;
+
+	for (auto& kv : m_mapKinematicMotions)
+	{
+		IParaPhysicsActor* actor = kv.first;
+		const KinematicMotionDesc& km = kv.second;
+		if (!actor || km.m_mode == KinematicMotion_None)
+			continue;
+
+		// legacy controllers (no local clock) evaluate at exactly (float)m_dSimulationTime as before
+		bool bFrozen = false;
+		const float t = GetKinematicLocalTime(km, m_dSimulationTime, &bFrozen);
+		Vector3 newOrigin, linVel, angVel;
+		Quaternion newRot;
+		EvaluateKinematicMotion(km, t, newOrigin, newRot, linVel, angVel);
+		if (bFrozen)
+		{
+			linVel = Vector3::ZERO;
+			angVel = Vector3::ZERO;
+		}
 
 		Matrix4 worldMat;
 		newRot.ToRotationMatrix(worldMat, newOrigin);
@@ -1013,6 +1478,12 @@ void CPhysicsWorld::StepKinematicControllers(double dTime)
 
 namespace
 {
+	void CPhysicsWorld_OnPhysicsSubstep(void* pUserData, float fFixedTimeStep, float fTimeOffsetFromStepEnd, int /*nIndex*/, int /*nCount*/)
+	{
+		if (pUserData)
+			((ParaEngine::CPhysicsWorld*)pUserData)->OnPhysicsSubstep(fFixedTimeStep, fTimeOffsetFromStepEnd);
+	}
+
 	void ExtractPhysicsActorWorldPose(ParaEngine::IParaPhysicsActor* actor, ParaEngine::Vector3& outOrigin, ParaEngine::Quaternion& outRot)
 	{
 		alignas(16) ParaEngine::Matrix4 mat;
@@ -1032,6 +1503,24 @@ void CPhysicsWorld::ResetSimulationTime(double t)
 	{
 		kv.second.m_hasPrev = false;
 	}
+	// Re-arm per-controller clocks: trigger-started controllers wait for StartKinematicMotion again,
+	// other running local-clock controllers restart from local t = 0.
+	for (auto& kv : m_mapKinematicMotions)
+	{
+		KinematicMotionDesc& km = kv.second;
+		if (!km.m_useLocalClock)
+			continue;
+		if (km.m_startOnTrigger)
+		{
+			km.m_running = false;
+			km.m_frozenLocalT = 0.f;
+		}
+		else if (km.m_running)
+		{
+			km.m_clockStart = t;
+		}
+	}
+	m_physicsEvents.clear();
 }
 
 bool CPhysicsWorld::IsValidDynamicActor(IParaPhysicsActor* actor, uint64_t* outUid) const
@@ -1143,6 +1632,8 @@ void CPhysicsWorld::StepSimulation(double dTime)
 		if (m_pPhysicsWorld)
 		{
 			PERF1("Dynamic Physics");
+			// pre-tick hook: per-substep kinematic poses (anti-tunnelling) and force zones
+			m_pPhysicsWorld->SetSubstepCallback(&CPhysicsWorld_OnPhysicsSubstep, this);
 			m_pPhysicsWorld->StepSimulation((float)dTime);
 		}
 
@@ -1202,6 +1693,8 @@ void CPhysicsWorld::StepSimulation(double dTime)
 				}
 			}
 		}
+
+		UpdatePhysicsEvents();
 	}
 }
 
@@ -1315,7 +1808,8 @@ IParaPhysicsActor* ParaEngine::CPhysicsWorld::CreateDynamicMesh(CBaseObject* obj
 		return NULL;
 	ParaPhysicsActorDesc ActorDesc;
 	ActorDesc.m_group = obj->GetPhysicsGroup();
-	ActorDesc.m_mask = -1;
+	// honor per-object PhysicsGroupMask (default 0xffffffff => -1, collide with everything as before)
+	ActorDesc.m_mask = (short)(obj->GetPhysicsGroupMask() & 0xffff);
 	ActorDesc.m_mass = 1.0f;
 	ActorDesc.m_pShape = pShape;
 
@@ -1346,6 +1840,8 @@ IParaPhysicsActor* ParaEngine::CPhysicsWorld::CreateDynamicMesh(CBaseObject* obj
 		pose.m_curRot = pose.m_prevRot;
 		pose.m_hasPrev = true;
 	}
+	// default auto-CCD for small fast bodies (min extent < 0.5m); model default property may override it
+	ApplyAutoCCD(pActor, true, true);
 	if (pParaXModel && !pParaXModel->GetDefaultPhysicsProperty().empty())
 	{
 		SetActorPhysicsProperty(pActor, pParaXModel->GetDefaultPhysicsProperty().c_str());
@@ -1375,7 +1871,7 @@ IParaPhysicsActor* ParaEngine::CPhysicsWorld::CreateDynamicShape(CBaseObject* ob
 	
 	ParaPhysicsActorDesc ActorDesc;
 	ActorDesc.m_group = obj->GetPhysicsGroup();
-	ActorDesc.m_mask = -1;
+	ActorDesc.m_mask = (short)(obj->GetPhysicsGroupMask() & 0xffff);
 	ActorDesc.m_mass = 1.0f;
 	ActorDesc.m_pShape = pShape;
 
@@ -1406,6 +1902,7 @@ IParaPhysicsActor* ParaEngine::CPhysicsWorld::CreateDynamicShape(CBaseObject* ob
 		pose.m_curRot = pose.m_prevRot;
 		pose.m_hasPrev = true;
 	}
+	ApplyAutoCCD(pActor, true, true);
 	return pActor;
 }
 
@@ -1814,6 +2311,7 @@ void CPhysicsWorld::ReleaseActor(IParaPhysicsActor* pActor)
 	{
 		ReleaseConstraintsByActor(pActor);
 		ReleaseVehicleByActor(pActor);
+		ForgetActorInEvents(pActor);
 		m_mapKinematicMotions.erase(pActor);
 		m_mapActorFramePoses.erase(pActor);
 		m_mapDynamicActors.erase(pActor);
@@ -1919,6 +2417,7 @@ void ParaEngine::CPhysicsWorld::ReleaseConstraint(IParaPhysicsConstraint* pConst
 	if (it != m_constraints.end())
 	{
 		m_constraints.erase(it);
+		m_brokenConstraints.erase(pConstraint);
 		if (m_pPhysicsWorld)
 		{
 			m_pPhysicsWorld->ReleaseConstraint(pConstraint);
@@ -1936,9 +2435,97 @@ void ParaEngine::CPhysicsWorld::SetConstraintProperty(IParaPhysicsConstraint* pC
 		return;
 
 	if (msg["Enabled"].GetType() == NPL::NPLObjectBase::NPLObjectType_Bool)
-		pConstraint->SetEnabled((bool)msg["Enabled"]);
+	{
+		bool bEnabled = (bool)msg["Enabled"];
+		pConstraint->SetEnabled(bEnabled);
+		// user-driven enable/disable never produces a jointBreak event
+		if (bEnabled)
+			m_brokenConstraints.erase(pConstraint);
+		else
+			m_brokenConstraints.insert(pConstraint);
+	}
 	if (msg["BreakingThreshold"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number)
 		pConstraint->SetBreakingThreshold((float)(double)msg["BreakingThreshold"]);
+	else if (msg["BreakForce"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number)
+		pConstraint->SetBreakingThreshold((float)(double)msg["BreakForce"]);
+
+	// ConeTwist limits (radians)
+	if (pConstraint->GetType() == ConstraintType_ConeTwist)
+	{
+		if (msg["SwingSpan1"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number ||
+			msg["SwingSpan2"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number ||
+			msg["TwistSpan"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number)
+		{
+			const float kDefaultSpan = 3.4028e+38f; // BT_LARGE_FLOAT => unlimited
+			float swing1 = (msg["SwingSpan1"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number) ? (float)(double)msg["SwingSpan1"] : kDefaultSpan;
+			float swing2 = (msg["SwingSpan2"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number) ? (float)(double)msg["SwingSpan2"] : swing1;
+			float twist = (msg["TwistSpan"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number) ? (float)(double)msg["TwistSpan"] : kDefaultSpan;
+			float softness = (msg["Softness"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number) ? (float)(double)msg["Softness"] : 1.0f;
+			float biasFactor = (msg["BiasFactor"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number) ? (float)(double)msg["BiasFactor"] : 0.3f;
+			float relaxationFactor = (msg["RelaxationFactor"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number) ? (float)(double)msg["RelaxationFactor"] : 1.0f;
+			pConstraint->SetConeTwistLimit(swing1, swing2, twist, softness, biasFactor, relaxationFactor);
+		}
+	}
+
+	// 6DoF / Spring full 3D limits. lower == upper locks an axis, lower > upper frees it.
+	if (pConstraint->GetType() == ConstraintType_Generic6Dof || pConstraint->GetType() == ConstraintType_Spring)
+	{
+		static const char* s_linKeys[2][3] = { { "LinearLowerX", "LinearLowerY", "LinearLowerZ" }, { "LinearUpperX", "LinearUpperY", "LinearUpperZ" } };
+		static const char* s_angKeys[2][3] = { { "AngularLowerX", "AngularLowerY", "AngularLowerZ" }, { "AngularUpperX", "AngularUpperY", "AngularUpperZ" } };
+		for (int kind = 0; kind < 2; ++kind)
+		{
+			const char* (*keys)[3] = (kind == 0) ? s_linKeys : s_angKeys;
+			bool bAny = false;
+			for (int lu = 0; lu < 2 && !bAny; ++lu)
+				for (int i = 0; i < 3 && !bAny; ++i)
+					bAny = (msg[keys[lu][i]].GetType() == NPL::NPLObjectBase::NPLObjectType_Number);
+			if (!bAny)
+				continue;
+			PARAVECTOR3 lower(0.f, 0.f, 0.f), upper(0.f, 0.f, 0.f);
+			if (kind == 0)
+				pConstraint->GetLinearLimits3D(lower, upper);
+			else
+				pConstraint->GetAngularLimits3D(lower, upper);
+			float* pLo[3] = { &lower.x, &lower.y, &lower.z };
+			float* pHi[3] = { &upper.x, &upper.y, &upper.z };
+			for (int i = 0; i < 3; ++i)
+			{
+				if (msg[keys[0][i]].GetType() == NPL::NPLObjectBase::NPLObjectType_Number)
+					*pLo[i] = (float)(double)msg[keys[0][i]];
+				if (msg[keys[1][i]].GetType() == NPL::NPLObjectBase::NPLObjectType_Number)
+					*pHi[i] = (float)(double)msg[keys[1][i]];
+			}
+			if (kind == 0)
+				pConstraint->SetLinearLimits3D(lower, upper);
+			else
+				pConstraint->SetAngularLimits3D(lower, upper);
+		}
+	}
+
+	// Per-axis springs for ConstraintType_Spring: LinearStiffnessX..Z / AngularStiffnessX..Z (+ Damping, Equilibrium)
+	if (pConstraint->GetType() == ConstraintType_Spring)
+	{
+		static const char* s_axisSuffix[3] = { "X", "Y", "Z" };
+		for (int kind = 0; kind < 2; ++kind)
+		{
+			const char* prefix = (kind == 0) ? "Linear" : "Angular";
+			for (int i = 0; i < 3; ++i)
+			{
+				std::string kStiff = std::string(prefix) + "Stiffness" + s_axisSuffix[i];
+				std::string kDamp = std::string(prefix) + "Damping" + s_axisSuffix[i];
+				std::string kEq = std::string(prefix) + "Equilibrium" + s_axisSuffix[i];
+				bool hasStiff = (msg[kStiff].GetType() == NPL::NPLObjectBase::NPLObjectType_Number);
+				bool hasDamp = (msg[kDamp].GetType() == NPL::NPLObjectBase::NPLObjectType_Number);
+				if (!hasStiff && !hasDamp)
+					continue;
+				float stiffness = hasStiff ? (float)(double)msg[kStiff] : 50.f;
+				float damping = hasDamp ? (float)(double)msg[kDamp] : 0.5f;
+				bool hasEq = (msg[kEq].GetType() == NPL::NPLObjectBase::NPLObjectType_Number);
+				float eq = hasEq ? (float)(double)msg[kEq] : 0.f;
+				pConstraint->SetSpringParams(kind * 3 + i, stiffness > 0.f, stiffness, damping, eq, false);
+			}
+		}
+	}
 
 	// Hinge-specific properties
 	if (pConstraint->GetType() == ConstraintType_Hinge)
@@ -2029,6 +2616,24 @@ const char* ParaEngine::CPhysicsWorld::GetConstraintProperty(IParaPhysicsConstra
 	msg["Type"] = (double)pConstraint->GetType();
 	msg["Enabled"] = pConstraint->IsEnabled();
 	msg["BreakingThreshold"] = (double)pConstraint->GetBreakingThreshold();
+	{
+		float thr = pConstraint->GetBreakingThreshold();
+		msg["Broken"] = (!pConstraint->IsEnabled() && thr > 0.f && thr < 1e30f);
+	}
+	if (pConstraint->GetType() == ConstraintType_Generic6Dof || pConstraint->GetType() == ConstraintType_Spring)
+	{
+		PARAVECTOR3 lo, hi;
+		if (pConstraint->GetLinearLimits3D(lo, hi))
+		{
+			msg["LinearLowerX"] = (double)lo.x; msg["LinearLowerY"] = (double)lo.y; msg["LinearLowerZ"] = (double)lo.z;
+			msg["LinearUpperX"] = (double)hi.x; msg["LinearUpperY"] = (double)hi.y; msg["LinearUpperZ"] = (double)hi.z;
+		}
+		if (pConstraint->GetAngularLimits3D(lo, hi))
+		{
+			msg["AngularLowerX"] = (double)lo.x; msg["AngularLowerY"] = (double)lo.y; msg["AngularLowerZ"] = (double)lo.z;
+			msg["AngularUpperX"] = (double)hi.x; msg["AngularUpperY"] = (double)hi.y; msg["AngularUpperZ"] = (double)hi.z;
+		}
+	}
 
 	if (pConstraint->GetType() == ConstraintType_Hinge)
 	{
@@ -2321,6 +2926,7 @@ void ParaEngine::CPhysicsWorld::ReleaseConstraintsByActor(IParaPhysicsActor* pAc
 	for (auto pConstraint : toRemove)
 	{
 		m_constraints.erase(pConstraint);
+		m_brokenConstraints.erase(pConstraint);
 		if (m_pPhysicsWorld)
 		{
 			m_pPhysicsWorld->ReleaseConstraint(pConstraint);
@@ -2735,4 +3341,461 @@ void ParaEngine::CPhysicsWorld::ResetVehicleSuspensionForBiped(CBipedObject* pBi
 	{
 		pVehicle->ResetSuspension();
 	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+// Contraption v2: substep kinematics, force zones, event queue, features
+//////////////////////////////////////////////////////////////////////////
+
+void ParaEngine::CPhysicsWorld::OnPhysicsSubstep(float fFixedTimeStep, float fTimeOffsetFromStepEnd)
+{
+	// Re-pose kinematic controllers at the end time of this fixed substep, so a fast sweeper advances
+	// 1/60 s per substep instead of teleporting a whole render frame at once (prevents tunnelling).
+	// The render-frame pose is re-locked after the step by StepKinematicControllers(0.0), so the
+	// final pose of legacy controllers stays bit-identical.
+	if (m_bKinematicSubstep && !m_mapKinematicMotions.empty())
+	{
+		const double simT = m_dSimulationTime + (double)fTimeOffsetFromStepEnd;
+		for (auto& kv : m_mapKinematicMotions)
+		{
+			IParaPhysicsActor* actor = kv.first;
+			const KinematicMotionDesc& km = kv.second;
+			if (!actor || km.m_mode == KinematicMotion_None)
+				continue;
+			bool bFrozen = false;
+			const float t = GetKinematicLocalTime(km, simT, &bFrozen);
+			Vector3 o, lv, av;
+			Quaternion q;
+			EvaluateKinematicMotion(km, t, o, q, lv, av);
+			if (bFrozen)
+			{
+				lv = Vector3::ZERO;
+				av = Vector3::ZERO;
+			}
+			Matrix4 worldMat;
+			q.ToRotationMatrix(worldMat, o);
+			actor->SetWorldTransform((const PARAMATRIX*)&worldMat);
+			actor->SetLinearVelocity(PARAVECTOR3(lv.x, lv.y, lv.z));
+			actor->SetAngularVelocity(PARAVECTOR3(av.x, av.y, av.z));
+		}
+	}
+	ApplyForceZonesToBodies(fFixedTimeStep);
+}
+
+void ParaEngine::CPhysicsWorld::SetForceZoneStr(const char* sCmd)
+{
+	if (!sCmd || !sCmd[0])
+		return;
+	NPL::NPLObjectProxy msg = NPL::NPLHelper::StringToNPLTable(sCmd, (int)strlen(sCmd));
+	if (msg.GetType() != NPL::NPLObjectBase::NPLObjectType_Table)
+		return;
+	std::string method = (msg["method"].GetType() == NPL::NPLObjectBase::NPLObjectType_String) ? (const std::string&)msg["method"] : "add";
+	if (method == "clear")
+	{
+		m_forceZones.clear();
+		return;
+	}
+	std::string name = (msg["name"].GetType() == NPL::NPLObjectBase::NPLObjectType_String) ? (const std::string&)msg["name"] : "";
+	if (method == "remove")
+	{
+		for (auto it = m_forceZones.begin(); it != m_forceZones.end();)
+		{
+			if (it->m_name == name)
+				it = m_forceZones.erase(it);
+			else
+				++it;
+		}
+		return;
+	}
+	if (method != "add" && method != "update")
+		return;
+
+	ForceZoneDesc z;
+	z.m_name = name;
+	Vector3 v;
+	if (PhysicsWorld_ReadVector3(msg["center"], v))
+		z.m_center = v;
+	if (PhysicsWorld_ReadVector3(msg["halfSize"], v))
+		z.m_halfSize = Vector3(std::fabs(v.x), std::fabs(v.y), std::fabs(v.z));
+	if (msg["yaw"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number)
+		z.m_yaw = (float)(double)msg["yaw"];
+	z.m_cosYaw = std::cos(z.m_yaw);
+	z.m_sinYaw = std::sin(z.m_yaw);
+	std::string mode = (msg["mode"].GetType() == NPL::NPLObjectBase::NPLObjectType_String) ? (const std::string&)msg["mode"] : "wind";
+	z.m_mode = (mode == "buoyancy") ? ForceZoneDesc::Mode_Buoyancy : ((mode == "radial") ? ForceZoneDesc::Mode_Radial : ForceZoneDesc::Mode_Wind);
+	bool bHasForce = PhysicsWorld_ReadVector3(msg["force"], v);
+	if (bHasForce)
+		z.m_force = v;
+	else if (z.m_mode == ForceZoneDesc::Mode_Buoyancy)
+		z.m_force = Vector3(0.f, 12.f, 0.f);
+	if (msg["falloff"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number)
+		z.m_falloff = (std::min)(1.f, (std::max)(0.f, (float)(double)msg["falloff"]));
+	z.m_strength = (msg["strength"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number) ? (float)(double)msg["strength"] : z.m_force.length();
+	if (msg["drag"].GetType() == NPL::NPLObjectBase::NPLObjectType_Number)
+		z.m_drag = (std::max)(0.f, (float)(double)msg["drag"]);
+	else
+		z.m_drag = (z.m_mode == ForceZoneDesc::Mode_Buoyancy) ? 1.5f : 0.f;
+	if (msg["affectBodies"].GetType() == NPL::NPLObjectBase::NPLObjectType_Bool)
+		z.m_affectBodies = (bool)msg["affectBodies"];
+	if (msg["affectPlayer"].GetType() == NPL::NPLObjectBase::NPLObjectType_Bool)
+		z.m_affectPlayer = (bool)msg["affectPlayer"];
+
+	if (!name.empty())
+	{
+		for (auto& existing : m_forceZones)
+		{
+			if (existing.m_name == name)
+			{
+				existing = z;
+				return;
+			}
+		}
+	}
+	const size_t kMaxForceZones = 256;
+	if (m_forceZones.size() < kMaxForceZones)
+		m_forceZones.push_back(z);
+}
+
+const char* ParaEngine::CPhysicsWorld::GetForceZonesStr()
+{
+	static std::string sResult;
+	NPL::NPLObjectProxy out;
+	out["count"] = (double)m_forceZones.size();
+	static const char* s_modeNames[] = { "wind", "buoyancy", "radial" };
+	int i = 0;
+	for (const auto& z : m_forceZones)
+	{
+		NPL::NPLObjectProxy item;
+		item["name"] = z.m_name;
+		item["mode"] = s_modeNames[(z.m_mode >= 0 && z.m_mode <= 2) ? z.m_mode : 0];
+		item["center"][1] = (double)z.m_center.x; item["center"][2] = (double)z.m_center.y; item["center"][3] = (double)z.m_center.z;
+		item["halfSize"][1] = (double)z.m_halfSize.x; item["halfSize"][2] = (double)z.m_halfSize.y; item["halfSize"][3] = (double)z.m_halfSize.z;
+		item["force"][1] = (double)z.m_force.x; item["force"][2] = (double)z.m_force.y; item["force"][3] = (double)z.m_force.z;
+		item["yaw"] = (double)z.m_yaw;
+		item["falloff"] = (double)z.m_falloff;
+		item["strength"] = (double)z.m_strength;
+		item["drag"] = (double)z.m_drag;
+		item["affectBodies"] = z.m_affectBodies;
+		item["affectPlayer"] = z.m_affectPlayer;
+		out[++i] = item;
+	}
+	NPL::NPLHelper::NPLTableToString(NULL, out, sResult);
+	return sResult.c_str();
+}
+
+bool ParaEngine::CPhysicsWorld::ComputeForceZoneAcceleration(const Vector3& pos, float halfHeight, bool bForPlayer, Vector3& outAccel, float& outDrag) const
+{
+	outAccel = Vector3::ZERO;
+	outDrag = 0.f;
+	bool bInside = false;
+	for (const auto& z : m_forceZones)
+	{
+		if (bForPlayer ? !z.m_affectPlayer : !z.m_affectBodies)
+			continue;
+		const Vector3 d = pos - z.m_center;
+		// world -> zone local (inverse yaw). zone local +X maps to world (cos(yaw), 0, -sin(yaw)).
+		const float lx = d.x * z.m_cosYaw - d.z * z.m_sinYaw;
+		const float lz = d.x * z.m_sinYaw + d.z * z.m_cosYaw;
+		const float ly = d.y;
+		const float extraY = (z.m_mode == ForceZoneDesc::Mode_Buoyancy) ? (std::max)(0.f, halfHeight) : 0.f;
+		if (std::fabs(lx) > z.m_halfSize.x || std::fabs(lz) > z.m_halfSize.z || std::fabs(ly) > z.m_halfSize.y + extraY)
+			continue;
+		bInside = true;
+		outDrag += z.m_drag;
+		if (z.m_mode == ForceZoneDesc::Mode_Wind)
+		{
+			float scale = 1.f;
+			float flen = z.m_force.length();
+			if (z.m_falloff > 0.f && flen > 1e-6f)
+			{
+				Vector3 dirW = z.m_force / flen;
+				float dlx = dirW.x * z.m_cosYaw - dirW.z * z.m_sinYaw;
+				float dly = dirW.y;
+				float dlz = dirW.x * z.m_sinYaw + dirW.z * z.m_cosYaw;
+				float ext = std::fabs(dlx) * z.m_halfSize.x + std::fabs(dly) * z.m_halfSize.y + std::fabs(dlz) * z.m_halfSize.z;
+				if (ext > 1e-6f)
+				{
+					float proj = lx * dlx + ly * dly + lz * dlz;
+					float s = (proj + ext) / (2.f * ext);
+					s = (std::min)(1.f, (std::max)(0.f, s));
+					scale = 1.f - z.m_falloff * s;
+				}
+			}
+			outAccel += z.m_force * scale;
+		}
+		else if (z.m_mode == ForceZoneDesc::Mode_Buoyancy)
+		{
+			float top = z.m_center.y + z.m_halfSize.y;
+			float depth = 1.f;
+			if (halfHeight > 1e-4f)
+			{
+				depth = (top - (pos.y - halfHeight)) / (2.f * halfHeight);
+				depth = (std::min)(1.f, (std::max)(0.f, depth));
+			}
+			outAccel += z.m_force * depth;
+		}
+		else
+		{
+			float r = d.length();
+			if (r < 1e-5f)
+				continue;
+			float rmax = (std::max)(1e-4f, z.m_halfSize.length());
+			float rn = (std::min)(1.f, r / rmax);
+			float mag = z.m_strength * (1.f - z.m_falloff * rn);
+			outAccel += d * (mag / r);
+		}
+	}
+	return bInside;
+}
+
+void ParaEngine::CPhysicsWorld::ApplyForceZonesToBodies(float fTimeStep)
+{
+	if (m_forceZones.empty() || fTimeStep <= 0.f)
+		return;
+	for (IParaPhysicsActor* actor : m_mapDynamicActors)
+	{
+		if (!actor || actor->IsStaticOrKinematicObject())
+			continue;
+		float mass = actor->GetMass();
+		if (mass <= 0.f)
+			continue;
+		PARAVECTOR3 o = actor->GetOrigin();
+		float halfHeight = 0.f;
+		PARAVECTOR3 mn, mx;
+		if (actor->GetAabb(mn, mx))
+			halfHeight = 0.5f * (mx.y - mn.y);
+		Vector3 accel;
+		float drag = 0.f;
+		if (!ComputeForceZoneAcceleration(Vector3(o.x, o.y, o.z), halfHeight, false, accel, drag))
+			continue;
+		PARAVECTOR3 lv = actor->GetLinearVelocity();
+		float dragFrac = (std::min)(1.f, drag * fTimeStep);
+		Vector3 dv = accel * fTimeStep - Vector3(lv.x, lv.y, lv.z) * dragFrac;
+		if (dv.squaredLength() < 1e-12f)
+			continue;
+		actor->ApplyCentralImpulse(PARAVECTOR3(dv.x * mass, dv.y * mass, dv.z * mass));
+	}
+}
+
+std::string ParaEngine::CPhysicsWorld::GetActorName(IParaPhysicsActor* actor) const
+{
+	if (!actor)
+		return std::string();
+	CBaseObject* obj = (CBaseObject*)actor->GetUserData();
+	return obj ? obj->GetIdentifier() : std::string();
+}
+
+void ParaEngine::CPhysicsWorld::PushPhysicsEvent(const char* type, const std::string& a, const std::string& b, float impulse)
+{
+	const size_t kMaxEvents = 64;
+	PhysicsEventDesc e;
+	e.m_type = type ? type : "";
+	e.m_a = a;
+	e.m_b = b;
+	e.m_impulse = impulse;
+	e.m_time = m_dSimulationTime;
+	m_physicsEvents.push_back(e);
+	while (m_physicsEvents.size() > kMaxEvents)
+		m_physicsEvents.pop_front();
+}
+
+const char* ParaEngine::CPhysicsWorld::PopPhysicsEventsStr()
+{
+	static std::string sResult;
+	NPL::NPLObjectProxy out;
+	out["count"] = (double)m_physicsEvents.size();
+	int i = 0;
+	for (const auto& e : m_physicsEvents)
+	{
+		NPL::NPLObjectProxy item;
+		item["type"] = e.m_type;
+		item["a"] = e.m_a;
+		item["b"] = e.m_b;
+		item["impulse"] = (double)e.m_impulse;
+		item["time"] = e.m_time;
+		out[++i] = item;
+	}
+	m_physicsEvents.clear();
+	NPL::NPLHelper::NPLTableToString(NULL, out, sResult);
+	return sResult.c_str();
+}
+
+void ParaEngine::CPhysicsWorld::UpdateSensorRegistration(IParaPhysicsActor* actor)
+{
+	if (!actor)
+		return;
+	bool bSensor = (m_mapDynamicActors.find(actor) != m_mapDynamicActors.end()) &&
+		((actor->GetCollisionFlags() & PHYSICS_CF_NO_CONTACT_RESPONSE) != 0);
+	if (bSensor)
+	{
+		m_sensorActors.insert(actor);
+	}
+	else if (m_sensorActors.erase(actor) > 0)
+	{
+		for (auto it = m_sensorOverlaps.begin(); it != m_sensorOverlaps.end();)
+		{
+			if (it->first.first == (void*)actor)
+				it = m_sensorOverlaps.erase(it);
+			else
+				++it;
+		}
+	}
+}
+
+void ParaEngine::CPhysicsWorld::ForgetActorInEvents(IParaPhysicsActor* actor)
+{
+	if (!actor)
+		return;
+	m_sensorActors.erase(actor);
+	for (auto it = m_sensorOverlaps.begin(); it != m_sensorOverlaps.end();)
+	{
+		if (it->first.first == (void*)actor)
+			it = m_sensorOverlaps.erase(it);
+		else
+			++it;
+	}
+	for (auto it = m_contactPairs.begin(); it != m_contactPairs.end();)
+	{
+		if (it->first.first == (void*)actor || it->first.second == (void*)actor)
+			it = m_contactPairs.erase(it);
+		else
+			++it;
+	}
+}
+
+void ParaEngine::CPhysicsWorld::UpdatePhysicsEvents()
+{
+	// 1. joint break: a breakable constraint that Bullet disabled during this step
+	for (IParaPhysicsConstraint* c : m_constraints)
+	{
+		if (!c)
+			continue;
+		if (c->IsEnabled())
+		{
+			m_brokenConstraints.erase(c);
+			continue;
+		}
+		float thr = c->GetBreakingThreshold();
+		if (thr <= 0.f || thr >= 1e30f)
+			continue;
+		if (m_brokenConstraints.insert(c).second)
+			PushPhysicsEvent("jointBreak", GetActorName(c->GetActorA()), GetActorName(c->GetActorB()), thr);
+	}
+
+	// 2. sensor overlaps (Bullet contacts + current player AABB) and impacts
+	std::map<std::pair<void*, void*>, std::pair<std::string, std::string> > curOverlaps;
+	const bool bNeedContacts = (!m_sensorActors.empty() || m_fImpactEventThreshold > 0.f) && m_pPhysicsWorld;
+	if (bNeedContacts)
+	{
+		std::vector<ParaPhysicsContactPair> pairs;
+		m_pPhysicsWorld->GetActiveContacts(pairs, 0.f);
+		std::map<std::pair<void*, void*>, float> curContacts;
+		for (const auto& cp : pairs)
+		{
+			IParaPhysicsActor* a = cp.m_pActorA;
+			IParaPhysicsActor* b = cp.m_pActorB;
+			if (!a || !b)
+				continue;
+			bool sa = m_sensorActors.find(a) != m_sensorActors.end();
+			bool sb = m_sensorActors.find(b) != m_sensorActors.end();
+			if (sa && sb)
+				continue;
+			if (sa || sb)
+			{
+				IParaPhysicsActor* s = sa ? a : b;
+				IParaPhysicsActor* o = sa ? b : a;
+				void* otherKey = o->GetUserData();
+				if (!otherKey)
+					continue; // ignore terrain block actors
+				curOverlaps[std::make_pair((void*)s, otherKey)] = std::make_pair(GetActorName(s), GetActorName(o));
+				continue;
+			}
+			if (m_fImpactEventThreshold > 0.f)
+			{
+				if (!a->GetUserData() && !b->GetUserData())
+					continue;
+				std::pair<void*, void*> key = ((void*)a < (void*)b) ? std::make_pair((void*)a, (void*)b) : std::make_pair((void*)b, (void*)a);
+				float imp = cp.m_appliedImpulse;
+				curContacts[key] = imp;
+				if (imp >= m_fImpactEventThreshold)
+				{
+					auto itPrev = m_contactPairs.find(key);
+					// new contact, or an impulse spike on an existing contact
+					if (itPrev == m_contactPairs.end() || itPrev->second < m_fImpactEventThreshold * 0.5f)
+						PushPhysicsEvent("impact", GetActorName(a), GetActorName(b), imp);
+				}
+			}
+		}
+		m_contactPairs.swap(curContacts);
+	}
+	else
+	{
+		m_contactPairs.clear();
+	}
+
+	if (!m_sensorActors.empty())
+	{
+		CSceneObject* pScene = CGlobals::GetScene();
+		CBipedObject* pPlayer = pScene ? pScene->GetCurrentPlayer() : nullptr;
+		if (pPlayer)
+		{
+			DVector3 p = pPlayer->GetPosition();
+			float r = (std::max)(0.2f, pPlayer->GetPhysicsRadius());
+			float h = (std::max)(0.5f, pPlayer->GetPhysicsHeight());
+			Vector3 pmin((float)p.x - r, (float)p.y, (float)p.z - r);
+			Vector3 pmax((float)p.x + r, (float)p.y + h, (float)p.z + r);
+			for (IParaPhysicsActor* s : m_sensorActors)
+			{
+				PARAVECTOR3 mn, mx;
+				if (!s->GetAabb(mn, mx))
+					continue;
+				if (pmax.x < mn.x || pmin.x > mx.x || pmax.y < mn.y || pmin.y > mx.y || pmax.z < mn.z || pmin.z > mx.z)
+					continue;
+				curOverlaps[std::make_pair((void*)s, (void*)pPlayer)] = std::make_pair(GetActorName(s), pPlayer->GetIdentifier());
+			}
+		}
+	}
+
+	for (const auto& kv : curOverlaps)
+	{
+		if (m_sensorOverlaps.find(kv.first) == m_sensorOverlaps.end())
+			PushPhysicsEvent("sensorEnter", kv.second.first, kv.second.second, 0.f);
+	}
+	for (const auto& kv : m_sensorOverlaps)
+	{
+		if (curOverlaps.find(kv.first) == curOverlaps.end())
+			PushPhysicsEvent("sensorExit", kv.second.first, kv.second.second, 0.f);
+	}
+	m_sensorOverlaps.swap(curOverlaps);
+}
+
+const char* ParaEngine::CPhysicsWorld::GetPhysicsFeatures()
+{
+	return "path,sensor,mask,forcezone,events,substep,limits3d,autoccd,localclock";
+}
+
+void ParaEngine::CPhysicsWorld::ApplyAutoCCD(IParaPhysicsActor* actor, bool bEnable, bool bOnlyIfSmall)
+{
+	if (!actor)
+		return;
+	if (!bEnable)
+	{
+		actor->SetCcdMotionThreshold(0.f);
+		actor->SetCcdSweptSphereRadius(0.f);
+		return;
+	}
+	if (bOnlyIfSmall && actor->GetCcdMotionThreshold() > 0.f)
+		return; // already configured
+	PARAVECTOR3 mn, mx;
+	if (!actor->GetAabb(mn, mx))
+		return;
+	float rawMin = (std::min)((std::min)(mx.x - mn.x, mx.y - mn.y), mx.z - mn.z);
+	if (rawMin <= 1e-3f)
+		return;
+	// the bullet AABB includes ~0.04 collision margin on each side
+	float minExtent = (std::max)(rawMin - 0.08f, rawMin * 0.5f);
+	if (bOnlyIfSmall && minExtent >= 0.5f)
+		return;
+	actor->SetCcdMotionThreshold(minExtent * 0.5f);
+	actor->SetCcdSweptSphereRadius(minExtent * 0.4f);
 }

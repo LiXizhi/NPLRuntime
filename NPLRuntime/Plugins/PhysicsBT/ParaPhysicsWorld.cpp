@@ -422,6 +422,40 @@ void BulletPhysicsActor::SetCcdMotionThreshold(float threshold)
 	m_pActor->setCcdMotionThreshold(threshold);
 }
 
+void BulletPhysicsActor::SetCollisionFilter(short group, short mask)
+{
+	if (group < 0)
+		group = 0;
+	if (group > 15)
+		group = 15;
+	if (m_group == group && m_mask == mask)
+		return;
+	m_group = group;
+	m_mask = mask;
+	btDynamicsWorld* dynWorld = m_pWorld ? m_pWorld->GetScene() : NULL;
+	if (dynWorld && m_pActor->getBroadphaseHandle())
+	{
+		// addRigidBody() resets per-body gravity to world gravity for dynamic bodies, so preserve it.
+		btVector3 gravity = m_pActor->getGravity();
+		dynWorld->removeRigidBody(m_pActor);
+		short nGroupMask = (short)(1 << m_group);
+		dynWorld->addRigidBody(m_pActor, nGroupMask, m_mask);
+		m_pActor->setGravity(gravity);
+		m_pActor->activate(true);
+	}
+}
+
+bool BulletPhysicsActor::GetAabb(PARAVECTOR3& vMin, PARAVECTOR3& vMax)
+{
+	if (!m_pActor || !m_pActor->getCollisionShape())
+		return false;
+	btVector3 mn, mx;
+	m_pActor->getAabb(mn, mx);
+	vMin = PARAVECTOR3((float)mn.x(), (float)mn.y(), (float)mn.z());
+	vMax = PARAVECTOR3((float)mx.x(), (float)mx.y(), (float)mx.z());
+	return true;
+}
+
 //////////////////////////////////////////////////////////////////////////
 // BulletPhysicsConstraint Implementation
 //////////////////////////////////////////////////////////////////////////
@@ -530,7 +564,10 @@ void BulletPhysicsConstraint::SetSpringParams(int axis, bool enable, float stiff
 		btGeneric6DofSpringConstraint* spring = static_cast<btGeneric6DofSpringConstraint*>(m_pConstraint);
 		spring->enableSpring(axis, enable);
 		spring->setStiffness(axis, stiffness);
-		spring->setDamping(axis, damping);
+		// btGeneric6DofSpringConstraint uses [0..1] where 1 == no damping and 0 == full damping;
+		// ParaEngine exposes standard [0..1] damping where 0 == undamped and 1 == maximally damped.
+		btScalar btDamping = btClamped(btScalar(1.0f) - btScalar(damping), btScalar(0.0f), btScalar(1.0f));
+		spring->setDamping(axis, btDamping);
 		if (useCurrentEquilibrium)
 			spring->setEquilibriumPoint(axis);
 		else
@@ -556,6 +593,45 @@ void BulletPhysicsConstraint::SetAngularLimits3D(const PARAVECTOR3& lower, const
 		dof->setAngularLowerLimit(btVector3(lower.x, lower.y, lower.z));
 		dof->setAngularUpperLimit(btVector3(upper.x, upper.y, upper.z));
 	}
+}
+
+void BulletPhysicsConstraint::SetConeTwistLimit(float swingSpan1, float swingSpan2, float twistSpan, float softness, float biasFactor, float relaxationFactor)
+{
+	if (m_type == ConstraintType_ConeTwist && m_pConstraint)
+	{
+		btConeTwistConstraint* cone = static_cast<btConeTwistConstraint*>(m_pConstraint);
+		cone->setLimit(swingSpan1, swingSpan2, twistSpan, softness, biasFactor, relaxationFactor);
+	}
+}
+
+bool BulletPhysicsConstraint::GetLinearLimits3D(PARAVECTOR3& lower, PARAVECTOR3& upper)
+{
+	if ((m_type == ConstraintType_Generic6Dof || m_type == ConstraintType_Spring) && m_pConstraint)
+	{
+		btGeneric6DofConstraint* dof = static_cast<btGeneric6DofConstraint*>(m_pConstraint);
+		btVector3 lo, hi;
+		dof->getLinearLowerLimit(lo);
+		dof->getLinearUpperLimit(hi);
+		lower = PARAVECTOR3((float)lo.x(), (float)lo.y(), (float)lo.z());
+		upper = PARAVECTOR3((float)hi.x(), (float)hi.y(), (float)hi.z());
+		return true;
+	}
+	return false;
+}
+
+bool BulletPhysicsConstraint::GetAngularLimits3D(PARAVECTOR3& lower, PARAVECTOR3& upper)
+{
+	if ((m_type == ConstraintType_Generic6Dof || m_type == ConstraintType_Spring) && m_pConstraint)
+	{
+		btGeneric6DofConstraint* dof = static_cast<btGeneric6DofConstraint*>(m_pConstraint);
+		btVector3 lo, hi;
+		dof->getAngularLowerLimit(lo);
+		dof->getAngularUpperLimit(hi);
+		lower = PARAVECTOR3((float)lo.x(), (float)lo.y(), (float)lo.z());
+		upper = PARAVECTOR3((float)hi.x(), (float)hi.y(), (float)hi.z());
+		return true;
+	}
+	return false;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -683,7 +759,8 @@ void BulletPhysicsVehicle::ResetSuspension()
 // Physics World
 //
 CParaPhysicsWorld::CParaPhysicsWorld()
-	: m_dynamicsWorld(NULL), m_collisionWorld(NULL), m_broadphase(NULL), m_dispatcher(NULL), m_solver(NULL), m_collisionConfiguration(NULL), m_bInvertFaceWinding(false)
+	: m_dynamicsWorld(NULL), m_collisionWorld(NULL), m_broadphase(NULL), m_dispatcher(NULL), m_solver(NULL), m_collisionConfiguration(NULL), m_bInvertFaceWinding(false),
+	m_pSubstepCallback(NULL), m_pSubstepUserData(NULL), m_fLocalTimeMirror(0.f), m_fFixedTimeStep(1.f / 60.f), m_fSubstepRemainder(0.f), m_nSubstepIndex(0), m_nSubstepCount(0)
 {
 	m_exit = true;
 #ifdef WIN32
@@ -720,14 +797,56 @@ bool CParaPhysicsWorld::InitPhysics()
 	if (m_dynamicsWorld)
 	{
 		m_dynamicsWorld->setDebugDrawer(&m_physics_debug_draw);
+		m_dynamicsWorld->setInternalTickCallback(&CParaPhysicsWorld::InternalPreTickCallback, this, true);
 	}
+	m_fLocalTimeMirror = 0.f;
+	m_nSubstepIndex = 0;
+	m_nSubstepCount = 0;
 	m_exit = false;
 	return true;
 }
 
+void CParaPhysicsWorld::SetSubstepCallback(ParaPhysicsSubstepCallback pCallback, void* pUserData)
+{
+	m_pSubstepCallback = pCallback;
+	m_pSubstepUserData = pUserData;
+}
+
+void CParaPhysicsWorld::InternalPreTickCallback(btDynamicsWorld* world, btScalar timeStep)
+{
+	CParaPhysicsWorld* pThis = world ? (CParaPhysicsWorld*)world->getWorldUserInfo() : NULL;
+	if (!pThis || !pThis->m_pSubstepCallback)
+		return;
+	int idx = pThis->m_nSubstepIndex++;
+	int count = pThis->m_nSubstepCount;
+	if (count < idx + 1)
+		count = idx + 1;
+	// end of substep idx relative to the end of this stepSimulation() call (<= 0)
+	float offset = -(float)(pThis->m_fSubstepRemainder + (btScalar)(count - 1 - idx) * timeStep);
+	if (offset > 0.f)
+		offset = 0.f;
+	pThis->m_pSubstepCallback(pThis->m_pSubstepUserData, (float)timeStep, offset, idx, count);
+}
+
 bool CParaPhysicsWorld::StepSimulation(float fDeltaTime)
 {
-	m_dynamicsWorld->stepSimulation(fDeltaTime, 8, 1.f / 60.f);
+	const int maxSubSteps = 8;
+	const btScalar fixedTimeStep = btScalar(1.f / 60.f);
+	// Mirror btDiscreteDynamicsWorld::stepSimulation() local time bookkeeping so that the pre-tick callback
+	// can map every fixed substep to a deterministic time offset relative to the end of this frame.
+	m_fFixedTimeStep = fixedTimeStep;
+	m_fLocalTimeMirror += fDeltaTime;
+	int numSubSteps = 0;
+	if (m_fLocalTimeMirror >= fixedTimeStep)
+	{
+		numSubSteps = int(m_fLocalTimeMirror / fixedTimeStep);
+		m_fLocalTimeMirror -= numSubSteps * fixedTimeStep;
+	}
+	m_fSubstepRemainder = m_fLocalTimeMirror;
+	m_nSubstepCount = (numSubSteps > maxSubSteps) ? maxSubSteps : numSubSteps;
+	m_nSubstepIndex = 0;
+
+	m_dynamicsWorld->stepSimulation(fDeltaTime, maxSubSteps, fixedTimeStep);
 	return true;
 }
 
@@ -1093,7 +1212,19 @@ IParaPhysicsActor* ParaEngine::CParaPhysicsWorld::RaycastClosestShapeEx(const PA
 		fSensorRange = 200.f;
 	vTo = vFrom + vTo * fSensorRange;
 
-	btCollisionWorld::ClosestRayResultCallback cb(vFrom, vTo);
+	// Sensor (CF_NO_CONTACT_RESPONSE) actors never block rays: triggers, coins and force-zone volumes are see-through.
+	struct ClosestRayIgnoreSensorsCallback : public btCollisionWorld::ClosestRayResultCallback
+	{
+		ClosestRayIgnoreSensorsCallback(const btVector3& from, const btVector3& to) : btCollisionWorld::ClosestRayResultCallback(from, to) {}
+		virtual bool needsCollision(btBroadphaseProxy* proxy0) const
+		{
+			if (!btCollisionWorld::ClosestRayResultCallback::needsCollision(proxy0))
+				return false;
+			const btCollisionObject* obj = (const btCollisionObject*)proxy0->m_clientObject;
+			return (obj == NULL) || obj->hasContactResponse();
+		}
+	};
+	ClosestRayIgnoreSensorsCallback cb(vFrom, vTo);
 	cb.m_collisionFilterMask = dwGroupMask;
 	// filter back faces. Added by LiXizhi 2010.3. In bullet, triangle seems to be double sided by default.  
 	cb.m_flags = 1;// btTriangleRaycastCallback::kF_FilterBackfaces;
@@ -1330,7 +1461,10 @@ IParaPhysicsConstraint* CParaPhysicsWorld::CreateConstraint(const ParaPhysicsCon
 		}
 		else
 		{
-			constraint = new btConeTwistConstraint(*bodyA, frameA);
+			// btConeTwistConstraint(rbA, frameA) places the world frame at the world origin; anchor it at the
+			// current pivot pose instead (same approach as the world-anchored fixed joint below).
+			btTransform worldFrame = bodyA->getCenterOfMassTransform() * frameA;
+			constraint = new btConeTwistConstraint(*bodyA, btTypedConstraint::getFixedBody(), frameA, worldFrame);
 		}
 		break;
 	}
@@ -1390,7 +1524,8 @@ IParaPhysicsConstraint* CParaPhysicsWorld::CreateConstraint(const ParaPhysicsCon
 		spring->setAngularUpperLimit(btVector3(0.f, 0.f, 0.f));
 		spring->enableSpring(0, true);
 		spring->setStiffness(0, constraintDesc.m_springStiffness);
-		spring->setDamping(0, constraintDesc.m_springDamping);
+		btScalar btDamping = btClamped(btScalar(1.0f) - btScalar(constraintDesc.m_springDamping), btScalar(0.0f), btScalar(1.0f));
+		spring->setDamping(0, btDamping);
 		spring->setEquilibriumPoint();
 		constraint = spring;
 		break;

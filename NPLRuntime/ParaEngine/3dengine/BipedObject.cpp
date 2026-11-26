@@ -993,6 +993,49 @@ void CBipedObject::PreAnimateParkourPhysics(double dTimeDelta)
 		m_vPos.y += step.y;
 		m_vPos.z += step.z;
 	}
+
+	// Force zones (fans / wind tunnels / water) acting on the current player.
+	// Horizontal acceleration feeds the decaying external impulse velocity (integrated in PostAnimateParkourPhysics);
+	// vertical acceleration feeds m_fSpeedVertical so a strong up-draft (> gravity) lifts the player off the ground.
+	if (pPhysicsWorld->GetForceZoneCount() > 0 && CGlobals::GetScene() && CGlobals::GetScene()->GetCurrentPlayer() == this)
+	{
+		const float fHalfHeight = (std::max)(0.25f, GetPhysicsHeight() * 0.5f);
+		Vector3 vCenter((float)m_vPos.x, (float)m_vPos.y + fHalfHeight, (float)m_vPos.z);
+		Vector3 vAccel;
+		float fDrag = 0.f;
+		if (pPhysicsWorld->ComputeForceZoneAcceleration(vCenter, fHalfHeight, true, vAccel, fDrag))
+		{
+			m_vExternalImpulseVel.x += vAccel.x * dt;
+			m_vExternalImpulseVel.z += vAccel.z * dt;
+			if (m_fSpeedVertical == 0.f)
+			{
+				// standing: only an up-draft stronger than gravity lifts the player
+				if (vAccel.y > m_gravity)
+				{
+					m_fSpeedVertical = (vAccel.y - m_gravity) * dt + FLT_TOLERANCE;
+					ClearParkourPhysicsState();
+				}
+			}
+			else
+			{
+				m_fSpeedVertical += vAccel.y * dt;
+				// damping keeps hovering at the top of a fan column stable
+				float fVertDrag = (std::max)(fDrag, (vAccel.y > 0.f) ? 1.0f : 0.f);
+				m_fSpeedVertical -= m_fSpeedVertical * (std::min)(1.f, fVertDrag * dt);
+				const float kMaxZoneRiseSpeed = 20.f;
+				if (m_fSpeedVertical > kMaxZoneRiseSpeed)
+					m_fSpeedVertical = kMaxZoneRiseSpeed;
+				if (m_fSpeedVertical == 0.f)
+					m_fSpeedVertical = FLT_TOLERANCE; // stay airborne (0 means standing)
+			}
+			if (fDrag > 0.f)
+			{
+				float k = (std::min)(1.f, fDrag * dt);
+				m_vExternalImpulseVel.x -= m_vExternalImpulseVel.x * k;
+				m_vExternalImpulseVel.z -= m_vExternalImpulseVel.z * k;
+			}
+		}
+	}
 }
 
 void CBipedObject::PostAnimateParkourPhysics(double dTimeDelta)
@@ -5356,6 +5399,8 @@ void ParaEngine::CBipedObject::SetPhysicsGroup(int nGroup)
 	{
 		m_nPhysicsGroup = nGroup;
 		UnloadPhysics();
+		if (m_dynamicPhysicsActor)
+			m_dynamicPhysicsActor->SetCollisionFilter((short)m_nPhysicsGroup, (short)(m_dwPhysicsGroupMask & 0xffff));
 	}
 }
 
@@ -5402,7 +5447,12 @@ ParaEngine::ParaXEntity* ParaEngine::CBipedObject::GetParaXEntity()
 
 void ParaEngine::CBipedObject::SetPhysicsGroupMask(DWORD dwValue)
 {
-	m_dwPhysicsGroupMask = dwValue;
+	if (m_dwPhysicsGroupMask != dwValue)
+	{
+		m_dwPhysicsGroupMask = dwValue;
+		if (m_dynamicPhysicsActor)
+			m_dynamicPhysicsActor->SetCollisionFilter((short)m_nPhysicsGroup, (short)(m_dwPhysicsGroupMask & 0xffff));
+	}
 }
 
 void ParaEngine::CBipedObject::SetLastSpeed(float fSpeed)

@@ -147,6 +147,10 @@ namespace ParaEngine
 		virtual void SetCcdSweptSphereRadius(float radius);
 		virtual float GetCcdMotionThreshold();
 		virtual void SetCcdMotionThreshold(float threshold);
+		virtual void SetCollisionFilter(short group, short mask) override;
+		virtual short GetCollisionGroup() override { return m_group; }
+		virtual short GetCollisionMask() override { return m_mask; }
+		virtual bool GetAabb(PARAVECTOR3& vMin, PARAVECTOR3& vMax) override;
 		
 		btRigidBody* m_pActor;
 		CParaPhysicsWorld* m_pWorld;
@@ -188,6 +192,9 @@ namespace ParaEngine
 		virtual void SetSpringParams(int axis, bool enable, float stiffness, float damping, float equilibriumPoint = 0.0f, bool useCurrentEquilibrium = false) override;
 		virtual void SetLinearLimits3D(const PARAVECTOR3& lower, const PARAVECTOR3& upper) override;
 		virtual void SetAngularLimits3D(const PARAVECTOR3& lower, const PARAVECTOR3& upper) override;
+		virtual void SetConeTwistLimit(float swingSpan1, float swingSpan2, float twistSpan, float softness = 1.0f, float biasFactor = 0.3f, float relaxationFactor = 1.0f) override;
+		virtual bool GetLinearLimits3D(PARAVECTOR3& lower, PARAVECTOR3& upper) override;
+		virtual bool GetAngularLimits3D(PARAVECTOR3& lower, PARAVECTOR3& upper) override;
 
 		btTypedConstraint* m_pConstraint;
 		ParaPhysicsConstraintType m_type;
@@ -316,6 +323,9 @@ namespace ParaEngine
 		/** bitwise of PhysicsDebugDrawModes */
 		virtual int		GetDebugDrawMode();
 
+		/** register a pre-tick callback invoked before each fixed 1/60 substep. */
+		virtual void SetSubstepCallback(ParaPhysicsSubstepCallback pCallback, void* pUserData) override;
+
 	public:
 		/** get a pointer to physics scene object */
 		virtual btDynamicsWorld* GetScene()
@@ -324,6 +334,8 @@ namespace ParaEngine
 		}
 
 	protected:
+		static void InternalPreTickCallback(btDynamicsWorld* world, btScalar timeStep);
+
 		btBroadphaseInterface*	m_broadphase;
 		btCollisionDispatcher*	m_dispatcher;
 		btConstraintSolver*	m_solver;
@@ -347,6 +359,15 @@ namespace ParaEngine
 		CPhysicsDebugDraw m_physics_debug_draw;
 		bool m_bInvertFaceWinding;
 		bool m_exit;
+
+		// substep (pre-tick) callback state. m_fLocalTimeMirror mirrors btDiscreteDynamicsWorld::m_localTime
+		ParaPhysicsSubstepCallback m_pSubstepCallback;
+		void* m_pSubstepUserData;
+		btScalar m_fLocalTimeMirror;
+		btScalar m_fFixedTimeStep;
+		btScalar m_fSubstepRemainder;
+		int m_nSubstepIndex;
+		int m_nSubstepCount;
 	};
 
 	class CParaContactResultCallback: public btCollisionWorld::ContactResultCallback

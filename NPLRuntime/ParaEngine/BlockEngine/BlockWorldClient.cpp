@@ -215,6 +215,9 @@ namespace ParaEngine
 		m_render_target_color.reset();
 		m_render_target_scene_color.reset();
 		m_render_target_block_info.reset();
+		m_waterSceneDepth.reset();
+		m_hasWaterSceneDepth = false;
+		m_deferredUnderwaterFog = false;
 		m_render_target_depth_tex.reset();
 		m_render_target_normal.reset();
 		m_damageTexture.reset();
@@ -561,6 +564,9 @@ namespace ParaEngine
 
 		auto pDevice = CGlobals::GetRenderDevice();
 
+		if (nRenderPass == BlockRenderPass_ReflectedWater)
+			m_hasWaterSceneDepth = false;
+
 		if (pCurRenderQueue->size() > 0)
 		{
 			const float fBlockSize = BlockConfig::g_blockSize;
@@ -589,6 +595,20 @@ namespace ParaEngine
 						return;
 					}
 
+					// Water overwrites linear view depth in the G-buffer. Retain the opaque
+					// intersection so the composite can measure the submerged part of each ray.
+					if (nRenderPass == BlockRenderPass_ReflectedWater && m_waterDepthEnabled)
+					{
+						if (!m_waterSceneDepth)
+							m_waterSceneDepth = CGlobals::GetAssetManager()->LoadTexture("_WaterSceneDepth_R32F", "_WaterSceneDepth_R32F", TextureEntity::RenderTarget);
+						if (m_waterSceneDepth)
+						{
+							m_waterSceneDepth->LoadAsset();
+							auto* dst = m_waterSceneDepth->GetRHIRenderTarget();
+							auto* src = m_render_target_depth_tex->GetRHIRenderTarget();
+							m_hasWaterSceneDepth = src && dst && pDevice->BlitRenderTarget(src, dst, nullptr, nullptr, false);
+						}
+					}
 					pEffectManager->BeginEffect(TECH_BLOCK_FANCY, &pEffect);
 					if (pEffect == 0)
 					{
@@ -2179,6 +2199,9 @@ namespace ParaEngine
 				m_render_target_color.reset();
 				m_render_target_scene_color.reset();
 				m_render_target_block_info.reset();
+				m_waterSceneDepth.reset();
+				m_hasWaterSceneDepth = false;
+				m_deferredUnderwaterFog = false;
 				m_render_target_depth_tex.reset();
 				m_render_target_normal.reset();
 			}
@@ -2240,6 +2263,9 @@ namespace ParaEngine
 		m_render_target_color.reset();
 		m_render_target_scene_color.reset();
 		m_render_target_block_info.reset();
+		m_waterSceneDepth.reset();
+		m_hasWaterSceneDepth = false;
+		m_deferredUnderwaterFog = false;
 		m_render_target_depth_tex.reset();
 		m_render_target_normal.reset();
 	}
@@ -2336,6 +2362,7 @@ namespace ParaEngine
 			}
 			else if (nRenderPass == BlockRenderPass_AlphaBlended)
 			{
+				m_deferredUnderwaterFog = false;
 				if (!m_sPostProcessorAlphaCallbackScript.empty())
 					CGlobals::GetNPLRuntime()->GetMainRuntimeState()->DoString(m_sPostProcessorAlphaCallbackScript.c_str(), (int)m_sPostProcessorAlphaCallbackScript.size());
 			}
@@ -2558,12 +2585,39 @@ namespace ParaEngine
 
 	void BlockWorldClient::SetPostProcessingScript(const char* sCallbackScript)
 	{
+		m_waterDepthEnabled = false;
 		m_sPostProcessorCallbackScript = sCallbackScript;
 	}
 
 	void BlockWorldClient::SetPostProcessingAlphaScript(const char* sCallbackScript)
 	{
 		m_sPostProcessorAlphaCallbackScript = sCallbackScript;
+	}
+
+	Vector4 BlockWorldClient::UpdateWaterView()
+	{
+		auto* camera = CGlobals::GetScene()->GetCurrentCamera();
+		if (!m_waterDepthEnabled || !camera || !IsInBlockWorld())
+			return Vector4(0, 0, 0, 0);
+		const Vector3 eye = camera->GetRenderEyePosition();
+		uint16_t x, z;
+		int16_t y;
+		BlockCommon::ConvertToBlockIndex(eye.x, eye.y, eye.z, x, y, z);
+		int top = y;
+		// Beyond this distance direct surface light is already extinguished.
+		while (top < y + 48 && BlockConfig::IsBlockY(top))
+		{
+			auto* block = GetBlockTemplate(x, top, z);
+			if (!block || block->GetCategoryID() != 8 || !block->IsMatchAttribute(BlockTemplate::batt_liquid))
+				break;
+			++top;
+		}
+		// The exposed liquid face sits at 80% of a block, as in GetWaterLevel.
+		// Handle the air gap above it here too: the legacy overlay tests the entire voxel.
+		m_deferredUnderwaterFog = top > y;
+		const float depth = !m_deferredUnderwaterFog ? 0.f : (std::max)(0.f,
+			BlockCommon::ConvertToRealPosition(x, top - 1, z, 4).y - BlockConfig::g_blockSize * 0.2f - eye.y);
+		return Vector4(depth, static_cast<float>(CGlobals::GetGameTime()), eye.x, eye.z);
 	}
 
 	bool BlockWorldClient::CanTraceBlockSky()
@@ -4240,6 +4294,9 @@ namespace ParaEngine
 		pClass->AddField("UseWaterReflection", FieldType_Bool, (void*)SetUseWaterReflection_s, (void*)GetUseWaterReflection_s, NULL, NULL, bOverride);
 		pClass->AddField("CanTraceBlockSky", FieldType_Bool, NULL, (void*)CanTraceBlockSky_s, NULL, NULL, bOverride);
 		pClass->AddField("UpdateRayTracedReflections", FieldType_Bool, NULL, (void*)UpdateRayTracedReflections_s, NULL, NULL, bOverride);
+		pClass->AddField("WaterDepthEnabled", FieldType_Bool, (void*)SetWaterDepthEnabled_s, NULL, NULL, NULL, bOverride);
+		pClass->AddField("HasWaterSceneDepth", FieldType_Bool, NULL, (void*)HasWaterSceneDepth_s, NULL, NULL, bOverride);
+		pClass->AddField("UpdateWaterView", FieldType_Vector4, NULL, (void*)UpdateWaterView_s, NULL, NULL, bOverride);
 		pClass->AddField("UpdateRayTracedSky", FieldType_Vector4, NULL, (void*)UpdateRayTracedSky_s, NULL, NULL, bOverride);
 		pClass->AddField("NearBlockGridOrigin", FieldType_Vector4, NULL, (void*)GetNearBlockGridOrigin_s, NULL, NULL, bOverride);
 		pClass->AddField("TerrainZigZagEnabled", FieldType_Bool, (void*)SetTerrainZigZagEnabled_s, NULL, NULL, NULL, bOverride);

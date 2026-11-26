@@ -309,6 +309,12 @@ static const NSRange kEmptyRange = { NSNotFound, 0 };
     }
 }
 
+- (void)magnifyWithEvent:(NSEvent *)event
+{
+    if (auto window = [RenderView getRenderWindow])
+        window->OnMagnify(event);
+}
+
 - (void)doCommandBySelector: (SEL)selector
 {
 }

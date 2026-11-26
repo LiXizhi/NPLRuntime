@@ -80,6 +80,9 @@ namespace ParaEngine
 		virtual void UnloadPhysics();
 		virtual void SetPhysicsGroup(int nGroup);
 		virtual int GetPhysicsGroup();
+		/** collision mask of the dynamic physics actor (default 0xffffffff: collide with all groups) */
+		virtual void SetPhysicsGroupMask(DWORD dwValue) override;
+		virtual DWORD GetPhysicsGroupMask() override;
 		virtual void EnablePhysics(bool bEnable);
 		virtual bool IsPhysicsEnabled();
 
@@ -142,6 +145,7 @@ namespace ParaEngine
 		// any bit wise combination of PHYSICS_METHOD
 		DWORD m_dwPhysicsMethod;
 		uint32 m_nPhysicsGroup;
+		DWORD m_dwPhysicsGroupMask;
 
 		/** a value between [0,1). last block light. */
 		float m_fLastBlockLight;

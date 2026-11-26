@@ -263,6 +263,15 @@ namespace ParaEngine
 		ATTRIBUTE_METHOD1(CSceneObject, SetPhysicsSimulationTime_s, float) { cls->SetPhysicsSimulationTime(p1); return S_OK; }
 		ATTRIBUTE_METHOD1(CSceneObject, PhysicsRaycast_s, const char**) { *p1 = cls->PhysicsRaycast(*p1); return S_OK; }
 		ATTRIBUTE_METHOD1(CSceneObject, PhysicsContacts_s, const char**) { *p1 = cls->PhysicsContacts(*p1); return S_OK; }
+		ATTRIBUTE_METHOD1(CSceneObject, GetPhysicsForceZones_s, const char**) { *p1 = cls->GetPhysicsForceZones(); return S_OK; }
+		ATTRIBUTE_METHOD1(CSceneObject, SetPhysicsForceZone_s, const char*) { cls->SetPhysicsForceZone(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(CSceneObject, GetPhysicsForceZoneCount_s, int*) { *p1 = cls->GetPhysicsForceZoneCount(); return S_OK; }
+		ATTRIBUTE_METHOD1(CSceneObject, PopPhysicsEvents_s, const char**) { *p1 = cls->PopPhysicsEvents(); return S_OK; }
+		ATTRIBUTE_METHOD1(CSceneObject, GetPhysicsImpactThreshold_s, float*) { *p1 = cls->GetPhysicsImpactThreshold(); return S_OK; }
+		ATTRIBUTE_METHOD1(CSceneObject, SetPhysicsImpactThreshold_s, float) { cls->SetPhysicsImpactThreshold(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(CSceneObject, IsPhysicsKinematicSubstep_s, bool*) { *p1 = cls->IsPhysicsKinematicSubstep(); return S_OK; }
+		ATTRIBUTE_METHOD1(CSceneObject, SetPhysicsKinematicSubstep_s, bool) { cls->SetPhysicsKinematicSubstep(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(CSceneObject, GetPhysicsFeatures_s, const char**) { *p1 = cls->GetPhysicsFeatures(); return S_OK; }
 
 		ATTRIBUTE_METHOD1(CSceneObject, IsBlockInput_s, bool*) { *p1 = cls->IsBlockInput(); return S_OK; }
 		ATTRIBUTE_METHOD1(CSceneObject, SetBlockInput_s, bool) { cls->SetBlockInput(p1); return S_OK; }
@@ -1078,6 +1087,16 @@ namespace ParaEngine
 		void SetPhysicsSimulationTime(float fTime);
 		const char* PhysicsRaycast(const char* queryTableStr);
 		const char* PhysicsContacts(const char* queryTableStr);
+		/** physics contraption v2: force zones, event queue, kinematic substeps and feature discovery */
+		void SetPhysicsForceZone(const char* sCmd);
+		const char* GetPhysicsForceZones();
+		int GetPhysicsForceZoneCount();
+		const char* PopPhysicsEvents();
+		float GetPhysicsImpactThreshold();
+		void SetPhysicsImpactThreshold(float fImpulse);
+		bool IsPhysicsKinematicSubstep();
+		void SetPhysicsKinematicSubstep(bool bEnable);
+		const char* GetPhysicsFeatures();
 
 		bool IsDropShadow() { return m_renderDropShadow; }
 		void SetDropShadow(bool useDropShadow) { m_renderDropShadow = useDropShadow; }

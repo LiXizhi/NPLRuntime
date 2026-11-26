@@ -358,30 +358,34 @@ HRESULT ParaEngine::CParaXProcessor::CopyToResource()
 					}
 					if (bGenerateLOD)
 					{
-						// each LOD at least cut triangle count in half and no bigger than a given count. 
-						// by default, generate lod in range 30, 60, 90, 120 meters;
-						// TODO: currently it is hard-coded, shall we read LOD settings from bmax file, so that users
-						// have find-control on the settings. 
+						// Scale LOD switch distances by the unscaled mesh's largest bounding dimension (baseline = 1.0m block/character),
+						// so large auto_scale="false" BMax models only switch to coarse voxel LOD when their apparent screen angle is small.
+						float fModelSizeScale = 1.0f;
+						if (pParaXMesh)
+						{
+							Vector3 vExt = pParaXMesh->GetHeader().maxExtent - pParaXMesh->GetHeader().minExtent;
+							float fMaxDim = (std::max)((std::max)(vExt.x, vExt.y), vExt.z);
+							if (fMaxDim > 1.0f)
+								fModelSizeScale = fMaxDim;
+						}
+
 						struct LODSetting {
 							int nMaxTriangleCount;
-							float fMaxDistance;
+							float fSwitchDistance;
 						};
-						const LODSetting nLodsMaxTriangleCounts[] = { {2000, 60.f}, {500, 90.f}, {100, 120.f} };
+						const LODSetting nLodsMaxTriangleCounts[] = { {2000, 30.f}, {500, 60.f}, {100, 90.f} };
 
-						// from second lod
-						for (int i = 0; pParaXMesh && i < sizeof(nLodsMaxTriangleCounts) / sizeof(LODSetting); i++)
+						// Each tier switches from the previous LOD at fSwitchDistance * fModelSizeScale.
+						for (int i = 0; pParaXMesh && i < (int)(sizeof(nLodsMaxTriangleCounts) / sizeof(LODSetting)); i++)
 						{
 							if ((int)pParaXMesh->GetPolyCount() >= nLodsMaxTriangleCounts[i].nMaxTriangleCount)
 							{
 								MeshLOD lod;
 								lod.m_pParaXMesh = p.ParseParaXModel((std::min)(nLodsMaxTriangleCounts[i].nMaxTriangleCount, (int)(pParaXMesh->GetPolyCount() / 2) - 4));
-								lod.m_fromDepthSquared = Math::Sqr(nLodsMaxTriangleCounts[i].fMaxDistance);
+								lod.m_fromDepthSquared = Math::Sqr(120.f * fModelSizeScale);
 								if (lod.m_pParaXMesh)
 								{
-									if (pMeshLODs.size() == 1)
-									{
-										iCur->m_fromDepthSquared = Math::Sqr(nLodsMaxTriangleCounts[0].fMaxDistance * 0.5f);
-									}
+									pMeshLODs.back().m_fromDepthSquared = Math::Sqr(nLodsMaxTriangleCounts[i].fSwitchDistance * fModelSizeScale);
 									pParaXMesh = lod.m_pParaXMesh;
 									pMeshLODs.push_back(lod);
 									iCur = pMeshLODs.end() - 1;

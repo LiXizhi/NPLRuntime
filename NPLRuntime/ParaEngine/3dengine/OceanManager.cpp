@@ -1926,7 +1926,7 @@ namespace ParaEngine
 		* - display an animated texture in front of the screen. The texture may contain some bubbles, etc.
 		* - blur the image with post-processing. Maybe need to copy back buffer using StrechRect, then apply a blur type pixel shader.
 		* - using fog or vertex based fog, etc.*/
-		if (!m_underwater)
+		if (!m_underwater || BlockWorldClient::GetInstance()->HasDeferredUnderwaterFog())
 		{
 			return;
 		}

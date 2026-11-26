@@ -156,7 +156,22 @@ void CNPLScriptingState::LoadHAPI_SceneManager()
 			def("GetMapChunkData", &ParaTerrain::GetMapChunkData),
 				def("ApplyMapChunkData", &ParaTerrain::ApplyMapChunkData),
 				def("GetBlockFullData", &ParaTerrain::GetBlockFullData, pure_out_value(_4) + pure_out_value(_5)),
-				def("SetBlockWorldSunIntensity",&ParaTerrain::SetBlockWorldSunIntensity)
+				def("SetBlockWorldSunIntensity",&ParaTerrain::SetBlockWorldSunIntensity),
+				def("ConfigureWorldGen", &ParaTerrain::ConfigureWorldGen),
+				def("GenerateBaseColumn", &ParaTerrain::GenerateBaseColumn),
+				def("SampleWorldColumn", &ParaTerrain::SampleWorldColumn),
+				def("GenResetBuffer", &ParaTerrain::GenResetBuffer),
+				def("GenSetBlock", &ParaTerrain::GenSetBlock),
+				def("GenGetBlockId", &ParaTerrain::GenGetBlockId),
+				def("GenFillBox", &ParaTerrain::GenFillBox),
+				def("GenFillEllipsoid", &ParaTerrain::GenFillEllipsoid),
+				def("GenStampTree", &ParaTerrain::GenStampTree),
+				def("GenStampCrystal", &ParaTerrain::GenStampCrystal),
+				def("GenEncodeChunkV2", &ParaTerrain::GenEncodeChunkV2),
+				def("GenCommitColumn", &ParaTerrain::GenCommitColumn),
+				def("Noise2D", &ParaTerrain::Noise2D),
+				def("Noise3D", &ParaTerrain::Noise3D),
+				def("RidgedNoise2D", &ParaTerrain::RidgedNoise2D)
 			]
 		];
 

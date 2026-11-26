@@ -1841,6 +1841,25 @@ const char* ParaEngine::ParaEngineSettings::GetRendererName()
 	return pDevice ? pDevice->GetCaps().backendName : "Null";
 }
 
+bool ParaEngine::ParaEngineSettings::IsSingleThread() const
+{
+#if defined(EMSCRIPTEN_SINGLE_THREAD) || defined(SDL_SINGLE_THREAD)
+	return true;
+#else
+	return false;
+#endif
+}
+
+int ParaEngine::ParaEngineSettings::GetHardwareConcurrency() const
+{
+#if defined(EMSCRIPTEN_SINGLE_THREAD) || defined(SDL_SINGLE_THREAD)
+	return 1;
+#else
+	const unsigned int count = std::thread::hardware_concurrency();
+	return count > 1u ? static_cast<int>(count) : 1;
+#endif
+}
+
 int ParaEngineSettings::InstallFields(CAttributeClass* pClass, bool bOverride)
 {
 	IAttributeFields::InstallFields(pClass, bOverride);
@@ -1977,6 +1996,8 @@ int ParaEngineSettings::InstallFields(CAttributeClass* pClass, bool bOverride)
 
 	pClass->AddField("RendererName", FieldType_String, NULL, (void*)GetRendererName_s, NULL, NULL, bOverride);
 	pClass->AddField("IsLowEndDevice", FieldType_Bool, NULL, (void*)IsLowEndRenderDevice_s, NULL, NULL, bOverride);
+	pClass->AddField("IsSingleThread", FieldType_Bool, NULL, (void*)IsSingleThread_s, NULL, NULL, bOverride);
+	pClass->AddField("HardwareConcurrency", FieldType_Int, NULL, (void*)GetHardwareConcurrency_s, NULL, NULL, bOverride);
 	
 	return S_OK;
 }

@@ -55,6 +55,9 @@ float BloomEnabled = 1.0f;
 float4 LightingStrength = float4(1, 1, 1, 1);
 float4 BlockSkyVolume;
 float BlockReflectionEnabled = 0;
+float HasWaterDepth = 0;
+// Camera submersion in world units, animation time in seconds, absolute camera XZ.
+float4 WaterView = float4(0, 0, 0, 0);
 float QualityLevel = 4.0f;
 float SkyVisibilityView = 0.0f;
 #ifdef BLOCK_SURFACE_EFFECTS
@@ -303,7 +306,7 @@ float2 convertCameraSpaceToScreenSpace(float3 cameraSpace)
 
 
 // compute water reflection by sampling along the reflected eye ray until a pixel is found. 
-float4 	ComputeRayTraceReflection(float3 cameraSpacePosition, float3 cameraSpaceNormal)
+float4 	ComputeRayTraceReflection(float3 cameraSpacePosition, float3 cameraSpaceNormal, bool fromWater)
 {
 	float initialStepAmount = QualityLevel >= 9 ? 0.25 : 1.0;
 	//float stepRefinementAmount = 0.1;
@@ -367,6 +370,10 @@ float4 	ComputeRayTraceReflection(float3 cameraSpacePosition, float3 cameraSpace
 	{
 		// compute point color
 		float2 texCoord = finalSamplePos.xy;
+		// A hit on the lake itself contains the unattenuated bottom in the input color.
+		// Treat it as a miss so that it cannot reintroduce the lakebed through a reflection.
+		if (fromWater && (int)(tex2Dlod(matInfoSampler, float4(texCoord, 0, 0)).r * 255.0f + 0.4f) == 8)
+			return color;
 		color.rgb = GetAlbedoLinear(texCoord);
 		float2 localUV = (finalSamplePos - viewportOffset) / viewportScale;
 		color.a = clamp(1 - pow(distance(float2(0.5, 0.5), localUV)*2.0, 2.0), 0.0, 1.0);
@@ -1717,7 +1724,7 @@ void CalculateSpecularReflections(inout SurfaceStruct2 surface)
 				}
 			}
 		}
-		float4 reflection = ComputeRayTraceReflection(surface.cameraSpacePos, cameraSpaceNormal);
+		float4 reflection = ComputeRayTraceReflection(surface.cameraSpacePos, cameraSpaceNormal, surface.category_id == 8);
 		float4 fakeSkyReflection = ComputeFakeSkyReflection(surface);
 
 		// When SSR misses off-screen sky on water, blend subtle horizon sky reflection
@@ -1854,6 +1861,60 @@ float3 DiffuseBounce(SurfaceStruct2 surface)
 	return irradiance * (1.6 / count) * (1.0 - smoothstep(24.0, 35.0, surface.depth));
 }
 
+// Linear-light absorption and in-scattering along the portion of the view ray in water.
+float3 WaterTransmission(float3 incident, float distanceInWater, float daylight)
+{
+	float3 transmission = exp(-distanceInWater * float3(0.67f, 0.32f, 0.22f));
+	float3 scattered = lerp(float3(0.0018f, 0.007f, 0.014f),
+		float3(0.009f, 0.090f, 0.126f), saturate(daylight));
+	return incident * transmission + scattered * (1.0f - transmission);
+}
+
+// Intersecting wave fronts focus sunlight into moving lines on nearby submerged faces.
+float WaterCaustics(float2 p, float t)
+{
+	float2 bend = float2(sin(p.y * 1.7f + t * 0.71f), cos(p.x * 1.4f - t * 0.58f));
+	float a = sin(p.x * 3.1f + p.y * 1.2f + bend.x + t * 0.83f);
+	float b = cos(p.y * 3.6f - p.x * 0.9f + bend.y - t * 0.62f);
+	return 1.0f - smoothstep(0.025f, 0.24f, abs(a + 0.72f * b));
+}
+
+void ShadeSubmergedView(inout SurfaceStruct2 surface, float skyLight)
+{
+	float3 ray = mul(normalize(surface.CameraEye), (float3x3)matViewInverse);
+	float hitDistance = surface.depth > 0.01f ? length(surface.cameraSpacePos) : 80.0f;
+	float waterPath = min(hitDistance, 80.0f);
+	if (ray.y > 0.001f)
+		waterPath = min(waterPath, WaterView.x / ray.y);
+	float3 offset = ray * waterPath;
+	float belowSurface = max(0.0f, WaterView.x - offset.y);
+	float daylight = saturate(1.0f - timeMidnight * 1.6f) * (1.0f - 0.7f * CloudThickness);
+	float direct = daylight * saturate(sunDirection.y * 3.0f) * (1.0f - rainStrength);
+	float2 sunSlope = sunDirection.xz / max(0.32f, sunDirection.y);
+	float2 hitXZ = WaterView.zw + offset.xz;
+	if (surface.depth > 0.01f && hitDistance <= waterPath + 0.05f && surface.category_id != 8)
+	{
+		float footprint = saturate(surface.normal.y * 0.8f + 0.2f);
+		float caustic = WaterCaustics(hitXZ + sunSlope * belowSurface, WaterView.y);
+		surface.color *= 1.0f + float3(0.52f, 0.78f, 0.68f) * caustic * footprint
+			* direct * surface.sunlightVisibility * exp(-0.32f * belowSurface);
+	}
+	float light = daylight * skyLight * exp(-0.13f * WaterView.x);
+	surface.color = WaterTransmission(surface.color, waterPath, light);
+
+	// Sample the light field along the view ray. Its footprint shifts with sun direction.
+	float shafts = 0.0f;
+	[unroll] for (int i = 0; i < 3; ++i)
+	{
+		float3 sampleOffset = offset * ((i + 0.5f) / 3.0f);
+		float sampleDepth = max(WaterView.x - sampleOffset.y, 0.0f);
+		float2 lightXZ = WaterView.zw + sampleOffset.xz + sunSlope * sampleDepth;
+		shafts += WaterCaustics(lightXZ * 0.29f, WaterView.y * 0.37f) * exp(-0.38f * sampleDepth);
+	}
+	surface.color += float3(0.021f, 0.065f, 0.073f) * (shafts / 3.0f) * direct * skyLight
+		* (1.0f - exp(-0.4f * waterPath)) * (0.3f + 0.7f * saturate(dot(ray, sunDirection)));
+}
+
 // do water reflection, specular & crepuscular shafts here
 float4 CompositePS1(VSOutput input) :COLOR
 {
@@ -1875,10 +1936,21 @@ float4 CompositePS1(VSOutput input) :COLOR
 	// float sun_light_strength = block_info.g;
 	surface.torch_light_strength = block_info.b;
 
+	if (QualityLevel >= 3 && surface.category_id == 8 && WaterView.x <= 0 && HasWaterDepth > 0.5f)
+	{
+		// Sample at a texel center to avoid mixing sky depth into a bank silhouette.
+		float2 uv = (floor(texCoord * screenParam) + 0.5f) / screenParam;
+		float bedDepth = tex2D(compositeSampler, uv).r;
+		float path = bedDepth > 0.01f ? max(0.0f, bedDepth - surface.depth) * length(input.CameraEye) : 80.0f;
+		surface.color = WaterTransmission(surface.color, min(path, 80.0f), block_info.g * (1.0f - timeMidnight));
+	}
 	CalculateSpecularReflections(surface);
 	surface.color += DiffuseBounce(surface) * sqrt(saturate(surface.color));
 	CalculateSpecularHighlight(surface);
-	CalculateCrepuscularLightShafts(surface);
+	if (QualityLevel >= 3 && WaterView.x > 0.0f)
+		ShadeSubmergedView(surface, surface.mask_sky ? 1.0f : block_info.g);
+	else
+		CalculateCrepuscularLightShafts(surface);
 
 	return float4(surface.color.rgb, 1.0);
 }
@@ -2199,6 +2271,14 @@ void Vignette(inout float3 color, float2 pos)
 float4 FinalPS(VSOutput input) :COLOR
 {
 	float2 texCoord = input.texCoord;
+	if (WaterView.x > 0.0f)
+	{
+		float3 dir = mul(normalize(input.CameraEye), (float3x3)matViewInverse);
+		float t = WaterView.y;
+		float2 ripple = float2(sin(dir.z * 19.0f + dir.y * 12.0f + t * 1.3f),
+			cos(dir.x * 16.0f - dir.y * 13.0f - t * 1.1f));
+		texCoord = ClampViewUV(texCoord + ripple * (1.5f * saturate(WaterView.x * 3.0f)) / screenParam);
+	}
 	float3 color;
 	if (RenderOptions.z >= 2)
 		color = DepthOfField(texCoord);
@@ -2217,7 +2297,7 @@ float4 FinalPS(VSOutput input) :COLOR
 
 	// apply user defined fog
 	float eyeDist = length(input.CameraEye * GetDepth(texCoord));
-	if (FogStart < FogEnd)
+	if (FogStart < FogEnd && WaterView.x <= 0.0f)
 		color.xyz = lerp(color.xyz, pow(g_FogColor.xyz, 2.2f), 1.0 - clamp((FogEnd - eyeDist) / (FogEnd - FogStart), 0.0, 1.0));
 
 	// vignette effect: darken edges

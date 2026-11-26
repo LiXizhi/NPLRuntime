@@ -11,12 +11,15 @@
 #include "BlockEngine/BlockDirection.h"
 #include "BlockEngine/BlockCommon.h"
 #include "BlockEngine/RenderableChunk.h"
+#include "BlockEngine/ProceduralNoise.h"
+#include "BlockEngine/ChunkGeneratorFast.h"
 #include "renderer/ParaVertexBuffer.h"
 #include "renderer/RenderDevice.h"
 #include "renderer/ParaVertexBufferPool.h"
 #include "renderer/VertexFVF.h"
 #include "ShapeAABB.h"
 #include "3dengine/ParaEngineSettings.h"
+#include <chrono>
 #include "IParaWebXR.h"
 #include "2dengine/GUIEdit.h"
 #include "util/NetworkAdapter.h"
@@ -917,6 +920,140 @@ namespace
 			TEST_CHECK(std::fabs(list.m_positionSum.x - (1.f + 3.f + 4.f)) < 1e-4f);
 		}
 	}
+
+	void TestProceduralWorldGenFast()
+	{
+		using namespace ParaEngine::WorldGen;
+
+		// 1. Settings threading capability attributes
+		auto& settings = CGlobals::GetSettings();
+		TEST_CHECK(settings.GetHardwareConcurrency() >= 1);
+#ifdef EMSCRIPTEN_SINGLE_THREAD
+		TEST_CHECK(settings.IsSingleThread());
+#else
+		TEST_CHECK(!settings.IsSingleThread());
+#endif
+
+		// 2. ProceduralNoise determinism & range bounds
+		const float n0 = ProceduralNoise::Fbm2D(20261126, 123.45, -678.9, 4, 2.0, 0.5);
+		const float n1 = ProceduralNoise::Fbm2D(20261126, 123.45, -678.9, 4, 2.0, 0.5);
+		const float r0 = ProceduralNoise::Ridged2D(20261126, 42.1, 88.7, 4, 2.1, 0.5);
+		float f1 = 0.f, f2 = 0.f;
+		uint32_t cellHash = 0;
+		ProceduralNoise::Cellular2D(20261126, 12.3, 45.6, 0.85f, &f1, &f2, &cellHash);
+		TEST_CHECK(n0 == n1 && n0 >= -1.5f && n0 <= 1.5f);
+		TEST_CHECK(r0 >= 0.0f && r0 <= 1.01f);
+		TEST_CHECK(f2 >= f1 && f1 >= 0.0f);
+
+		// 3. Configure an extended-height profile with Danxia ColorBlock strata, sky islands & deep caves
+		WorldGenProfile profile;
+		profile.seed = 20261126;
+		profile.presetMode = Preset_SkyIslands;
+		profile.seaLevel = 64;
+		profile.bedrockY = -240;
+		profile.lavaLevel = -216;
+		profile.skyIslandChance = 0.85f;
+		profile.skyIslandMinY = 300;
+		profile.skyIslandMaxY = 580;
+		profile.strata = {
+			{10, 0x0c43u},
+			{10, 0x0df8u},
+			{4, 0u},
+		};
+		profile.ores = {
+			{147, 0u, -238, -48, 0.08f, 0.96f},
+		};
+
+		ChunkColumnBuffer bufA, bufB;
+		ChunkGeneratorFast::GenerateBaseColumn(profile, 1200, 1200, bufA);
+		ChunkGeneratorFast::GenerateBaseColumn(profile, 1200, 1200, bufB);
+
+		std::string encA, encB;
+		bufA.EncodeChunkV2(encA);
+		bufB.EncodeChunkV2(encB);
+		TEST_CHECK(encA.size() > 1035 && encA == encB);
+		TEST_CHECK(encA.compare(0, 7, "chunkV2") == 0);
+
+		// Verify negative-Y bedrock (-240) exists
+		TEST_CHECK(bufA.GetBlockId(5, -240, 5) == profile.blocks.bedrock);
+
+		// Stamp a high-altitude sky crystal & tree above Y=320 with 16-bit ColorBlock metadata
+		bufA.StampTree(8, 340, 8, Tree_CherryUmbrella, 99, 0, 92, 0, 0, 0, 7, 3, 777u);
+		bufA.StampCrystalCluster(4, 345, 4, 87, 73, 0x03efu, 6, 2, true, 999u);
+		bufA.SetBlock(2, -200, 3, 10, 0x0c43u, false);
+
+		// Sparse air gap check: sections between surface (~120) and sky (340) should remain unallocated!
+		const int allocatedSections = bufA.GetActiveSectionCount();
+		TEST_CHECK(allocatedSections > 0 && allocatedSections < 38);
+
+		// 4. Verify EncodeChunkV2 -> ApplyMapChunkData matches direct zero-copy CommitToRegion
+		CBlockWorld world;
+		for (uint16_t id : {4, 5, 10, 12, 17, 28, 51, 52, 53, 55, 56, 62, 73, 76, 82, 87, 92, 99, 123, 145, 146, 147, 150, 153})
+		{
+			uint32_t att = BlockTemplate::batt_solid | BlockTemplate::batt_cubeModel;
+			if (id == 73 || id == 92) att = BlockTemplate::batt_transparent | BlockTemplate::batt_cubeModel;
+			if (id == 76 || id == 82) att = BlockTemplate::batt_liquid;
+			world.RegisterTemplate(id, att, 0);
+		}
+
+		BlockRegion regionEncoded(37, 37, &world); // 1200 >> 5 == 37
+		BlockRegion regionDirect(37, 37, &world);
+
+		std::string encodedV2;
+		bufA.EncodeChunkV2(encodedV2);
+		lua_State* L = luaL_newstate();
+		{
+			auto output = luabind::newtable(L);
+			regionEncoded.ApplyMapChunkData(1200, 1200, 0, encodedV2, output, true);
+		}
+		lua_close(L);
+
+		TEST_CHECK(bufA.CommitToRegion(&world, &regionDirect, 1200, 1200));
+
+		const uint16_t rxBase = (1200 & 31) * 16;
+		const uint16_t rzBase = (1200 & 31) * 16;
+		TEST_CHECK(regionEncoded.GetBlockTemplateIdByIndex(rxBase + 5, -240, rzBase + 5) == profile.blocks.bedrock);
+		TEST_CHECK(regionDirect.GetBlockTemplateIdByIndex(rxBase + 5, -240, rzBase + 5) == profile.blocks.bedrock);
+		TEST_CHECK(regionEncoded.GetBlockTemplateIdByIndex(rxBase + 2, -200, rzBase + 3) == 10);
+		TEST_CHECK(regionEncoded.GetBlockUserDataByIndex(rxBase + 2, -200, rzBase + 3) == 0x0c43u);
+		TEST_CHECK(regionDirect.GetBlockUserDataByIndex(rxBase + 2, -200, rzBase + 3) == 0x0c43u);
+		TEST_CHECK(regionEncoded.GetBlockTemplateIdByIndex(rxBase + 8, 342, rzBase + 8) == 99);
+		TEST_CHECK(regionDirect.GetBlockTemplateIdByIndex(rxBase + 8, 342, rzBase + 8) == 99);
+		TEST_CHECK(regionEncoded.GetBlockUserDataByIndex(rxBase + 4, 349, rzBase + 4) == 0x03efu);
+		TEST_CHECK(regionDirect.GetBlockUserDataByIndex(rxBase + 4, 349, rzBase + 4) == 0x03efu);
+		TEST_CHECK(regionEncoded.GetHighestBlock(rxBase + 8, rzBase + 8)->GetMaxHeight() ==
+			regionDirect.GetHighestBlock(rxBase + 8, rzBase + 8)->GetMaxHeight());
+
+		// 5. Smoke-test all 4 presets + throughput benchmark (64 extended-height chunks)
+		for (int mode : {Preset_EpicOverworld, Preset_SkyIslands, Preset_KarstCanyon, Preset_LushCavern})
+		{
+			profile.presetMode = mode;
+			const auto sample = ChunkGeneratorFast::SampleWorldColumn(profile, 19200, 19200);
+			TEST_CHECK(sample.surfaceY >= profile.bedrockY && sample.surfaceY <= BlockConfig::MaxBlockY);
+		}
+
+		profile.presetMode = Preset_EpicOverworld;
+		profile.skyIslandChance = 0.25f;
+		const auto tStart = std::chrono::steady_clock::now();
+		size_t totalBytes = 0;
+		for (int dz = 0; dz < 8; ++dz)
+		{
+			for (int dx = 0; dx < 8; ++dx)
+			{
+				ChunkGeneratorFast::GenerateBaseColumn(profile, 1200 + dx, 1200 + dz, bufA);
+				bufA.StampTree(7, bufA.m_surfaceY[7 * 16 + 7] + 1, 7, Tree_CherryUmbrella, 99, 0, 92, 0, 0, 0, 7, 3, static_cast<uint32_t>(dx * 31 + dz));
+				bufA.EncodeChunkV2(encodedV2);
+				totalBytes += encodedV2.size();
+			}
+		}
+		const auto tEnd = std::chrono::steady_clock::now();
+		const double elapsedMs = std::chrono::duration<double, std::milli>(tEnd - tStart).count();
+		const double msPerChunk = elapsedMs / 64.0;
+		std::printf("[WorldGen Benchmark] 64 extended-height chunks generated + encoded in %.2f ms (%.3f ms/chunk, avg %.1f KB/chunk)\n",
+			elapsedMs, msPerChunk, (totalBytes / 64.0) / 1024.0);
+		TEST_CHECK(totalBytes > 64 * 1024);
+		TEST_CHECK(msPerChunk < 5.0);
+	}
 }
 
 int main()
@@ -937,6 +1074,7 @@ int main()
 	TestRigidBodyFastPathAndPsoStateHashCache();
 	TestChunkCompactMemoryAndBucketPool();
 	TestWaveBRuntimeOptimizations();
+	TestProceduralWorldGenFast();
 
 	std::printf("=== Summary: %d passed, %d failed ===\n", g_passed, g_failed);
 	return (g_failed == 0) ? EXIT_SUCCESS : EXIT_FAILURE;

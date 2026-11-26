@@ -25,7 +25,7 @@ namespace ParaEngine
 {
 	BMaxObject::BMaxObject()
 		:m_fScale(1.0f), m_fPitch(0.f), m_fRoll(0.f), m_fLastBlockLight(0.f), m_dwLastBlockHash(0), m_bEnableAnim(true), m_curTime(0),
-		m_nPhysicsGroup(0), m_dwPhysicsMethod(PHYSICS_FORCE_NO_PHYSICS), m_sPhysicsShape("box"), m_dynamicPhysicsActor(nullptr), m_pLocalTransform(nullptr)
+		m_nPhysicsGroup(0), m_dwPhysicsGroupMask(0xffffffff), m_dwPhysicsMethod(PHYSICS_FORCE_NO_PHYSICS), m_sPhysicsShape("box"), m_dynamicPhysicsActor(nullptr), m_pLocalTransform(nullptr)
 	{
 		SetAttribute(OBJ_VOLUMN_FREESPACE);
 	}
@@ -316,7 +316,7 @@ namespace ParaEngine
 	{
 		if (!m_pAnimatedMesh)
 			return false;
-		int nIndex = (sceneState && IsLODEnabled()) ? m_pAnimatedMesh->GetLodIndex(sceneState->GetCameraToCurObjectDistance()/*, GetScaling()*/) : 0;
+		int nIndex = (sceneState && IsLODEnabled()) ? m_pAnimatedMesh->GetLodIndex(sceneState->GetCameraToCurObjectDistance(), GetScaling()) : 0;
 		CParaXModel* pModel = m_pAnimatedMesh->GetModel(nIndex);
 		
 		if (pModel == NULL)
@@ -361,7 +361,7 @@ namespace ParaEngine
 		sceneState->SetCurrentSceneObject(this);
 
 		int nIndex = (sceneState && sceneState->IsLODEnabled()) ?
-			m_pAnimatedMesh->GetLodIndex(sceneState->GetCameraToCurObjectDistance()/*, GetScaling()*/) : 0;
+			m_pAnimatedMesh->GetLodIndex(sceneState->GetCameraToCurObjectDistance(), GetScaling()) : 0;
 		CParaXModel* pModel = m_pAnimatedMesh->GetModel(nIndex);
 		if (pModel == NULL)
 			return E_FAIL;
@@ -544,7 +544,24 @@ namespace ParaEngine
 		{
 			m_nPhysicsGroup = nGroup;
 			UnloadPhysics();
+			if (m_dynamicPhysicsActor)
+				m_dynamicPhysicsActor->SetCollisionFilter((short)m_nPhysicsGroup, (short)(m_dwPhysicsGroupMask & 0xffff));
 		}
+	}
+
+	void BMaxObject::SetPhysicsGroupMask(DWORD dwValue)
+	{
+		if (m_dwPhysicsGroupMask != dwValue)
+		{
+			m_dwPhysicsGroupMask = dwValue;
+			if (m_dynamicPhysicsActor)
+				m_dynamicPhysicsActor->SetCollisionFilter((short)m_nPhysicsGroup, (short)(m_dwPhysicsGroupMask & 0xffff));
+		}
+	}
+
+	DWORD BMaxObject::GetPhysicsGroupMask()
+	{
+		return m_dwPhysicsGroupMask;
 	}
 
 	int BMaxObject::GetPhysicsGroup()

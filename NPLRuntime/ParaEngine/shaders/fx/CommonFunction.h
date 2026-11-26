@@ -95,8 +95,8 @@ float calculatePCSSShadowFactor(
 			float2( 0.2588f, -0.9659f)
 		};
 
-		const float maxFilterTexels = (qualityLevel >= 5.0f) ? 5.2f : 4.2f;
-		const float searchRadius = (maxFilterTexels + 0.75f) * invShadowMapSize;
+		float maxFilterTexels = (qualityLevel >= 5.0f) ? 5.2f : 4.2f;
+		float searchRadius = (maxFilterTexels + 0.75f) * invShadowMapSize;
 
 		float blockerSum = 0.0f;
 		float blockerCount = 0.0f;

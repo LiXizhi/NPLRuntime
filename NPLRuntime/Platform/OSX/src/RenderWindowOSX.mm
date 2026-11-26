@@ -4,6 +4,8 @@
 #include "2dengine/GUIRoot.h"
 #include "2dengine/GUIEdit.h"
 #include "Core/Variable.h"
+#include "AutoCamera.h"
+#include "SceneObject.h"
 #include "ViewportManager.h"
 #include "NPLRuntime.h"
 #include "WindowDelegate.h"
@@ -614,6 +616,8 @@ void RenderWindowOSX::OnScrollWheel(NSEvent* event)
     
     if (CGlobals::GetApp()->GetAppState() != PEAppState_Ready)
         return;
+    if (m_magnifyingWorld && (phase != NSEventPhaseNone || momentumPhase != NSEventPhaseNone))
+        return;
     const bool overUI = CGUIRoot::GetInstance()->IsMouseOverScrollableUI();
     const bool precise = [event hasPreciseScrollingDeltas];
     // Convert Cocoa points to wheel notches. The GUI bridge retains 120 ticks per notch.
@@ -672,6 +676,44 @@ void RenderWindowOSX::OnScrollWheel(NSEvent* event)
         EndTrackpadDrag();
 }
 
+void RenderWindowOSX::OnMagnify(NSEvent* event)
+{
+    if (CGlobals::GetApp()->GetAppState() != PEAppState_Ready)
+        return;
+
+    auto* gui = CGUIRoot::GetInstance();
+    const auto phase = event.phase;
+    if (phase == NSEventPhaseBegan)
+    {
+        CancelScrollGesture();
+        m_magnifyingWorld = !gui->IsMouseOverScrollableUI() && !gui->GetTopLevelControl();
+    }
+    const bool wasMagnifyingWorld = m_magnifyingWorld;
+    if (phase == NSEventPhaseEnded || phase == NSEventPhaseCancelled)
+        m_magnifyingWorld = false;
+    if (!wasMagnifyingWorld || phase == NSEventPhaseCancelled || event.magnification == 0)
+        return;
+
+    auto* scene = CGlobals::GetScene();
+    if (!scene || !scene->IsSceneEnabled() || scene->IsBlockInput() || gui->GetTopLevelControl())
+        return;
+    auto* camera = dynamic_cast<CAutoCamera*>(scene->GetCurrentCamera());
+    if (!camera || camera->IsBlockInput())
+        return;
+    const auto mode = camera->GetCameraMode();
+    if (mode != CameraFollowFirstPerson && mode != CameraFollowThirdPerson)
+        return;
+    // Paracraft can bind the wheel to inventory even while the follow camera is interactive.
+    if (!camera->GetEnableMouseWheel() && !camera->IsEnableMouseRightDrag() && !camera->IsEnableMouseLeftDrag())
+        return;
+    const double maxDistance = camera->GetMaxCameraObjectDistance();
+    if (maxDistance <= 0.5) // Fixed first-person radius in the follow camera.
+        return;
+    const double minDistance = std::max(camera->GetMinCameraObjectDistance(), (double)camera->GetNearPlane());
+    const double distance = camera->GetCameraObjectDistance() * std::exp(-event.magnification);
+    camera->SetCameraObjectDistance(std::min(maxDistance, std::max(minDistance, distance)));
+}
+
 void RenderWindowOSX::EndTrackpadDrag()
 {
     if (m_trackpadDrag == TrackpadDrag::Active)
@@ -683,6 +725,7 @@ void RenderWindowOSX::EndTrackpadDrag()
 
 void RenderWindowOSX::CancelScrollGesture()
 {
+    m_magnifyingWorld = false;
     EndTrackpadDrag();
     if (m_scrollGestureOverUI)
     {

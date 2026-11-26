@@ -231,6 +231,15 @@ namespace ParaEngine
 		virtual float GetCcdMotionThreshold() = 0;
 		virtual void SetCcdMotionThreshold(float threshold) = 0;
 
+		/** Change collision filtering of a live actor.
+		* @param group: group index (0..15). The broadphase group bit is (1 << group).
+		* @param mask: bitwise mask of group bits this actor collides with (-1 = all). */
+		virtual void SetCollisionFilter(short group, short mask) {}
+		virtual short GetCollisionGroup() { return 0; }
+		virtual short GetCollisionMask() { return -1; }
+		/** Get world-space axis aligned bounding box of the actor's collision shape. */
+		virtual bool GetAabb(PARAVECTOR3& vMin, PARAVECTOR3& vMax) { return false; }
+
 		void* m_pUserData;
 	};
 
@@ -257,6 +266,8 @@ namespace ParaEngine
 	struct ParaPhysicsConstraintDesc
 	{
 		ParaPhysicsConstraintDesc() : m_type(ConstraintType_Hinge), m_pActorA(nullptr), m_pActorB(nullptr),
+			m_pivotInA(0.0f, 0.0f, 0.0f), m_axisInA(0.0f, 1.0f, 0.0f),
+			m_pivotInB(0.0f, 0.0f, 0.0f), m_axisInB(0.0f, 1.0f, 0.0f),
 			m_disableCollisionsBetweenBodies(true), m_breakingThreshold(-1.0f),
 			m_lowLimit(0.0f), m_highLimit(0.0f), m_softness(0.9f), m_biasFactor(0.3f), m_relaxationFactor(1.0f),
 			m_enableMotor(false), m_motorTargetVelocity(0.0f), m_maxMotorImpulse(0.0f),
@@ -331,13 +342,20 @@ namespace ParaEngine
 		virtual void SetLinearLimits3D(const PARAVECTOR3& lower, const PARAVECTOR3& upper) {}
 		virtual void SetAngularLimits3D(const PARAVECTOR3& lower, const PARAVECTOR3& upper) {}
 
+		// ConeTwist-specific limits (radians)
+		virtual void SetConeTwistLimit(float swingSpan1, float swingSpan2, float twistSpan, float softness = 1.0f, float biasFactor = 0.3f, float relaxationFactor = 1.0f) {}
+		// 6DoF / Spring limit queries. Return false if the constraint type does not support them.
+		virtual bool GetLinearLimits3D(PARAVECTOR3& lower, PARAVECTOR3& upper) { return false; }
+		virtual bool GetAngularLimits3D(PARAVECTOR3& lower, PARAVECTOR3& upper) { return false; }
+
 		void* m_pUserData;
 	};
 
 	/** Descriptor for vehicle wheel */
 	struct ParaPhysicsWheelDesc
 	{
-		ParaPhysicsWheelDesc() : m_wheelRadius(0.5f), m_wheelWidth(0.2f), m_suspensionRestLength(0.3f),
+		ParaPhysicsWheelDesc() : m_connectionPoint(0.0f, 0.0f, 0.0f), m_wheelDirection(0.0f, -1.0f, 0.0f), m_wheelAxle(-1.0f, 0.0f, 0.0f),
+			m_wheelRadius(0.5f), m_wheelWidth(0.2f), m_suspensionRestLength(0.3f),
 			m_suspensionStiffness(20.0f), m_wheelsDampingCompression(4.4f), m_wheelsDampingRelaxation(2.3f),
 			m_frictionSlip(1000.0f), m_rollInfluence(0.1f), m_isFrontWheel(false) {}
 
@@ -389,6 +407,15 @@ namespace ParaEngine
 
 		void* m_pUserData;
 	};
+
+	/** Callback invoked before each fixed physics substep.
+	* @param pUserData: user data passed to SetSubstepCallback
+	* @param fFixedTimeStep: substep duration in seconds (usually 1/60)
+	* @param fTimeOffsetFromStepEnd: (<= 0) time of the END of this substep relative to the end of the
+	*   current StepSimulation() call, i.e. the substep ends at (frameEndTime + fTimeOffsetFromStepEnd).
+	* @param nSubstepIndex, nSubstepCount: zero-based index and number of substeps in this StepSimulation() call.
+	*/
+	typedef void (*ParaPhysicsSubstepCallback)(void* pUserData, float fFixedTimeStep, float fTimeOffsetFromStepEnd, int nSubstepIndex, int nSubstepCount);
 
 	/** ParaPhysics core interface. 
 	*/
@@ -482,6 +509,10 @@ namespace ParaEngine
 
 		/** bitwise of PhysicsDebugDrawModes */
 		virtual int		GetDebugDrawMode() = 0;
+
+		/** Register a callback that is invoked before every internal fixed substep (Bullet pre-tick).
+		* Pass nullptr to unregister. Physics engines that do not substep may ignore this. */
+		virtual void SetSubstepCallback(ParaPhysicsSubstepCallback pCallback, void* pUserData) {}
 	};
 
 	typedef std::set<IParaPhysicsActor*> IParaPhysicsActor_Map_Type;

@@ -21,6 +21,8 @@
 #include "ParaScriptingBlockWorld.h"
 #include "BlockEngine/BlockWorldClient.h"
 #include "BlockEngine/BlockRegion.h"
+#include "BlockEngine/ChunkGeneratorFast.h"
+#include "BlockEngine/ProceduralNoise.h"
 #include "ViewportManager.h"
 #include "AutoCamera.h"
 #include "SceneObject.h"
@@ -866,6 +868,311 @@ const std::string& ParaTerrain::GetMapChunkData(uint32_t chunkX, uint32_t chunkZ
 		{
 			mgr->LoadBlockAsync(x, y, z, blockId, userData);
 		}
+	}
+
+	namespace
+	{
+		template<typename T>
+		T ReadFieldOrDefault(const object& tbl, const char* key, T defaultVal)
+		{
+			if (!tbl.is_valid() || type(tbl) != LUA_TTABLE)
+				return defaultVal;
+			object v = tbl[key];
+			if (v.is_valid() && type(v) == LUA_TNUMBER)
+				return static_cast<T>(object_cast<double>(v));
+			return defaultVal;
+		}
+
+		bool ReadBoolOrDefault(const object& tbl, const char* key, bool defaultVal)
+		{
+			if (!tbl.is_valid() || type(tbl) != LUA_TTABLE)
+				return defaultVal;
+			object v = tbl[key];
+			if (v.is_valid() && type(v) == LUA_TBOOLEAN)
+				return object_cast<bool>(v);
+			return defaultVal;
+		}
+
+		template<typename T, size_t N>
+		void WriteFlatArray256(lua_State* L, int summaryTableIdx, const char* fieldName, const std::array<T, N>& values)
+		{
+			lua_getfield(L, summaryTableIdx, fieldName);
+			if (!lua_istable(L, -1))
+			{
+				lua_pop(L, 1);
+				lua_createtable(L, static_cast<int>(N), 0);
+				lua_pushvalue(L, -1);
+				lua_setfield(L, summaryTableIdx, fieldName);
+			}
+			for (size_t i = 0; i < N; ++i)
+			{
+				lua_pushinteger(L, static_cast<lua_Integer>(values[i]));
+				lua_rawseti(L, -2, static_cast<int>(i + 1));
+			}
+			lua_pop(L, 1);
+		}
+	}
+
+	bool ParaTerrain::ConfigureWorldGen(int profileId, const object& config)
+	{
+		if (!config.is_valid() || type(config) != LUA_TTABLE)
+			return false;
+
+		auto profile = std::make_shared<WorldGen::WorldGenProfile>();
+		profile->seed = ReadFieldOrDefault<int32_t>(config, "seed", 12345);
+		profile->presetMode = ReadFieldOrDefault<int32_t>(config, "presetMode", WorldGen::Preset_EpicOverworld);
+		profile->seaLevel = ReadFieldOrDefault<int16_t>(config, "seaLevel", 64);
+		profile->bedrockY = ReadFieldOrDefault<int16_t>(config, "bedrockY", -240);
+		profile->lavaLevel = ReadFieldOrDefault<int16_t>(config, "lavaLevel", -216);
+		profile->snowLineY = ReadFieldOrDefault<int16_t>(config, "snowLineY", 230);
+
+		profile->baseHeight = ReadFieldOrDefault<float>(config, "baseHeight", 68.0f);
+		profile->continentalFreq = ReadFieldOrDefault<float>(config, "continentalFreq", 0.00075f);
+		profile->mountainHeight = ReadFieldOrDefault<float>(config, "mountainHeight", 310.0f);
+		profile->peakBoost = ReadFieldOrDefault<float>(config, "peakBoost", 210.0f);
+		profile->karstStrength = ReadFieldOrDefault<float>(config, "karstStrength", 1.0f);
+		profile->canyonStrength = ReadFieldOrDefault<float>(config, "canyonStrength", 1.0f);
+		profile->riverStrength = ReadFieldOrDefault<float>(config, "riverStrength", 1.0f);
+		profile->overhangStrength = ReadFieldOrDefault<float>(config, "overhangStrength", 1.0f);
+
+		profile->skyIslandChance = ReadFieldOrDefault<float>(config, "skyIslandChance", 0.22f);
+		profile->skyIslandMinY = ReadFieldOrDefault<int16_t>(config, "skyIslandMinY", 260);
+		profile->skyIslandMaxY = ReadFieldOrDefault<int16_t>(config, "skyIslandMaxY", 640);
+		profile->skyWaterfallChance = ReadFieldOrDefault<float>(config, "skyWaterfallChance", 0.35f);
+
+		profile->caveStrength = ReadFieldOrDefault<float>(config, "caveStrength", 1.0f);
+		profile->sinkholeChance = ReadFieldOrDefault<float>(config, "sinkholeChance", 0.25f);
+		profile->deepCavernMinY = ReadFieldOrDefault<int16_t>(config, "deepCavernMinY", -210);
+		profile->deepCavernMaxY = ReadFieldOrDefault<int16_t>(config, "deepCavernMaxY", -36);
+
+		object blocksTbl = config["blocks"];
+		if (blocksTbl.is_valid() && type(blocksTbl) == LUA_TTABLE)
+		{
+			auto& b = profile->blocks;
+			b.bedrock = ReadFieldOrDefault<uint16_t>(blocksTbl, "bedrock", b.bedrock);
+			b.stone = ReadFieldOrDefault<uint16_t>(blocksTbl, "stone", b.stone);
+			b.dirt = ReadFieldOrDefault<uint16_t>(blocksTbl, "dirt", b.dirt);
+			b.grass = ReadFieldOrDefault<uint16_t>(blocksTbl, "grass", b.grass);
+			b.sand = ReadFieldOrDefault<uint16_t>(blocksTbl, "sand", b.sand);
+			b.sandstone = ReadFieldOrDefault<uint16_t>(blocksTbl, "sandstone", b.sandstone);
+			b.clay = ReadFieldOrDefault<uint16_t>(blocksTbl, "clay", b.clay);
+			b.gravel = ReadFieldOrDefault<uint16_t>(blocksTbl, "gravel", b.gravel);
+			b.snow = ReadFieldOrDefault<uint16_t>(blocksTbl, "snow", b.snow);
+			b.snowBlock = ReadFieldOrDefault<uint16_t>(blocksTbl, "snowBlock", b.snowBlock);
+			b.ice = ReadFieldOrDefault<uint16_t>(blocksTbl, "ice", b.ice);
+			b.brokenIce = ReadFieldOrDefault<uint16_t>(blocksTbl, "brokenIce", b.brokenIce);
+			b.mossStone = ReadFieldOrDefault<uint16_t>(blocksTbl, "mossStone", b.mossStone);
+			b.obsidian = ReadFieldOrDefault<uint16_t>(blocksTbl, "obsidian", b.obsidian);
+			b.netherrack = ReadFieldOrDefault<uint16_t>(blocksTbl, "netherrack", b.netherrack);
+			b.glowstone = ReadFieldOrDefault<uint16_t>(blocksTbl, "glowstone", b.glowstone);
+			b.water = ReadFieldOrDefault<uint16_t>(blocksTbl, "water", b.water);
+			b.lava = ReadFieldOrDefault<uint16_t>(blocksTbl, "lava", b.lava);
+			b.mycelium = ReadFieldOrDefault<uint16_t>(blocksTbl, "mycelium", b.mycelium);
+			b.colorBlock = ReadFieldOrDefault<uint16_t>(blocksTbl, "colorBlock", b.colorBlock);
+			b.transparentColorBlock = ReadFieldOrDefault<uint16_t>(blocksTbl, "transparentColorBlock", b.transparentColorBlock);
+		}
+
+		object biomesTbl = config["biomes"];
+		if (biomesTbl.is_valid() && type(biomesTbl) == LUA_TTABLE)
+		{
+			for (luabind::iterator it(biomesTbl), end; it != end; ++it)
+			{
+				object entry = *it;
+				if (type(entry) != LUA_TTABLE) continue;
+				WorldGen::BiomeDef bd;
+				bd.id = ReadFieldOrDefault<uint8_t>(entry, "id", 1);
+				bd.specialFlag = ReadFieldOrDefault<uint8_t>(entry, "specialFlag", 0);
+				bd.useStrata = ReadBoolOrDefault(entry, "useStrata", false);
+				bd.minTemp = ReadFieldOrDefault<float>(entry, "minTemp", 0.0f);
+				bd.maxTemp = ReadFieldOrDefault<float>(entry, "maxTemp", 1.0f);
+				bd.minMoist = ReadFieldOrDefault<float>(entry, "minMoist", 0.0f);
+				bd.maxMoist = ReadFieldOrDefault<float>(entry, "maxMoist", 1.0f);
+				bd.topBlockId = ReadFieldOrDefault<uint16_t>(entry, "topBlockId", profile->blocks.grass);
+				bd.topBlockData = ReadFieldOrDefault<uint32_t>(entry, "topBlockData", 0);
+				bd.fillerBlockId = ReadFieldOrDefault<uint16_t>(entry, "fillerBlockId", profile->blocks.dirt);
+				bd.fillerBlockData = ReadFieldOrDefault<uint32_t>(entry, "fillerBlockData", 0);
+				bd.cliffBlockId = ReadFieldOrDefault<uint16_t>(entry, "cliffBlockId", profile->blocks.stone);
+				bd.cliffBlockData = ReadFieldOrDefault<uint32_t>(entry, "cliffBlockData", 0);
+				bd.underwaterBlockId = ReadFieldOrDefault<uint16_t>(entry, "underwaterBlockId", profile->blocks.sand);
+				bd.underwaterBlockData = ReadFieldOrDefault<uint32_t>(entry, "underwaterBlockData", 0);
+				bd.fillerDepth = ReadFieldOrDefault<int16_t>(entry, "fillerDepth", 4);
+				profile->biomes.push_back(bd);
+				if (profile->biomes.size() >= 32) break;
+			}
+		}
+
+		object strataTbl = config["strata"];
+		if (strataTbl.is_valid() && type(strataTbl) == LUA_TTABLE)
+		{
+			for (luabind::iterator it(strataTbl), end; it != end; ++it)
+			{
+				object entry = *it;
+				if (type(entry) != LUA_TTABLE) continue;
+				WorldGen::StrataBand sb;
+				sb.blockId = ReadFieldOrDefault<uint16_t>(entry, "blockId", profile->blocks.sandstone);
+				sb.blockData = ReadFieldOrDefault<uint32_t>(entry, "blockData", 0);
+				profile->strata.push_back(sb);
+				if (profile->strata.size() >= 64) break;
+			}
+		}
+
+		object oresTbl = config["ores"];
+		if (oresTbl.is_valid() && type(oresTbl) == LUA_TTABLE)
+		{
+			for (luabind::iterator it(oresTbl), end; it != end; ++it)
+			{
+				object entry = *it;
+				if (type(entry) != LUA_TTABLE) continue;
+				WorldGen::OrePocketDef od;
+				od.blockId = ReadFieldOrDefault<uint16_t>(entry, "blockId", 125);
+				od.blockData = ReadFieldOrDefault<uint32_t>(entry, "blockData", 0);
+				od.minY = ReadFieldOrDefault<int16_t>(entry, "minY", -240);
+				od.maxY = ReadFieldOrDefault<int16_t>(entry, "maxY", 128);
+				od.frequency = ReadFieldOrDefault<float>(entry, "frequency", 0.09f);
+				od.threshold = ReadFieldOrDefault<float>(entry, "threshold", 0.72f);
+				profile->ores.push_back(od);
+				if (profile->ores.size() >= 24) break;
+			}
+		}
+
+		WorldGen::ChunkGeneratorFast::SetProfile(profileId, profile);
+		return true;
+	}
+
+	bool ParaTerrain::GenerateBaseColumn(int profileId, int chunkX, int chunkZ, const object& outSummary)
+	{
+		auto profile = WorldGen::ChunkGeneratorFast::GetProfile(profileId);
+		if (!profile)
+			return false;
+
+		auto& buf = WorldGen::ChunkGeneratorFast::GetThreadBuffer();
+		WorldGen::ChunkGeneratorFast::GenerateBaseColumn(*profile, chunkX, chunkZ, buf);
+
+		if (outSummary.is_valid() && type(outSummary) == LUA_TTABLE)
+		{
+			lua_State* L = outSummary.interpreter();
+			outSummary.push(L);
+			const int tblIdx = lua_gettop(L);
+
+			WriteFlatArray256(L, tblIdx, "surfaceY", buf.m_surfaceY);
+			WriteFlatArray256(L, tblIdx, "surfaceId", buf.m_surfaceBlockId);
+			WriteFlatArray256(L, tblIdx, "biomeId", buf.m_biomeId);
+			WriteFlatArray256(L, tblIdx, "slopeGrad", buf.m_slopeGrad);
+			WriteFlatArray256(L, tblIdx, "skyTopY", buf.m_skyTopY);
+			WriteFlatArray256(L, tblIdx, "skyBottomY", buf.m_skyBottomY);
+			WriteFlatArray256(L, tblIdx, "caveFloorY", buf.m_caveFloorY);
+			WriteFlatArray256(L, tblIdx, "caveCeilY", buf.m_caveCeilY);
+			WriteFlatArray256(L, tblIdx, "waterDepth", buf.m_waterDepth);
+
+			lua_pop(L, 1);
+		}
+		return true;
+	}
+
+	object ParaTerrain::SampleWorldColumn(int profileId, int worldX, int worldZ, const object& outInfo)
+	{
+		auto profile = WorldGen::ChunkGeneratorFast::GetProfile(profileId);
+		if (!profile || !outInfo.is_valid() || type(outInfo) != LUA_TTABLE)
+			return outInfo;
+
+		const auto sample = WorldGen::ChunkGeneratorFast::SampleWorldColumn(*profile, worldX, worldZ);
+		outInfo["surfaceY"] = static_cast<int>(sample.surfaceY);
+		outInfo["surfaceId"] = static_cast<int>(sample.surfaceBlockId);
+		outInfo["biomeId"] = static_cast<int>(sample.biomeId);
+		outInfo["slopeGrad"] = static_cast<int>(sample.slopeGrad);
+		outInfo["skyTopY"] = static_cast<int>(sample.skyTopY);
+		outInfo["skyBottomY"] = static_cast<int>(sample.skyBottomY);
+		outInfo["caveFloorY"] = static_cast<int>(sample.caveFloorY);
+		outInfo["caveCeilY"] = static_cast<int>(sample.caveCeilY);
+		outInfo["waterDepth"] = static_cast<int>(sample.waterDepth);
+		outInfo["isRiver"] = sample.isRiver;
+		outInfo["isSinkhole"] = sample.isSinkhole;
+		return outInfo;
+	}
+
+	void ParaTerrain::GenResetBuffer(int chunkX, int chunkZ)
+	{
+		WorldGen::ChunkGeneratorFast::GetThreadBuffer().Reset(chunkX, chunkZ);
+	}
+
+	void ParaTerrain::GenSetBlock(int lx, int wy, int lz, uint16_t blockId, uint32_t blockData, bool onlyIfAir)
+	{
+		WorldGen::ChunkGeneratorFast::GetThreadBuffer().SetBlock(lx, wy, lz, blockId, blockData, onlyIfAir);
+	}
+
+	uint16_t ParaTerrain::GenGetBlockId(int lx, int wy, int lz)
+	{
+		return WorldGen::ChunkGeneratorFast::GetThreadBuffer().GetBlockId(lx, wy, lz);
+	}
+
+	void ParaTerrain::GenFillBox(int x1, int y1, int z1, int x2, int y2, int z2, uint16_t blockId, uint32_t blockData, int mode)
+	{
+		WorldGen::ChunkGeneratorFast::GetThreadBuffer().FillBox(x1, y1, z1, x2, y2, z2, blockId, blockData, mode);
+	}
+
+	void ParaTerrain::GenFillEllipsoid(float cx, float cy, float cz, float rx, float ry, float rz, uint16_t blockId, uint32_t blockData, bool onlyIfAir)
+	{
+		WorldGen::ChunkGeneratorFast::GetThreadBuffer().FillEllipsoid(cx, cy, cz, rx, ry, rz, blockId, blockData, onlyIfAir);
+	}
+
+	void ParaTerrain::GenStampTree(int lx, int wy, int lz, int style, uint32_t packedTrunk, uint32_t packedLeaf, uint32_t packedExtra, int packedSize, uint32_t seed)
+	{
+		const uint16_t trunkId = static_cast<uint16_t>(packedTrunk & 0xffffu);
+		const uint32_t trunkData = (packedTrunk >> 16) & 0xffffu;
+		const uint16_t leafId = static_cast<uint16_t>(packedLeaf & 0xffffu);
+		const uint32_t leafData = (packedLeaf >> 16) & 0xffffu;
+		const uint16_t extraId = static_cast<uint16_t>(packedExtra & 0xffffu);
+		const uint32_t extraData = (packedExtra >> 16) & 0xffffu;
+		const int height = packedSize & 0xff;
+		const int radius = (packedSize >> 8) & 0xff;
+		WorldGen::ChunkGeneratorFast::GetThreadBuffer().StampTree(lx, wy, lz, style,
+			trunkId, trunkData, leafId, leafData, extraId, extraData, height, radius, seed);
+	}
+
+	void ParaTerrain::GenStampCrystal(int lx, int wy, int lz, uint16_t coreId, uint16_t shellId, uint32_t shellData, int height, int radius, int signedSeed)
+	{
+		const bool pointUp = signedSeed >= 0;
+		const uint32_t seed = static_cast<uint32_t>(pointUp ? signedSeed : -signedSeed);
+		WorldGen::ChunkGeneratorFast::GetThreadBuffer().StampCrystalCluster(lx, wy, lz, coreId, shellId, shellData, height, radius, pointUp, seed);
+	}
+
+	std::string ParaTerrain::GenEncodeChunkV2()
+	{
+		std::string encoded;
+		WorldGen::ChunkGeneratorFast::GetThreadBuffer().EncodeChunkV2(encoded);
+		return encoded;
+	}
+
+	bool ParaTerrain::GenCommitColumn(uint32_t chunkX, uint32_t chunkZ)
+	{
+		if (chunkX >= 4096 || chunkZ >= 4096)
+			return false;
+		BlockWorldClient* mgr = BlockWorldClient::GetInstance();
+		if (!mgr)
+			return false;
+		BlockRegion* region = mgr->CreateGetRegion(static_cast<uint16_t>(chunkX >> 5), static_cast<uint16_t>(chunkZ >> 5));
+		if (!region)
+			return false;
+		return WorldGen::ChunkGeneratorFast::GetThreadBuffer().CommitToRegion(mgr, region, static_cast<uint16_t>(chunkX), static_cast<uint16_t>(chunkZ));
+	}
+
+	double ParaTerrain::Noise2D(int seed, double x, double z, int octaves, double lacunarity, double gain)
+	{
+		if (octaves <= 1)
+			return static_cast<double>(WorldGen::ProceduralNoise::Noise2D(seed, x, z));
+		return static_cast<double>(WorldGen::ProceduralNoise::Fbm2D(seed, x, z, octaves, lacunarity, gain));
+	}
+
+	double ParaTerrain::Noise3D(int seed, double x, double y, double z, int octaves, double lacunarity, double gain)
+	{
+		if (octaves <= 1)
+			return static_cast<double>(WorldGen::ProceduralNoise::Noise3D(seed, x, y, z));
+		return static_cast<double>(WorldGen::ProceduralNoise::Fbm3D(seed, x, y, z, octaves, lacunarity, gain));
+	}
+
+	double ParaTerrain::RidgedNoise2D(int seed, double x, double z, int octaves, double lacunarity, double gain)
+	{
+		return static_cast<double>(WorldGen::ProceduralNoise::Ridged2D(seed, x, z, octaves, lacunarity, gain));
 	}
 
 }

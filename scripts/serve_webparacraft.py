@@ -182,6 +182,8 @@ def detect_default_searchroot() -> str:
     candidates.extend([
         "C:/lxzsrc/ParaEngine/ParaWorld",
         "C:/Paracraft",
+        os.path.join(os.path.dirname(REPO_ROOT), "ParaEngine", "paraworld"),
+        "/Applications/Paracraft.app/Contents/Resources/assets",
         os.path.expanduser("~/paracraft"),
         "/mnt/c/lxzsrc/ParaEngine/ParaWorld",
         "/mnt/c/Paracraft",
@@ -475,6 +477,20 @@ def cached_asset_entries(root_real: str):
                 break
 
 
+def detect_macos_assets_fallback(root_real: str) -> str:
+    """When searchroot is a pure script checkout on macOS (without main.pkg), fall back to installed Paracraft.app assets."""
+    if not root_real:
+        return ""
+    if os.path.isfile(os.path.join(root_real, "main.pkg")) or os.path.isfile(os.path.join(root_real, "main150727.pkg")):
+        return ""
+    mac_assets = "/Applications/Paracraft.app/Contents/Resources/assets"
+    if os.path.isdir(mac_assets) and os.path.isfile(os.path.join(mac_assets, "main.pkg")):
+        real_assets = os.path.realpath(mac_assets)
+        if real_assets != root_real:
+            return real_assets
+    return ""
+
+
 def build_disk_manifest(root_real: str, prefixes, fallback_font_path: str, latin_fonts: dict = None):
     entries = []
     seen_lower = set()
@@ -524,6 +540,8 @@ def build_disk_manifest(root_real: str, prefixes, fallback_font_path: str, latin
                         continue
                     if not matches_searchpath(rel_posix, prefixes):
                         continue
+                    if rel_posix.lower() in seen_lower:
+                        continue
                     try:
                         st = entry.stat(follow_symlinks=False)
                     except OSError:
@@ -533,6 +551,10 @@ def build_disk_manifest(root_real: str, prefixes, fallback_font_path: str, latin
 
     walk_dir(root_real, "", 0)
     entries.extend(cached_asset_entries(root_real))
+    fallback_assets = detect_macos_assets_fallback(root_real)
+    if fallback_assets:
+        walk_dir(fallback_assets, "", 0)
+        entries.extend(cached_asset_entries(fallback_assets))
 
     virtual_fonts = []
     if fallback_font_path:
@@ -658,6 +680,10 @@ class Handler(http.server.SimpleHTTPRequestHandler):
 
     def _resolve_target_file(self, root_real: str, rel_norm: str) -> str:
         target_file = resolve_path_case_insensitive(root_real, rel_norm)
+        if not target_file:
+            fallback_assets = detect_macos_assets_fallback(root_real)
+            if fallback_assets:
+                target_file = resolve_path_case_insensitive(fallback_assets, rel_norm)
         if not target_file:
             rel_lower = rel_norm.lower()
             if (

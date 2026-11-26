@@ -33,16 +33,13 @@ if [ -z "${PARAWORLD_ROOT:-}" ] || { [ ! -d "$PARAWORLD_ROOT/script" ] && [ ! -f
 fi
 
 if [ -z "${PARAENGINE_EXE:-}" ]; then
-    # Prefer the most recently modified built Paracraft binary across build/mac-current, build/mac, and build-client
+    # Prefer the most recently modified built Paracraft binary across build/mac and build-client
     best_exe=""
     best_mtime=0
     for candidate in \
         "$REPO_ROOT/build/mac/bin/Paracraft.app/Contents/MacOS/Paracraft" \
         "$REPO_ROOT/build/mac/bin/Release/Paracraft.app/Contents/MacOS/Paracraft" \
         "$REPO_ROOT/build/mac/bin/Debug/Paracraft.app/Contents/MacOS/Paracraft" \
-        "$REPO_ROOT/build/mac-current/bin/Paracraft.app/Contents/MacOS/Paracraft" \
-        "$REPO_ROOT/build/mac-current/bin/Release/Paracraft.app/Contents/MacOS/Paracraft" \
-        "$REPO_ROOT/build/mac-current/bin/Debug/Paracraft.app/Contents/MacOS/Paracraft" \
         "$REPO_ROOT/build-client/bin/Paracraft.app/Contents/MacOS/Paracraft" \
         "$REPO_ROOT/build-client/bin/Release/Paracraft.app/Contents/MacOS/Paracraft" \
         "$REPO_ROOT/build-client/bin/Debug/Paracraft.app/Contents/MacOS/Paracraft"; do
@@ -58,7 +55,7 @@ if [ -z "${PARAENGINE_EXE:-}" ]; then
 fi
 
 if [ -z "${PARAENGINE_EXE:-}" ] || [ ! -x "$PARAENGINE_EXE" ]; then
-    echo "[ERROR] Built Paracraft binary not found under build/mac-current/bin/, build/mac/bin/, or build-client/bin/." >&2
+    echo "[ERROR] Built Paracraft binary not found under build/mac/bin/ or build-client/bin/." >&2
     echo "        Run './build_linux.sh client' (or VSCode task 'Mac: Build Paracraft') first." >&2
     exit 1
 fi

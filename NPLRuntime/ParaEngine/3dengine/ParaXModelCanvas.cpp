@@ -205,7 +205,8 @@ bool CanvasAttachment::SetupParantTransform(SceneState * sceneState, float fCame
 		return false;
 	if (parent->model != 0)
 	{
-		int nIndex = (sceneState && sceneState->IsLODEnabled()) ? parent->model->GetLodIndex(fCameraToObjectDist) : 0;
+		float fLodScale = (sceneState && sceneState->GetCurrentSceneObject()) ? sceneState->GetCurrentSceneObject()->GetScaling() : 1.f;
+		int nIndex = (sceneState && sceneState->IsLODEnabled()) ? parent->model->GetLodIndex(fCameraToObjectDist, fLodScale) : 0;
 		CParaXModel* pModel = parent->model->GetModel(nIndex);
 		if (pModel)
 		{
@@ -297,7 +298,8 @@ bool CanvasAttachment::animate(SceneState * sceneState, CharacterPose* pPose, bo
 	// CharacterPose* pPoseInfo=(m_bIsAutoCharacter)?pPose:NULL;
 	if (model != 0)
 	{
-		int nIndex = (sceneState && sceneState->IsLODEnabled()) ? model->GetLodIndex(sceneState->GetCameraToCurObjectDistance()) : 0;
+		float fLodScale = (sceneState && sceneState->GetCurrentSceneObject()) ? sceneState->GetCurrentSceneObject()->GetScaling() : 1.f;
+		int nIndex = (sceneState && sceneState->IsLODEnabled()) ? model->GetLodIndex(sceneState->GetCameraToCurObjectDistance(), fLodScale) : 0;
 		CParaXModel* pModel = model->GetModel(nIndex);
 		if (pModel != NULL)
 		{
@@ -356,7 +358,8 @@ void CanvasAttachment::BuildShadowVolume(SceneState * sceneState, ShadowVolume *
 	CGlobals::GetWorldMatrixStack().push(mat);
 
 	// draw this model
-	int nIndex = (sceneState && sceneState->IsLODEnabled()) ? model->GetLodIndex(fCameraToObjectDist) : 0;
+	float fLodScale = (sceneState && sceneState->GetCurrentSceneObject()) ? sceneState->GetCurrentSceneObject()->GetScaling() : 1.f;
+	int nIndex = (sceneState && sceneState->IsLODEnabled()) ? model->GetLodIndex(fCameraToObjectDist, fLodScale) : 0;
 
 	CParaXModel* pModel = model->GetModel(nIndex);
 	if (pModel)
@@ -428,7 +431,8 @@ void CanvasAttachment::draw(SceneState * sceneState, ParaXModelCanvas *c, CParam
 	// draw this model
 	if (model != 0)
 	{
-		int nIndex = (sceneState && sceneState->IsLODEnabled()) ? model->GetLodIndex(fCameraToObjectDist) : 0;
+		float fLodScale = (sceneState && sceneState->GetCurrentSceneObject()) ? sceneState->GetCurrentSceneObject()->GetScaling() : 1.f;
+	int nIndex = (sceneState && sceneState->IsLODEnabled()) ? model->GetLodIndex(fCameraToObjectDist, fLodScale) : 0;
 		CParaXModel* pModel = model->GetModel(nIndex);
 
 		if (pModel)

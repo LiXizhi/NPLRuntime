@@ -259,7 +259,6 @@ case "${1:-}" in
         fi
         for client_test_dir in \
             "$REPO_ROOT/build/mac" \
-            "$REPO_ROOT/build/mac-current" \
             "$REPO_ROOT/build-client"; do
             if [ -f "$client_test_dir/CTestTestfile.cmake" ]; then
                 ctest --test-dir "$client_test_dir" --output-on-failure || true
@@ -336,20 +335,7 @@ if [ "$MODE" = "server" ]; then
     fi
 else
     if [ "$HOST_OS" = "Darwin" ]; then
-        if [ -z "${BUILD_DIR:-}" ]; then
-            if [ -f "$REPO_ROOT/build/mac-current/CMakeCache.txt" ] && [ ! -e "$REPO_ROOT/build/mac" ] && [ ! -L "$REPO_ROOT/build/mac" ]; then
-                ln -s mac-current "$REPO_ROOT/build/mac" 2>/dev/null || true
-            fi
-            if [ -f "$REPO_ROOT/build/mac/CMakeCache.txt" ]; then
-                BUILD_DIR="$REPO_ROOT/build/mac"
-            elif [ -f "$REPO_ROOT/build/mac-current/CMakeCache.txt" ]; then
-                BUILD_DIR="$REPO_ROOT/build/mac-current"
-            elif [ -f "$REPO_ROOT/build-client/CMakeCache.txt" ]; then
-                BUILD_DIR="$REPO_ROOT/build-client"
-            else
-                BUILD_DIR="$REPO_ROOT/build/mac"
-            fi
-        fi
+        BUILD_DIR="${BUILD_DIR:-$REPO_ROOT/build/mac}"
         CMAKE_EXTRA_ARGS+=("-DNPLRUNTIME_SERVER=OFF" "-DNPLRUNTIME_RENDERER=OPENGL" "-DNPLRUNTIME_ENABLE_METAL=ON" "-DNPLRUNTIME_STATIC_LIB=ON" "-DMAC_SERVER=OFF")
         BUILD_TARGET_ARGS+=("--target" "Paracraft")
     else
@@ -428,14 +414,31 @@ if [ "$FORCE_CONFIGURE" -eq 1 ] || [ ! -f "$BUILD_DIR/CMakeCache.txt" ]; then
         "${CMAKE_EXTRA_ARGS[@]}"
 fi
 
+MAC_APP_BUNDLE=""
+if [ "$MODE" = "client" ] && [ "$HOST_OS" = "Darwin" ] && ! grep -q '^CMAKE_GENERATOR:INTERNAL=Xcode$' "$BUILD_DIR/CMakeCache.txt"; then
+    app_bin_dir="$BUILD_DIR/bin"
+    if grep -q '^CMAKE_CONFIGURATION_TYPES:[^=]*=.' "$BUILD_DIR/CMakeCache.txt"; then
+        app_bin_dir="$app_bin_dir/$BUILD_TYPE"
+    fi
+    MAC_APP_BUNDLE="$app_bin_dir/Paracraft.app"
+    app_exe="$MAC_APP_BUNDLE/Contents/MacOS/Paracraft"
+    if [ -f "$app_exe" ] && ! /usr/bin/codesign --verify "$MAC_APP_BUNDLE" 2>/dev/null; then
+        echo "[build_linux] Relinking Paracraft to repair its bundle signature..."
+        unlink "$app_exe"
+    fi
+fi
+
 echo "[build_linux] Building $MODE ($BUILD_TYPE) with $JOBS parallel jobs..."
 cmake --build "$BUILD_DIR" --config "$BUILD_TYPE" "${BUILD_TARGET_ARGS[@]}" --parallel "$JOBS"
+if [ -n "$MAC_APP_BUNDLE" ]; then
+    /usr/bin/codesign --verify "$MAC_APP_BUNDLE"
+fi
 
 echo ""
 echo "[build_linux] Build succeeded!"
 echo "  Build bin  : $BUILD_DIR/bin/"
 if [ "$MODE" = "client" ] && [ "$HOST_OS" = "Darwin" ]; then
-    echo "  App bundle : $BUILD_DIR/bin/Paracraft.app"
+    echo "  App bundle : ${MAC_APP_BUNDLE:-$BUILD_DIR/bin/Paracraft.app}"
 else
     echo "  Copied to  : $REPO_ROOT/ParaWorld/bin64/"
 fi

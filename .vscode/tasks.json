@@ -27,6 +27,20 @@
                 "${workspaceFolder}/scripts/dev_web.ps1",
                 "build"
             ],
+            "osx": {
+                "command": "${workspaceFolder}/scripts/dev_web.sh",
+                "args": [
+                    "build"
+                ],
+                "problemMatcher": "$gcc"
+            },
+            "linux": {
+                "command": "${workspaceFolder}/scripts/dev_web.sh",
+                "args": [
+                    "build"
+                ],
+                "problemMatcher": "$gcc"
+            },
             "group": "build",
             "problemMatcher": [],
             "presentation": {
@@ -53,6 +67,20 @@
                 "-ProjectId",
                 "530"
             ],
+            "osx": {
+                "command": "${workspaceFolder}/scripts/dev_web.sh",
+                "args": [
+                    "run",
+                    "530"
+                ]
+            },
+            "linux": {
+                "command": "${workspaceFolder}/scripts/dev_web.sh",
+                "args": [
+                    "run",
+                    "530"
+                ]
+            },
             "problemMatcher": {
                 "pattern": {
                     "regexp": "^(ERROR|Error):\\s+(.*)$",
@@ -61,8 +89,8 @@
                 },
                 "background": {
                     "activeOnStart": true,
-                    "beginsPattern": "^\\[dev_web\\.ps1\\]",
-                    "endsPattern": "^(Serving WebParacraft shell from:|\\[dev_web\\.ps1\\] Server already running)"
+                    "beginsPattern": "^\\[dev_web(\\.ps1)?\\]",
+                    "endsPattern": "^(Serving WebParacraft shell from:|\\[dev_web(\\.ps1)?\\] (Server already running|Opening ))"
                 }
             },
             "presentation": {
@@ -89,6 +117,18 @@
                 "-ProjectId",
                 "530"
             ],
+            "osx": {
+                "command": "${workspaceFolder}/scripts/dev_web.sh",
+                "args": [
+                    "serve"
+                ]
+            },
+            "linux": {
+                "command": "${workspaceFolder}/scripts/dev_web.sh",
+                "args": [
+                    "serve"
+                ]
+            },
             "problemMatcher": {
                 "pattern": {
                     "regexp": "^(ERROR|Error):\\s+(.*)$",
@@ -97,8 +137,8 @@
                 },
                 "background": {
                     "activeOnStart": true,
-                    "beginsPattern": "^\\[dev_web\\.ps1\\]",
-                    "endsPattern": "^(Serving WebParacraft shell from:|\\[dev_web\\.ps1\\] Server already running)"
+                    "beginsPattern": "^(\\[dev_web(\\.ps1)?\\]|Serving WebParacraft shell from:)",
+                    "endsPattern": "^(Serving WebParacraft shell from:|\\[dev_web(\\.ps1)?\\] Server already running)"
                 }
             },
             "presentation": {
@@ -118,6 +158,18 @@
                 "${workspaceFolder}/scripts/dev_web.ps1",
                 "configure"
             ],
+            "osx": {
+                "command": "${workspaceFolder}/scripts/dev_web.sh",
+                "args": [
+                    "configure"
+                ]
+            },
+            "linux": {
+                "command": "${workspaceFolder}/scripts/dev_web.sh",
+                "args": [
+                    "configure"
+                ]
+            },
             "problemMatcher": [],
             "presentation": {
                 "reveal": "always",

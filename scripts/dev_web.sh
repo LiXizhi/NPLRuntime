@@ -5,14 +5,62 @@
 #       the self-contained <repo>/web shell mounting any local Paracraft directory directly via
 #       ?searchroot=...&searchpath=... (no webparacraft clone or .data packing required).
 #
-# usage: scripts/dev_web.sh [cpp|build|configure|serve|all]   (default: cpp)
-#        SEARCHROOT=C:/lxzsrc/ParaEngine/ParaWorld scripts/dev_web.sh serve
-#        WEB_ROBOT=OFF scripts/dev_web.sh cpp                 (optional faster non-robotics build)
-#        scripts/dev_web.sh serve --https                     (HTTPS for WebXR / LAN secure context)
+# usage: scripts/dev_web.sh [cpp|build|configure|serve|run|all]   (default: cpp)
+#        scripts/dev_web.sh build                                 (incremental WASM build -> web/auto_generate_files/)
+#        scripts/dev_web.sh run [pid]                             (start/reuse port 8088 server & open browser)
+#        SEARCHROOT=/path/to/paraworld scripts/dev_web.sh serve   (foreground HTTP + local-disk server)
+#        WEB_ROBOT=OFF scripts/dev_web.sh build                   (optional faster non-robotics build)
+#        scripts/dev_web.sh serve --https                         (HTTPS for WebXR / LAN secure context)
 
 set -e
 
 REPO_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+
+ensure_cmake() {
+    if command -v cmake >/dev/null 2>&1; then return; fi
+    for dir in \
+        "/opt/homebrew/bin" \
+        "/usr/local/bin" \
+        "/Applications/CMake.app/Contents/bin" \
+        "$REPO_DIR/../deps/cmake/CMake.app/Contents/bin" \
+        "$HOME/lxzsrc/deps/cmake/CMake.app/Contents/bin" \
+        "$REPO_DIR"/../deps/cmake-*/CMake.app/Contents/bin \
+        "$HOME"/lxzsrc/deps/cmake-*/CMake.app/Contents/bin; do
+        if [ -x "$dir/cmake" ]; then
+            export PATH="$dir:$PATH"
+            return
+        fi
+    done
+}
+
+resolve_default_emsdk() {
+    for cand in \
+        "$REPO_DIR/../deps/emsdk" \
+        "$HOME/lxzsrc/deps/emsdk" \
+        "$HOME/emsdk/emsdk" \
+        "$HOME/emsdk"; do
+        if [ -f "$cand/emsdk_env.sh" ]; then
+            (cd "$cand" && pwd)
+            return
+        fi
+    done
+    echo "$HOME/emsdk/emsdk"
+}
+
+resolve_default_boost_wasm() {
+    for cand in \
+        "$REPO_DIR/../deps/boost-wasm" \
+        "$HOME/lxzsrc/deps/boost-wasm" \
+        "$HOME/boost_1_85_0"; do
+        if [ -d "$cand/stage/lib" ]; then
+            (cd "$cand" && pwd)
+            return
+        fi
+    done
+    echo "$HOME/boost_1_85_0"
+}
+
+ensure_cmake
 
 ## On WSL (/mnt/...), default BUILD_DIR to native Linux ext4 for 10x faster compilation
 if [[ "$REPO_DIR" == /mnt/* ]]; then
@@ -21,8 +69,8 @@ else
     DEFAULT_BUILD_DIR="$REPO_DIR/build/emscripten_single_thread"
 fi
 
-EMSDK_DIR=${EMSDK_DIR:-$HOME/emsdk/emsdk}
-BOOST_DIR=${BOOST_DIR:-$HOME/boost_1_85_0}
+EMSDK_DIR=${EMSDK_DIR:-$(resolve_default_emsdk)}
+BOOST_DIR=${BOOST_DIR:-$(resolve_default_boost_wasm)}
 BUILD_DIR=${BUILD_DIR:-$DEFAULT_BUILD_DIR}
 WEB_DIR=${WEB_DIR:-$REPO_DIR/web}
 SEARCHROOT=${SEARCHROOT:-${PARACRAFT_SEARCHROOT:-}}
@@ -124,15 +172,43 @@ make_cert() {
 cmd_serve() {
     check_web_dir
     [ "$1" = "--https" ] && [ -z "$CERT" ] && make_cert
-    local args=(--root "$WEB_DIR" --engine-dir "$BUILD_DIR/bin" --port "$PORT" --host "$HOST")
+    local args=(--root "$WEB_DIR" --engine-dir "$OUT_DIR" --port "$PORT" --host "$HOST")
     [ -n "$SEARCHROOT" ] && args+=(--searchroot "$SEARCHROOT")
     [ -n "$CERT" ] && args+=(--cert "$CERT" --key "$KEY")
     exec python3 -u "$REPO_DIR/scripts/serve_webparacraft.py" "${args[@]}"
 }
 
+open_url() {
+    local url="$1"
+    if command -v open >/dev/null 2>&1; then
+        open "$url"
+    elif command -v xdg-open >/dev/null 2>&1; then
+        xdg-open "$url" >/dev/null 2>&1 &
+    fi
+}
+
+cmd_run() {
+    check_web_dir
+    local pid="${1:-530}"
+    local url="http://${HOST}:${PORT}/npl/webparacraft/keepwork/local.html?searchpath=script/&pid=${pid}"
+    if lsof -nP -iTCP:"$PORT" -sTCP:LISTEN >/dev/null 2>&1; then
+        log "Server already running on http://${HOST}:${PORT}"
+    else
+        local args=(--root "$WEB_DIR" --engine-dir "$OUT_DIR" --port "$PORT" --host "$HOST")
+        [ -n "$SEARCHROOT" ] && args+=(--searchroot "$SEARCHROOT")
+        nohup python3 -u "$REPO_DIR/scripts/serve_webparacraft.py" "${args[@]}" >"$BUILD_DIR/serve_web.log" 2>&1 &
+        sleep 0.6
+        log "Started WebParacraft server on http://${HOST}:${PORT} (log: $BUILD_DIR/serve_web.log)"
+    fi
+    log "Opening $url"
+    open_url "$url"
+}
+
 case "${1:-cpp}" in
     setup|configure) configure ;;
-    cpp|build|all)   cmd_cpp ;;
+    cpp|build)       cmd_cpp ;;
     serve)           cmd_serve "$2" ;;
-    *) sed -n '2,11p' "$0"; exit 1 ;;
+    run)             cmd_run "$2" ;;
+    all)             cmd_cpp; cmd_run "$2" ;;
+    *) sed -n '2,12p' "$0"; exit 1 ;;
 esac

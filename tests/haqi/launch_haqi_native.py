@@ -101,7 +101,7 @@ def prepare_runtime(web_root, paraworld, runtime, manifest_override=None):
 def find_executable():
     if sys.platform == "darwin":
         paths = [REPOSITORY / folder / "Paracraft.app/Contents/MacOS/Paracraft" for folder in
-                 ("build/mac/bin", "build/mac-current/bin", "build-client/bin",
+                 ("build/mac/bin", "build-client/bin",
                   "build-client/bin/Release", "build-client/bin/Debug")]
     elif os.name == "nt":
         paths = [REPOSITORY / folder / name for folder in

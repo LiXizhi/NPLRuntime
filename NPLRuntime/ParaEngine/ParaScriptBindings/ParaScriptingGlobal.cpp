@@ -1614,7 +1614,7 @@ void ParaAttributeObject::SetField(const char*  sFieldname, const object& input)
 		}
 		case FieldType_DWORD:
 		{
-			DWORD value = object_cast<unsigned int>(input);
+			DWORD value = (DWORD)(int64_t)object_cast<double>(input);
 			pField->Set(m_pAttribute.get(), value);
 			break;
 		}
@@ -1946,7 +1946,7 @@ void ParaAttributeObject::SetValueField(const char*  sFieldname, int nIndex, dou
 	}
 	case FieldType_DWORD:
 	{
-		DWORD value = (DWORD)input;
+		DWORD value = (DWORD)(int64_t)input;
 		pField->Set(m_pAttribute.get(), value);
 		break;
 	}

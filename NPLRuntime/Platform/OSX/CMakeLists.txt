@@ -227,6 +227,10 @@ if (NPL_HAS_DESKTOP_ONNXRUNTIME)
 endif ()
 
 if (NOT CMAKE_GENERATOR STREQUAL "Xcode")
+    # CMake can regenerate the bundle plist without rebuilding any object files.
+    # Run the post-link plist updates and signing step when that happens, too.
+    set_property(TARGET Paracraft APPEND PROPERTY LINK_DEPENDS
+        "$<TARGET_BUNDLE_DIR:Paracraft>/Contents/Info.plist")
     set(sign_identity "${PARACRAFT_MACOS_SIGN_IDENTITY}")
     if (NOT sign_identity)
         set(sign_identity "-")

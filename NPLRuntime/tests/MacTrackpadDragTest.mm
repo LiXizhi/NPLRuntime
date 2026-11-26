@@ -5,6 +5,7 @@
 #include "2dengine/GUIContainer.h"
 #include "AutoCamera.h"
 #include "SceneObject.h"
+#include <cmath>
 #include <cstdio>
 
 using namespace ParaEngine;
@@ -21,6 +22,15 @@ using namespace ParaEngine;
 @synthesize phase, momentumPhase, scrollingDeltaX, scrollingDeltaY;
 - (BOOL)hasPreciseScrollingDeltas { return YES; }
 - (NSPoint)locationInWindow { return NSMakePoint(300, 300); }
+@end
+
+@interface TestMagnifyEvent : NSEvent
+@property NSEventPhase phase;
+@property CGFloat magnification;
+@end
+
+@implementation TestMagnifyEvent
+@synthesize phase, magnification;
 @end
 
 int RunMacTrackpadDragTest(RenderView* view, RenderWindowOSX& window)
@@ -70,6 +80,32 @@ int RunMacTrackpadDragTest(RenderView* view, RenderWindowOSX& window)
     swipe(NSEventPhaseNone, 10, 10, NSEventPhaseChanged);
     CHECK(mouse->GetBufferedMessageCount() == 0);
 
+    auto* pinchEvent = [[[TestMagnifyEvent alloc] init] autorelease];
+    auto pinch = [&](NSEventPhase phase, CGFloat delta) {
+        pinchEvent.phase = phase;
+        pinchEvent.magnification = delta;
+        [view magnifyWithEvent:pinchEvent];
+    };
+    CGlobals::GetScene()->EnableScene(true);
+    camera->SetCameraMode(CameraFollowThirdPerson);
+    camera->EnableMouseWheel(false); // Paracraft uses the wheel for inventory.
+    camera->SetCameraObjectDistance(8);
+    pinch(NSEventPhaseBegan, 0);
+    swipe(NSEventPhaseBegan, 1, 1);
+    swipe(NSEventPhaseChanged, 4, 4);
+    pinch(NSEventPhaseChanged, 0.15);
+    CHECK(camera->GetCameraObjectDistance() < 8);
+    pinch(NSEventPhaseChanged, -0.30);
+    CHECK(camera->GetCameraObjectDistance() > 8);
+    pinch(NSEventPhaseEnded, 0.15);
+    CHECK(std::abs(camera->GetCameraObjectDistance() - 8) < 1e-6);
+    CHECK(mouse->GetBufferedMessageCount() == 0);
+
+    pinch(NSEventPhaseBegan, 0);
+    window.CancelScrollGesture();
+    pinch(NSEventPhaseChanged, 0.2);
+    CHECK(std::abs(camera->GetCameraObjectDistance() - 8) < 1e-6);
+
     auto* panel = new CGUIContainer();
     panel->InitObject("scroll_panel", "_fi", 0, 0, 0, 0);
     panel->SetScrollable(true);
@@ -77,6 +113,11 @@ int RunMacTrackpadDragTest(RenderView* view, RenderWindowOSX& window)
     root->SetMouseFocus(panel);
     frame();
     CHECK(root->IsMouseOverScrollableUI());
+    pinch(NSEventPhaseBegan, 0);
+    pinch(NSEventPhaseChanged, 0.2);
+    pinch(NSEventPhaseEnded, 0);
+    CHECK(std::abs(camera->GetCameraObjectDistance() - 8) < 1e-6);
+    camera->FreeCameraMode();
     swipe(NSEventPhaseBegan, 0, 0);
     swipe(NSEventPhaseChanged, 5, -10);
     swipe(NSEventPhaseEnded, 0, 0);

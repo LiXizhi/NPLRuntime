@@ -262,6 +262,8 @@ namespace ParaEngine
 
         ATTRIBUTE_METHOD1(ParaEngineSettings, GetRendererName_s, const char**) { *p1 = cls->GetRendererName(); return S_OK; }
         ATTRIBUTE_METHOD1(ParaEngineSettings, IsLowEndRenderDevice_s, bool*) { *p1 = cls->IsLowEndRenderDevice(); return S_OK; }
+        ATTRIBUTE_METHOD1(ParaEngineSettings, IsSingleThread_s, bool*) { *p1 = cls->IsSingleThread(); return S_OK; }
+        ATTRIBUTE_METHOD1(ParaEngineSettings, GetHardwareConcurrency_s, int*) { *p1 = cls->GetHardwareConcurrency(); return S_OK; }
 
 
 #ifdef ANDROID
@@ -785,6 +787,8 @@ namespace ParaEngine
         
         /** @return "OpenGL" or "DirectX" */
         const char* GetRendererName();
+        bool IsSingleThread() const;
+        int GetHardwareConcurrency() const;
 
         /**
          ** webversion

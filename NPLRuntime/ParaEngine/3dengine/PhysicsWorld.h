@@ -4,6 +4,10 @@
 #include <list>
 #include <unordered_map>
 #include <string>
+#include <vector>
+#include <deque>
+#include <set>
+#include <map>
 
 /** different physics engine has different winding order. */
 // #define INVERT_PHYSICS_FACE_WINDING
@@ -144,6 +148,21 @@ namespace ParaEngine
 			KinematicMotion_Rotate = 1,
 			KinematicMotion_PingPong = 2,
 			KinematicMotion_Pendulum = 3,
+			KinematicMotion_Path = 4,
+		};
+
+		enum KinematicPathLoop
+		{
+			KinematicPathLoop_PingPong = 0,
+			KinematicPathLoop_Loop = 1,
+			KinematicPathLoop_Once = 2,
+		};
+
+		enum KinematicEasing
+		{
+			KinematicEasing_Linear = 0,
+			KinematicEasing_Smooth = 1,
+			KinematicEasing_Bounce = 2,
 		};
 
 		struct KinematicMotionDesc
@@ -159,6 +178,48 @@ namespace ParaEngine
 			float m_maxAngle = 0.785398f;             // Pendulum max angle (radians)
 			float m_period = 2.0f;                    // Pendulum period (seconds)
 			float m_phaseOffset = 0.0f;               // Normalized phase [0..1] or radian offset
+
+			// Path mode: world-space offsets from m_baseOrigin. m_pathPoints[0] is always ZERO (the base pose).
+			std::vector<Vector3> m_pathPoints;
+			int m_pathLoop = KinematicPathLoop_PingPong;
+			int m_pathEasing = KinematicEasing_Smooth;
+			float m_segmentPause = 0.0f;              // pause at every path vertex (seconds)
+
+			// Per-controller clock. When m_useLocalClock is false the global m_dSimulationTime drives f(t) (legacy).
+			bool m_useLocalClock = false;
+			bool m_running = true;                    // only meaningful with m_useLocalClock
+			bool m_startOnTrigger = false;            // ResetSimulationTime() re-arms (stops at t=0) these controllers
+			double m_clockStart = 0.0;                // global sim time at which local t == 0
+			float m_frozenLocalT = 0.0f;              // local time held while stopped
+		};
+
+		/** A box shaped force field volume (fan, wind tunnel, water). */
+		struct ForceZoneDesc
+		{
+			enum Mode { Mode_Wind = 0, Mode_Buoyancy = 1, Mode_Radial = 2 };
+			std::string m_name;
+			Vector3 m_center = Vector3::ZERO;
+			Vector3 m_halfSize = Vector3(0.5f, 0.5f, 0.5f);
+			float m_yaw = 0.f;
+			float m_cosYaw = 1.f;
+			float m_sinYaw = 0.f;
+			Vector3 m_force = Vector3::ZERO;          // acceleration in m/s^2 (mass independent), world space
+			int m_mode = Mode_Wind;
+			float m_falloff = 0.f;                    // 0..1
+			float m_strength = 0.f;                   // radial mode magnitude (defaults to |force|)
+			float m_drag = 0.f;                       // linear drag (1/s) inside the zone
+			bool m_affectBodies = true;
+			bool m_affectPlayer = true;
+		};
+
+		/** queued script-visible physics event */
+		struct PhysicsEventDesc
+		{
+			std::string m_type;
+			std::string m_a;
+			std::string m_b;
+			float m_impulse = 0.f;
+			double m_time = 0.0;
 		};
 
 		struct ActorFramePose
@@ -448,6 +509,64 @@ namespace ParaEngine
 		/** Script-friendly active contact query after StepSimulation (returns NPL table string). */
 		const char* GetActiveContactsStr(const char* queryTableStr = nullptr);
 
+		//////////////////////////////////////////////////////////////////////////
+		// Contraption v2 extensions
+		//////////////////////////////////////////////////////////////////////////
+
+		/** Analytic, deterministic kinematic controller pose at local time t (seconds).
+		* @return false if mode is none. */
+		static bool EvaluateKinematicMotion(const KinematicMotionDesc& km, float t, Vector3& outOrigin, Quaternion& outRot, Vector3& outLinVel, Vector3& outAngVel);
+
+		/** controller local time at global simulation time simTime. pFrozen receives true if the controller is stopped. */
+		static float GetKinematicLocalTime(const KinematicMotionDesc& km, double simTime, bool* pFrozen = nullptr);
+
+		/** Parse "x,y,z;x,y,z;..." into vector list. returns number of points parsed. */
+		static int ParsePathPoints(const char* str, std::vector<Vector3>& outPoints);
+
+		/** Called by the physics plugin before each fixed substep. */
+		void OnPhysicsSubstep(float fFixedTimeStep, float fTimeOffsetFromStepEnd);
+
+		/** whether kinematic controllers are re-posed at every internal 1/60 substep (default true). */
+		void SetKinematicSubstepEnabled(bool bEnable) { m_bKinematicSubstep = bEnable; }
+		bool IsKinematicSubstepEnabled() const { return m_bKinematicSubstep; }
+
+		/** Force zones: {method='add'|'remove'|'clear', name=..., center={x,y,z}, halfSize={x,y,z}, yaw=0,
+		* force={x,y,z}, mode='wind'|'buoyancy'|'radial', falloff=0..1, strength=, drag=, affectBodies=true, affectPlayer=true} */
+		void SetForceZoneStr(const char* sCmd);
+		const char* GetForceZonesStr();
+		int GetForceZoneCount() const { return (int)m_forceZones.size(); }
+
+		/** Sum of force zone accelerations (m/s^2) at a world position.
+		* @param halfHeight: half height of the object (used by buoyancy depth).
+		* @param bForPlayer: if true, only zones with affectPlayer are considered, otherwise affectBodies.
+		* @param outDrag: summed linear drag coefficient (1/s) of the containing zones.
+		* @return true if pos is inside at least one zone. */
+		bool ComputeForceZoneAcceleration(const Vector3& pos, float halfHeight, bool bForPlayer, Vector3& outAccel, float& outDrag) const;
+
+		/** Apply force zone impulses to all dynamic actors for a given time step. */
+		void ApplyForceZonesToBodies(float fTimeStep);
+
+		/** Pop all queued physics events as NPL table string: {count=N, {type=, a=, b=, impulse=, time=}, ...} */
+		const char* PopPhysicsEventsStr();
+		int GetPhysicsEventCount() const { return (int)m_physicsEvents.size(); }
+		void PushPhysicsEvent(const char* type, const std::string& a, const std::string& b, float impulse);
+		void SetImpactEventThreshold(float fImpulse) { m_fImpactEventThreshold = fImpulse; }
+		float GetImpactEventThreshold() const { return m_fImpactEventThreshold; }
+
+		/** comma separated list of supported physics extensions. */
+		static const char* GetPhysicsFeatures();
+
+		/** apply automatic CCD settings (from actor AABB) to a dynamic actor.
+		* @param bOnlyIfSmall: only enable when the smallest extent < 0.5m and no CCD threshold is configured yet. */
+		void ApplyAutoCCD(IParaPhysicsActor* actor, bool bEnable, bool bOnlyIfSmall = false);
+
+	protected:
+		/** collect joint break / sensor / impact events after a simulation step. */
+		void UpdatePhysicsEvents();
+		void ForgetActorInEvents(IParaPhysicsActor* actor);
+		void UpdateSensorRegistration(IParaPhysicsActor* actor);
+		std::string GetActorName(IParaPhysicsActor* actor) const;
+
 	public:
 		/** the main physic interface. */
 		IParaPhysics*     m_pPhysicsWorld;
@@ -470,5 +589,17 @@ namespace ParaEngine
 		bool m_bRunDynamicSimulation;
 		double m_dSimulationTime = 0.0;
 		uint64_t m_nextActorPoseUid = 1;
+
+		/// contraption v2 state
+		bool m_bKinematicSubstep = true;
+		std::vector<ForceZoneDesc> m_forceZones;
+		std::deque<PhysicsEventDesc> m_physicsEvents;
+		std::set<IParaPhysicsConstraint*> m_brokenConstraints;
+		std::set<IParaPhysicsActor*> m_sensorActors;
+		/// (sensor actor, other key) -> (sensor name, other name)
+		std::map<std::pair<void*, void*>, std::pair<std::string, std::string> > m_sensorOverlaps;
+		/// (min, max) actor pair -> applied impulse last frame (impact event detection)
+		std::map<std::pair<void*, void*>, float> m_contactPairs;
+		float m_fImpactEventThreshold = 0.f;
 	};
 }

@@ -215,6 +215,11 @@ namespace ParaEngine
 		/** check device capabilities for deferred shading. */
 		bool CanUseAdvancedShading();
 		bool CanTraceBlockSky();
+		Vector4 UpdateWaterView();
+		bool HasDeferredUnderwaterFog() const { return m_deferredUnderwaterFog && m_dwBlockRenderMethod == BLOCK_RENDER_FANCY_SHADER; }
+		ATTRIBUTE_METHOD1(BlockWorldClient, SetWaterDepthEnabled_s, bool) { cls->m_waterDepthEnabled = p1; return S_OK; }
+		ATTRIBUTE_METHOD1(BlockWorldClient, HasWaterSceneDepth_s, bool*) { *p1 = cls->m_hasWaterSceneDepth; return S_OK; }
+		ATTRIBUTE_METHOD1(BlockWorldClient, UpdateWaterView_s, Vector4*) { *p1 = cls->UpdateWaterView(); return S_OK; }
 		Vector4 UpdateRayTracedSky();
 		Vector4 GetNearBlockGridOrigin();
 		Vector4 UpdateTerrainZigZagVolume();
@@ -393,6 +398,10 @@ namespace ParaEngine
 		/** depth, block_id, block_light, sun_light*/
 		asset_ptr<TextureEntity> m_render_target_block_info;
 		/** 32bits for the red channel, writing depth info to this texture. */
+		bool m_waterDepthEnabled = false;
+		bool m_hasWaterSceneDepth = false;
+		bool m_deferredUnderwaterFog = false;
+		asset_ptr<TextureEntity> m_waterSceneDepth;
 		asset_ptr<TextureEntity> m_render_target_depth_tex;
 		/** normal render target */
 		asset_ptr<TextureEntity> m_render_target_normal;

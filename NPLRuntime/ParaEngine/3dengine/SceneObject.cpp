@@ -4819,6 +4819,12 @@ int CSceneObject::InstallFields(CAttributeClass* pClass, bool bOverride)
 	pClass->AddField("PhysicsSimulationTime", FieldType_Float, (void*)SetPhysicsSimulationTime_s, (void*)GetPhysicsSimulationTime_s, NULL, NULL, bOverride);
 	pClass->AddField("PhysicsRaycast", FieldType_String, NULL, (void*)PhysicsRaycast_s, NULL, NULL, bOverride);
 	pClass->AddField("PhysicsContacts", FieldType_String, NULL, (void*)PhysicsContacts_s, NULL, NULL, bOverride);
+	pClass->AddField("PhysicsForceZone", FieldType_String, (void*)SetPhysicsForceZone_s, (void*)GetPhysicsForceZones_s, NULL, NULL, bOverride);
+	pClass->AddField("PhysicsForceZoneCount", FieldType_Int, NULL, (void*)GetPhysicsForceZoneCount_s, NULL, NULL, bOverride);
+	pClass->AddField("PhysicsEvents", FieldType_String, NULL, (void*)PopPhysicsEvents_s, NULL, NULL, bOverride);
+	pClass->AddField("PhysicsImpactThreshold", FieldType_Float, (void*)SetPhysicsImpactThreshold_s, (void*)GetPhysicsImpactThreshold_s, NULL, NULL, bOverride);
+	pClass->AddField("PhysicsKinematicSubstep", FieldType_Bool, (void*)SetPhysicsKinematicSubstep_s, (void*)IsPhysicsKinematicSubstep_s, NULL, NULL, bOverride);
+	pClass->AddField("PhysicsFeatures", FieldType_String, NULL, (void*)GetPhysicsFeatures_s, NULL, NULL, bOverride);
 	pClass->AddField("BlockInput", FieldType_Bool, (void*)SetBlockInput_s, (void*)IsBlockInput_s, NULL, NULL, bOverride);
 	pClass->AddField("AllMiniSceneGraphNames", FieldType_String, NULL, (void*)GetAllMiniSceneGraphNames_s, NULL, NULL, bOverride);
 	pClass->AddField("ShadowRadius", FieldType_Float, (void*)SetShadowRadius_s, (void*)GetShadowRadius_s, NULL, NULL, bOverride);
@@ -4867,4 +4873,49 @@ const char* CSceneObject::PhysicsRaycast(const char* queryTableStr)
 const char* CSceneObject::PhysicsContacts(const char* queryTableStr)
 {
 	return CGlobals::GetPhysicsWorld()->GetActiveContactsStr(queryTableStr);
+}
+
+void CSceneObject::SetPhysicsForceZone(const char* sCmd)
+{
+	CGlobals::GetPhysicsWorld()->SetForceZoneStr(sCmd);
+}
+
+const char* CSceneObject::GetPhysicsForceZones()
+{
+	return CGlobals::GetPhysicsWorld()->GetForceZonesStr();
+}
+
+int CSceneObject::GetPhysicsForceZoneCount()
+{
+	return CGlobals::GetPhysicsWorld()->GetForceZoneCount();
+}
+
+const char* CSceneObject::PopPhysicsEvents()
+{
+	return CGlobals::GetPhysicsWorld()->PopPhysicsEventsStr();
+}
+
+float CSceneObject::GetPhysicsImpactThreshold()
+{
+	return CGlobals::GetPhysicsWorld()->GetImpactEventThreshold();
+}
+
+void CSceneObject::SetPhysicsImpactThreshold(float fImpulse)
+{
+	CGlobals::GetPhysicsWorld()->SetImpactEventThreshold(fImpulse);
+}
+
+bool CSceneObject::IsPhysicsKinematicSubstep()
+{
+	return CGlobals::GetPhysicsWorld()->IsKinematicSubstepEnabled();
+}
+
+void CSceneObject::SetPhysicsKinematicSubstep(bool bEnable)
+{
+	CGlobals::GetPhysicsWorld()->SetKinematicSubstepEnabled(bEnable);
+}
+
+const char* CSceneObject::GetPhysicsFeatures()
+{
+	return CPhysicsWorld::GetPhysicsFeatures();
 }

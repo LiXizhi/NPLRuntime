@@ -516,7 +516,8 @@ bool CharModelInstance::AnimateModel(SceneState* sceneState, const AnimIndex& Cu
 	ParaXEntity* pModelAsset = GetBaseModel();
 	if (pModelAsset == NULL)
 		return false;
-	int nIndex = (sceneState && sceneState->IsLODEnabled()) ? pModelAsset->GetLodIndex(sceneState->GetCameraToCurObjectDistance()) : 0;
+	float fLodScale = (sceneState && sceneState->GetCurrentSceneObject()) ? sceneState->GetCurrentSceneObject()->GetScaling() : 1.f;
+	int nIndex = (sceneState && sceneState->IsLODEnabled()) ? pModelAsset->GetLodIndex(sceneState->GetCameraToCurObjectDistance(), fLodScale) : 0;
 	CParaXModel* pModel = pModelAsset->GetModel(nIndex);
 
 	if (pModel == NULL)
@@ -593,7 +594,8 @@ void CharModelInstance::Draw(SceneState* sceneState, CParameterBlock* materialPa
 		ParaXEntity* pModelAsset = GetBaseModel();
 		if (pModelAsset)
 		{
-			int nIndex = (sceneState && sceneState->IsLODEnabled()) ? pModelAsset->GetLodIndex(sceneState->GetCameraToCurObjectDistance()) : 0;
+			float fLodScale = (sceneState && sceneState->GetCurrentSceneObject()) ? sceneState->GetCurrentSceneObject()->GetScaling() : 1.f;
+	int nIndex = (sceneState && sceneState->IsLODEnabled()) ? pModelAsset->GetLodIndex(sceneState->GetCameraToCurObjectDistance(), fLodScale) : 0;
 			CParaXModel* pModel = pModelAsset->GetModel(nIndex);
 			if (pModel)
 				m_pCapeInstance->Draw(sceneState, pModel, m_pModelCanvas.get(), materialParams, reflection);

@@ -16,6 +16,7 @@
 #include "NPLHelper.h"
 #include "NPLCommon.h"
 #include "NPLRuntime.h"
+#include "util/ParaTime.h"
 #include "util/ScopedLock.h"
 #include <boost/bind.hpp>
 #include "NPLRuntimeState.h"
@@ -291,15 +292,22 @@ int NPL::CNPLRuntimeState::Run_Async()
 		m_thread.reset(CoroutineThread::StartCoroutineThread([this](CoroutineThread* t)->CO_ASYNC {
 			NPLMessage_ptr msg;
 			int nRes = 0;
+			int64 sliceStartUS = ParaEngine::GetTimeUS();
 			while (nRes != -1)
 			{
 				if (m_input_queue.try_pop(msg))
 				{
 					nRes = ProcessMsg(msg);
+					if (nRes != -1 && (ParaEngine::GetTimeUS() - sliceStartUS) >= 2500 && !m_input_queue.empty())
+					{
+						CO_AWAIT(t->Sleep(0));
+						sliceStartUS = ParaEngine::GetTimeUS();
+					}
 				}
 				else
 				{
-					CO_AWAIT(t->Sleep(100));
+					CO_AWAIT(t->Sleep(16));
+					sliceStartUS = ParaEngine::GetTimeUS();
 				}
 			}
 			// this is necessary, because we must finalize mono state before the thread is terminated. 
@@ -921,19 +929,25 @@ int NPL::CNPLRuntimeState::activate(const char* sNPLFilename, const char* sCode,
 
 NPL::NPLReturnCode NPL::CNPLRuntimeState::SendMessage(NPLMessage_ptr& msg, int priority/*=0*/)
 {
+	NPLReturnCode rc = NPL_OK;
 	// insert to the input message queue
 	if (priority <= 0)
 	{
 		// normal priority, push to back
-		return (m_input_queue.try_push(msg) != CNPLMessageQueue::BufferOverFlow) ? NPL_OK : NPL_QueueIsFull;
+		rc = (m_input_queue.try_push(msg) != CNPLMessageQueue::BufferOverFlow) ? NPL_OK : NPL_QueueIsFull;
 	}
 	else
 	{
 		// high priority, push to front
 		m_input_queue.push_front(msg);
-		return NPL_OK;
 	}
-	return NPL_OK;
+#ifdef EMSCRIPTEN_SINGLE_THREAD
+	if (rc == NPL_OK && m_thread)
+	{
+		m_thread->WakeUp();
+	}
+#endif
+	return rc;
 }
 
 const char* NPL::CNPLRuntimeState::GetCurrentMsg()

@@ -41,6 +41,7 @@ namespace ParaEngine
         void OnKey(EKeyState state, NSEvent* event);
         void OnFlagsChanged(NSEvent* event);
         void OnScrollWheel(NSEvent* event);
+        void OnMagnify(NSEvent* event);
         void CancelScrollGesture();
         bool SampleTrackpadDrag(DeviceMouseState& frame);
         void OnInsertText(NSString* string);
@@ -64,6 +65,7 @@ namespace ParaEngine
         bool m_shouldClose;
         NSWindow* m_window;
         bool m_scrollGestureOverUI = false;
+        bool m_magnifyingWorld = false;
         enum class TrackpadDrag { Idle, Active, Released };
         TrackpadDrag m_trackpadDrag = TrackpadDrag::Idle;
         NSPoint m_dragPosition = NSZeroPoint;

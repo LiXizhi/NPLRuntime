@@ -544,6 +544,23 @@ namespace ParaScripting
 
 		/** this function is only valid, when the block region is locked. this function is extremely fast. and it does not do light calculation. */
 		static void LoadBlockAsync(uint16_t x, int32_t y, uint16_t z, uint16_t blockId, uint32_t userData);
+
+		/** Fast cross-platform C++ procedural world generation & noise APIs (usable on main and worker NPL states). */
+		static bool ConfigureWorldGen(int profileId, const object& config);
+		static bool GenerateBaseColumn(int profileId, int chunkX, int chunkZ, const object& outSummary);
+		static object SampleWorldColumn(int profileId, int worldX, int worldZ, const object& outInfo);
+		static void GenResetBuffer(int chunkX, int chunkZ);
+		static void GenSetBlock(int lx, int wy, int lz, uint16_t blockId, uint32_t blockData, bool onlyIfAir);
+		static uint16_t GenGetBlockId(int lx, int wy, int lz);
+		static void GenFillBox(int x1, int y1, int z1, int x2, int y2, int z2, uint16_t blockId, uint32_t blockData, int mode);
+		static void GenFillEllipsoid(float cx, float cy, float cz, float rx, float ry, float rz, uint16_t blockId, uint32_t blockData, bool onlyIfAir);
+		static void GenStampTree(int lx, int wy, int lz, int style, uint32_t packedTrunk, uint32_t packedLeaf, uint32_t packedExtra, int packedSize, uint32_t seed);
+		static void GenStampCrystal(int lx, int wy, int lz, uint16_t coreId, uint16_t shellId, uint32_t shellData, int height, int radius, int signedSeed);
+		static std::string GenEncodeChunkV2();
+		static bool GenCommitColumn(uint32_t chunkX, uint32_t chunkZ);
+		static double Noise2D(int seed, double x, double z, int octaves, double lacunarity, double gain);
+		static double Noise3D(int seed, double x, double y, double z, int octaves, double lacunarity, double gain);
+		static double RidgedNoise2D(int seed, double x, double z, int octaves, double lacunarity, double gain);
 	};
 
 }
