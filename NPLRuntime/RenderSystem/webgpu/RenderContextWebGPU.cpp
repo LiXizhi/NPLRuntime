@@ -32,6 +32,29 @@ namespace ParaEngine
 		};
 
 #if defined(WGPUINTERNAL_HAVE_EMDAWNWEBGPU_HEADER)
+		// Older browsers expose WebGPU but reject the D3DCOLOR vertex format.
+		// It has no adapter feature flag, so test it before WebGPU claims the canvas.
+		EM_ASYNC_JS(int, CanRenderPackedVertexColors, (WGPUDevice device), {
+			const gpu = WebGPU.getJsObject(device);
+			try {
+				const module = gpu.createShaderModule({
+					code: "@vertex fn vs(@location(0) color: vec4<f32>) -> @builtin(position) vec4<f32> { return color; }"
+				});
+				await gpu.createRenderPipelineAsync({
+					layout: "auto",
+					vertex: {
+						module: module, entryPoint: "vs",
+						buffers: [{arrayStride: 4, attributes: [{shaderLocation: 0, offset: 0, format: "unorm8x4-bgra"}]}]
+					},
+					depthStencil: {format: "depth24plus", depthWriteEnabled: true, depthCompare: "always"}
+				});
+				return 1;
+			} catch (error) {
+				console.warn("[ParaRHI-WebGPU] Packed vertex color pipeline unavailable:", error.message);
+				return 0;
+			}
+		});
+
 		void OnAdapterRequested(WGPURequestAdapterStatus status, WGPUAdapter adapter, WGPUStringView message, void* userdata1, void* /*userdata2*/)
 		{
 			auto* st = static_cast<AdapterReqState*>(userdata1);
@@ -249,7 +272,17 @@ namespace ParaEngine
 		}
 
 		WGPUDevice device = devReq.device;
-#if !defined(WGPUINTERNAL_HAVE_EMDAWNWEBGPU_HEADER)
+#if defined(WGPUINTERNAL_HAVE_EMDAWNWEBGPU_HEADER)
+		if (!CanRenderPackedVertexColors(device))
+		{
+			PARA_WGPU_CALL(wgpu, wgpuDeviceDestroy, device);
+			PARA_WGPU_CALL(wgpu, wgpuDeviceRelease, device);
+			PARA_WGPU_CALL(wgpu, wgpuAdapterRelease, adapter);
+			PARA_WGPU_CALL(wgpu, wgpuInstanceRelease, instance);
+			wgpu.Unload();
+			return nullptr;
+		}
+#else
 		if (PARA_WGPU_HAS(wgpu, wgpuDeviceSetUncapturedErrorCallback))
 		{
 			PARA_WGPU_CALL(wgpu, wgpuDeviceSetUncapturedErrorCallback, device, &OnUncapturedWebGPUError, nullptr);

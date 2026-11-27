@@ -1,6 +1,7 @@
 """Run with Python Playwright and Chrome against a locally served Web Paracraft world.
 
     python3 tests/web/test_webgl_fallback.py '<world URL without a renderer override>'
+    python3 tests/web/test_webgl_fallback.py --missing-bgra '<world URL without a renderer override>'
 """
 import argparse
 from urllib.parse import parse_qs, urlsplit
@@ -8,12 +9,12 @@ from urllib.parse import parse_qs, urlsplit
 from playwright.sync_api import sync_playwright
 
 
-def verify_fallback(url):
+def verify_fallback(url, missing_bgra=False):
     assert "renderer" not in parse_qs(urlsplit(url).query), "Use automatic renderer selection"
     with sync_playwright() as playwright:
         browser = playwright.chromium.launch(channel="chrome", args=[
             "--disable-webgl2", "--use-gl=angle", "--use-angle=swiftshader",
-            "--enable-unsafe-swiftshader",
+            "--enable-unsafe-swiftshader", "--enable-unsafe-webgpu",
         ])
         try:
             page = browser.new_page()
@@ -28,14 +29,32 @@ def verify_fallback(url):
                     failures.append(message.text)
 
             page.on("console", check_render_message)
+            page.on("pageerror", lambda error: failures.append(str(error)))
+            if missing_bgra:
+                page.add_init_script("""(() => {
+                    for (const name of ['createRenderPipeline', 'createRenderPipelineAsync']) {
+                        const create = GPUDevice.prototype[name];
+                        GPUDevice.prototype[name] = function (desc) {
+                            const buffers = desc.vertex.buffers || [];
+                            if (buffers.some(b => b?.attributes.some(a => a.format === 'unorm8x4-bgra'))) {
+                                window.bgraRejected = true;
+                                const error = new TypeError("Unsupported GPUVertexFormat: unorm8x4-bgra");
+                                if (name === 'createRenderPipelineAsync') return Promise.reject(error);
+                                throw error;
+                            }
+                            return create.call(this, desc);
+                        };
+                    }
+                })()""")
+            else:
+                page.add_init_script("""navigator.gpu.requestAdapter = async () => {
+                    window.adapterUnavailable = true;
+                    return null;
+                };""")
             page.add_init_script("""(() => {
                 // Exercise the desktop Windows WebGPU selection policy on any test host.
                 Object.defineProperty(navigator.userAgentData, 'platform', {value: 'Windows'});
-                window.fallbackProbe = {adapterRequested: false, draws: 0};
-                navigator.gpu.requestAdapter = async () => {
-                    fallbackProbe.adapterRequested = true;
-                    return null;
-                };
+                window.fallbackProbe = {draws: 0};
                 const gl = WebGLRenderingContext.prototype;
                 const checkFramebufferStatus = gl.checkFramebufferStatus;
                 gl.checkFramebufferStatus = function (target) {
@@ -62,7 +81,8 @@ def verify_fallback(url):
                 lambda message: "ParaRHI initialized backend:" in message.text, timeout=90000
             ) as selected:
                 page.goto(url, wait_until="domcontentloaded")
-            assert page.evaluate("window.fallbackProbe.adapterRequested"), "WebGPU probe did not run"
+            expected_probe = "window.bgraRejected" if missing_bgra else "window.adapterUnavailable"
+            assert page.evaluate(expected_probe), f"{expected_probe} did not run"
             assert "backend: OpenGL" in selected.value.text, selected.value.text
             page.wait_for_function("window.fallbackProbe.draws > 0", timeout=90000)
             assert not failures, "\n".join(failures)
@@ -91,4 +111,6 @@ def verify_fallback(url):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("url")
-    verify_fallback(parser.parse_args().url)
+    parser.add_argument("--missing-bgra", action="store_true", help="Emulate a WebGPU device that rejects packed BGRA vertex colors")
+    args = parser.parse_args()
+    verify_fallback(args.url, args.missing_bgra)
