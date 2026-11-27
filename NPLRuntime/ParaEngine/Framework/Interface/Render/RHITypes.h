@@ -181,6 +181,8 @@ namespace ParaEngine
 	{
 	public:
 		virtual ~IRHITexture() = default;
+		// Pixel artwork can select nearest magnification independently of minification.
+		bool pointMagnification = false;
 		virtual uint32_t GetWidth() const = 0;
 		virtual uint32_t GetHeight() const = 0;
 		virtual uint32_t GetMipLevels() const { return 1; }

@@ -25,6 +25,7 @@ namespace ParaEngine
 	{
 		memset(m_renderStates, 0, sizeof(m_renderStates));
 		memset(m_samplerStates, 0, sizeof(m_samplerStates));
+		m_pointMagnificationMask = 0;
 		memset(m_clipPlanes, 0, sizeof(m_clipPlanes));
 
 		m_renderStates[static_cast<size_t>(ERenderState::ZENABLE)]          = 1;
@@ -159,6 +160,30 @@ namespace ParaEngine
 		m_samplerStates[stage][t] = value;
 		m_dirtySamplersMask |= (1u << stage);
 		return true;
+	}
+
+	bool RHIStateTracker::SetSamplerTexture(uint32_t stage, const IRHITexture* texture)
+	{
+		if (stage >= MAX_SAMPLER_STAGES) return false;
+		const uint32_t bit = 1u << stage;
+		const bool nearest = texture && texture->pointMagnification;
+		if (((m_pointMagnificationMask & bit) != 0) == nearest) return false;
+		m_pointMagnificationMask ^= bit;
+		m_dirtySamplersMask |= bit;
+		return true;
+	}
+
+	uint32_t RHIStateTracker::GetEffectiveSamplerState(uint32_t stage, ESamplerStateType type) const
+	{
+		const uint32_t requested = GetSamplerState(stage, type);
+		if (stage < MAX_SAMPLER_STAGES && (m_pointMagnificationMask & (1u << stage)))
+		{
+			if (type == ESamplerStateType::MAGFILTER || type == ESamplerStateType::MAXANISOTROPY)
+				return 1;
+			if (type == ESamplerStateType::MINFILTER && requested == 3)
+				return 2; // Anisotropic samplers require linear magnification.
+		}
+		return requested;
 	}
 
 	uint32_t RHIStateTracker::GetSamplerState(uint32_t stage, ESamplerStateType type) const

@@ -1182,6 +1182,9 @@ namespace ParaScripting
 		* @return :the scene object. if the object is invalid, it means that the ray has hit nothing.
 		*/
 		ParaObject MousePick(float x, float y, float fMaxDistance, const char* sFilterFunc);
+		// Snapshot the posed skin for screen-space painting. Each triangle has three
+		// vertices (normalized screen x/y, inverse clip w, u/w, v/w). Use a fresh table.
+		int GetSkinProjection(const char* name, int textureSlot, const object& output);
 
 		/** show or hide all scene's objects' head on display*/
 		void ShowHeadOnDisplay(bool bShow);

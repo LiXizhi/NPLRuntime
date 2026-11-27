@@ -165,6 +165,7 @@ namespace ParaEngine
 		bool m_bAsyncLoad;
 
 		bool m_bEmbeddedTexture;
+		bool m_pointMagnification = false;
 	public:
 		TextureEntity(const AssetKey& key);
 		TextureEntity();
@@ -377,6 +378,8 @@ namespace ParaEngine
 	public:
 		virtual int InstallFields(CAttributeClass* pClass, bool bOverride);
 
+		ATTRIBUTE_METHOD1(TextureEntity, SetPointMagnification_s, bool) { cls->m_pointMagnification = p1; return S_OK; }
+		ATTRIBUTE_METHOD1(TextureEntity, GetPointMagnification_s, bool*) { *p1 = cls->m_pointMagnification; return S_OK; }
 		ATTRIBUTE_METHOD1(TextureEntity, SetHitCount_s, int) { cls->SetHitCount(p1); return S_OK; }
 		ATTRIBUTE_METHOD1(TextureEntity, GetHitCount_s, int*) { *p1 = cls->GetHitCount(); return S_OK; }
 		ATTRIBUTE_METHOD1(TextureEntity, GetWidth_s, int*) { *p1 = cls->GetWidth(); return S_OK; }

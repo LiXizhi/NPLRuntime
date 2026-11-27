@@ -663,6 +663,7 @@ int TextureEntity::InstallFields(CAttributeClass* pClass, bool bOverride)
 {
 	AssetEntity::InstallFields(pClass, bOverride);
 
+	pClass->AddField("PointMagnification", FieldType_Bool, (void*)SetPointMagnification_s, (void*)GetPointMagnification_s, NULL, NULL, bOverride);
 	pClass->AddField("HitCount", FieldType_Int, (void*)SetHitCount_s, (void*)GetHitCount_s, NULL, NULL, bOverride);
 	pClass->AddField("LoadImageFromString", FieldType_String, (void*)LoadImageFromString_s, NULL, NULL, NULL, bOverride);
 	pClass->AddField("SaveToFile", FieldType_String, (void*)SaveToFile_s, NULL, NULL, NULL, bOverride);

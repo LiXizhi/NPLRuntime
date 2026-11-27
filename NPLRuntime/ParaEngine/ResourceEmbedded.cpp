@@ -25,6 +25,7 @@ CStaticInitRes::CStaticInitRes()
 	// Embedded shader #include headers
 	ADD_RESOURCE(":IDR_SHADER_INC_COMMON_SHADER_DATA", common_shader_data_h);
 	ADD_RESOURCE(":IDR_SHADER_INC_LIGHT_SCATTERING_CONSTANTS", light_scattering_constants_h);
+	ADD_RESOURCE(":IDR_SHADER_INC_MESH_LOCAL_LIGHTS", mesh_local_lights_h);
 	ADD_RESOURCE(":IDR_SHADER_INC_PATCH_DEFORM", patch_deform_h);
 	ADD_RESOURCE(":IDR_SHADER_INC_SIMPLE_MESH_NORMAL_VEGETATION", simple_mesh_normal_vegetation_h);
 	ADD_RESOURCE(":IDR_SHADER_INC_COMMON_DEFINE", CommonDefine_h);

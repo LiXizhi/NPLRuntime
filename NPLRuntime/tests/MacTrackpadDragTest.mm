@@ -3,6 +3,7 @@
 #include "RenderWindowOSX.h"
 #include "2dengine/GUIRoot.h"
 #include "2dengine/GUIContainer.h"
+#include "2dengine/GUIKeyboardVirtual.h"
 #include "AutoCamera.h"
 #include "SceneObject.h"
 #include <cmath>
@@ -16,10 +17,11 @@ using namespace ParaEngine;
 @property NSEventPhase momentumPhase;
 @property CGFloat scrollingDeltaX;
 @property CGFloat scrollingDeltaY;
+@property NSEventModifierFlags modifierFlags;
 @end
 
 @implementation TestScrollEvent
-@synthesize phase, momentumPhase, scrollingDeltaX, scrollingDeltaY;
+@synthesize phase, momentumPhase, scrollingDeltaX, scrollingDeltaY, modifierFlags;
 - (BOOL)hasPreciseScrollingDeltas { return YES; }
 - (NSPoint)locationInWindow { return NSMakePoint(300, 300); }
 @end
@@ -57,7 +59,29 @@ int RunMacTrackpadDragTest(RenderView* view, RenderWindowOSX& window)
     };
 
 #define CHECK(condition) do { if (!(condition)) { std::fprintf(stderr, "line %d: %s\n", __LINE__, #condition); return 1; } } while (false)
+    auto ctrlDown = [&]() { return root->GetKeyboard()->IsKeyPressed(EVirtualKey::KEY_LCONTROL); };
+    event.modifierFlags = NSEventModifierFlagCommand;
+    [view flagsChanged:event];
+    CHECK(ctrlDown());
+    // Command was released elsewhere. The first ordinary right drag must see Ctrl up.
+    event.modifierFlags = 0;
+    [view rightMouseDown:event];
+    CHECK(!ctrlDown());
+    [view rightMouseUp:event];
+    frame();
+
+    event.modifierFlags = NSEventModifierFlagControl | NSEventModifierFlagCommand;
+    [view flagsChanged:event];
+    event.modifierFlags = NSEventModifierFlagControl;
+    [view flagsChanged:event];
+    [view rightMouseDown:event];
+    CHECK(ctrlDown());
+    [view rightMouseUp:event];
+    frame();
+    // A trackpad swipe also generates a right drag and carries its own modifier snapshot.
+    event.modifierFlags = 0;
     swipe(NSEventPhaseBegan, 0, 0);
+    CHECK(!ctrlDown());
     frame();
     CHECK(camera->IsMouseRButtonDown());
     for (int i = 0; i < 12; ++i)

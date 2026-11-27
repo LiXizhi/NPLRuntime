@@ -47,7 +47,8 @@ namespace ParaEngine
 			//! Raw Data
 			RAW_DATA,
 			//! Unknown format
-			UNKNOWN
+			UNKNOWN,
+			BMP
 		};
 
 	public:

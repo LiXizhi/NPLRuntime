@@ -2437,6 +2437,7 @@ namespace ParaEngine
 	{
 		if (!m_context || stage >= RHIStateTracker::MAX_SAMPLER_STAGES)
 			return false;
+		m_stateTracker.SetSamplerTexture(stage, texture);
 
 		ID3D11ShaderResourceView* srv = texture ? static_cast<ID3D11ShaderResourceView*>(texture->GetNativeHandle()) : nullptr;
 		if (m_logicalSRVs[stage] != srv)
@@ -2754,10 +2755,10 @@ namespace ParaEngine
 				const uint32_t addrU = m_stateTracker.GetSamplerState(s, ESamplerStateType::ADDRESSU);
 				const uint32_t addrV = m_stateTracker.GetSamplerState(s, ESamplerStateType::ADDRESSV);
 				const uint32_t addrW = m_stateTracker.GetSamplerState(s, ESamplerStateType::ADDRESSW);
-				const uint32_t minF  = m_stateTracker.GetSamplerState(s, ESamplerStateType::MINFILTER);
-				const uint32_t magF  = m_stateTracker.GetSamplerState(s, ESamplerStateType::MAGFILTER);
+				const uint32_t minF  = m_stateTracker.GetEffectiveSamplerState(s, ESamplerStateType::MINFILTER);
+				const uint32_t magF  = m_stateTracker.GetEffectiveSamplerState(s, ESamplerStateType::MAGFILTER);
 				const uint32_t mipF  = m_stateTracker.GetSamplerState(s, ESamplerStateType::MIPFILTER);
-				const uint32_t aniso = m_stateTracker.GetSamplerState(s, ESamplerStateType::MAXANISOTROPY);
+				const uint32_t aniso = m_stateTracker.GetEffectiveSamplerState(s, ESamplerStateType::MAXANISOTROPY);
 				const uint32_t border = m_stateTracker.GetSamplerState(s, ESamplerStateType::BORDERCOLOR);
 				const uint32_t biasBits = m_stateTracker.GetSamplerState(s, ESamplerStateType::MIPMAPLODBIAS);
 

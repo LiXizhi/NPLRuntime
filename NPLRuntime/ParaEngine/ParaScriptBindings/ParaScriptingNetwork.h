@@ -108,6 +108,37 @@ namespace ParaScripting
 		*/
 		static void SetNerveReceptorAddress(const char* pAddress); 
 
+		/**
+		* Connect an outbound RFC 6455 WebSocket client (supports both ws:// and wss:// TLS).
+		* @param url: e.g. "wss://speechrtc.keepwork.com/speech?asr_format=pcm&asr_rate=16000"
+		* @param extraHeaders: optional HTTP headers separated by \r\n
+		* @return positive integer connection handle (>0), or 0 if url is invalid.
+		*/
+		static int ConnectWebSocket(const std::string& url);
+		static int ConnectWebSocketEx(const std::string& url, const std::string& extraHeaders);
+
+		/** Send a UTF-8 text WebSocket frame (opcode 0x1). */
+		static bool SendWebSocketText(int handle, const std::string& text);
+
+		/** Send a binary WebSocket frame (opcode 0x2). Preserves embedded NUL bytes. */
+		static bool SendWebSocketBinary(int handle, const std::string& binaryData);
+
+		/** ReadyState: 0 = Closed, 1 = Connecting, 2 = Open, 3 = Closing. */
+		static int GetWebSocketState(int handle);
+
+		/**
+		* Pops the next queued WebSocket event into Lua table outEvent:
+		*   outEvent.type = "open" | "text" | "binary" | "close" | "error"
+		*   outEvent.data = string (binary-safe)
+		*   outEvent.code = number
+		* @return true if an event was popped, false if queue is empty.
+		*/
+		static bool PollWebSocketEvent(int handle, const object& outEvent);
+
+		/** Close and release a WebSocket client handle. */
+		static void CloseWebSocket(int handle);
+		static void CloseWebSocketEx(int handle, int code, const std::string& reason);
+
 #ifdef _OBSOLETED
 		
 

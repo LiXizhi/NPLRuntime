@@ -5,6 +5,7 @@
 #include "OpenGLWrapper/GLTexture2D.h"
 #include "renderer/EffectManager.h"
 #include "RenderDeviceNull.h"
+#include "RHIStateTracker.h"
 #include "RHISoftwareS3TC.h"
 #include <cstdio>
 #include <cstdlib>
@@ -77,6 +78,23 @@ int main()
 		uint32_t current = 0;
 		device.GetSamplerState(0, address, &current);
 		Check(current == D3DTADDRESS_CLAMP, "next terrain pass clamps its mask again");
+	}
+	{
+		RHIStateTracker states;
+		GLTexture2D artwork;
+		artwork.setPointMagnification(true);
+		states.ClearAllDirty();
+		states.SetSamplerTexture(2, &artwork);
+		Check(states.GetDirtySamplerMask() == (1u << 2), "binding artwork updates its sampler stage");
+		Check(states.GetEffectiveSamplerState(2, ESamplerStateType::MAGFILTER) == D3DTEXF_POINT &&
+			states.GetEffectiveSamplerState(2, ESamplerStateType::MINFILTER) == D3DTEXF_LINEAR,
+			"artwork magnifies with nearest and minifies with linear");
+		Check(states.GetSamplerState(2, ESamplerStateType::MAGFILTER) == D3DTEXF_LINEAR &&
+			states.GetEffectiveSamplerState(0, ESamplerStateType::MAGFILTER) == D3DTEXF_LINEAR,
+			"requested and unrelated sampler states stay independent");
+		states.SetSamplerTexture(2, nullptr);
+		Check(states.GetEffectiveSamplerState(2, ESamplerStateType::MAGFILTER) == D3DTEXF_LINEAR,
+			"unbinding artwork restores normal magnification");
 	}
 	{
 		std::vector<uint8_t> rgba(8 * 8 * 4, 255);

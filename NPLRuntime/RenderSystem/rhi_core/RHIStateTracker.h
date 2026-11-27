@@ -33,6 +33,9 @@ namespace ParaEngine
 		bool SetSamplerState(uint32_t stage, ESamplerStateType type, uint32_t value);
 		uint32_t GetSamplerState(uint32_t stage, ESamplerStateType type) const;
 
+		bool SetSamplerTexture(uint32_t stage, const IRHITexture* texture);
+		uint32_t GetEffectiveSamplerState(uint32_t stage, ESamplerStateType type) const;
+
 		void SetClipPlane(uint32_t index, const float plane[4]);
 		const float* GetClipPlane(uint32_t index) const;
 
@@ -88,6 +91,7 @@ namespace ParaEngine
 		bool m_dirtyRasterizer;
 		bool m_dirtyDepthStencil;
 		uint32_t m_dirtySamplersMask;
+		uint32_t m_pointMagnificationMask;
 
 		mutable uint64_t m_cachedRenderStatePsoHash = 0;
 		mutable bool m_dirtyPsoStateHash = true;

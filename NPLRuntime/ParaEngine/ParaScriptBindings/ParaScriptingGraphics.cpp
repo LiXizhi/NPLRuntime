@@ -117,17 +117,19 @@ std::string ParaUITexture::GetTextureRect()const
 {
 	std::string rect = "";
 	if (m_pObj) {
+		RECT bounds;
+		m_pObj->GetRect(&bounds);
 		char temp[30];
-		ParaEngine::StringHelper::fast_itoa(m_pObj->rcTexture.left, temp, 30);
+		ParaEngine::StringHelper::fast_itoa(bounds.left, temp, 30);
 		rect += temp;
 		rect += " ";
-		ParaEngine::StringHelper::fast_itoa(m_pObj->rcTexture.top, temp, 30);
+		ParaEngine::StringHelper::fast_itoa(bounds.top, temp, 30);
 		rect += temp;
 		rect += " ";
-		ParaEngine::StringHelper::fast_itoa(m_pObj->rcTexture.right - m_pObj->rcTexture.left, temp, 30);
+		ParaEngine::StringHelper::fast_itoa(bounds.right - bounds.left, temp, 30);
 		rect += temp;
 		rect += " ";
-		ParaEngine::StringHelper::fast_itoa(m_pObj->rcTexture.bottom - m_pObj->rcTexture.top, temp, 30);
+		ParaEngine::StringHelper::fast_itoa(bounds.bottom - bounds.top, temp, 30);
 		rect += temp;
 	}
 	return rect;

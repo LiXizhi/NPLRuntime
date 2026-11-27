@@ -41,43 +41,32 @@
 using namespace ParaEngine;
 
 
-static TextureEntity emptyTexture;
 //////////////////////////////////////////////////////////////////////////
 // GUITextureElement
 //////////////////////////////////////////////////////////////////////////
 
 void GUITextureElement::GetRect(RECT* pOut)
 {
-	if (rcTexture.right >= 0 && rcTexture.bottom >= 0)
+	*pOut = rcTexture;
+	if ((rcTexture.right >= 0 && rcTexture.bottom >= 0) || !pTexture)
+		return;
+
+	// -1 denotes the far edge, and more negative values are insets from it.
+	// Keep those anchors on the element so a resize or reload can move them.
+	const TextureEntity::TextureInfo* info = pTexture->GetTextureInfo();
+	if (!info)
+		return;
+	if (rcTexture.right < 0 && info->m_width + 1 + rcTexture.right >= 0)
 	{
-		*pOut = rcTexture;
+		pOut->right += info->m_width + 1;
+		if (rcTexture.left < 0)
+			pOut->left += info->m_width + 1;
 	}
-	else if (pTexture)
+	if (rcTexture.bottom < 0 && info->m_height + 1 + rcTexture.bottom >= 0)
 	{
-		const TextureEntity::TextureInfo* pTextureInfo = pTexture->GetTextureInfo();
-		if (pTextureInfo)
-		{
-			/** 2009.8.16, LiXizhi:
-			* for unavailable texture, we used texture width (-1, -1) and offset by this negative width whenever a smaller inner region is specified(making the rcTexture.right and bottom more negative).
-			* so in case, the texture width is suddenly available, we can offset (image_width+1, image_height+1) to obtain the inner region properly */
-			if (rcTexture.right < 0 && (pTextureInfo->m_width + rcTexture.right + 1) >= 0)
-			{
-				rcTexture.right = (pTextureInfo->m_width + rcTexture.right + 1);
-				if (rcTexture.left < 0)
-				{
-					rcTexture.left = (pTextureInfo->m_width + rcTexture.left + 1);
-				}
-			}
-			if (rcTexture.bottom < 0 && (pTextureInfo->m_height + rcTexture.bottom + 1) >= 0)
-			{
-				rcTexture.bottom = (pTextureInfo->m_height + rcTexture.bottom + 1);
-				if (rcTexture.top < 0)
-				{
-					rcTexture.top = (pTextureInfo->m_height + rcTexture.top + 1);
-				}
-			}
-		}
-		*pOut = rcTexture;
+		pOut->bottom += info->m_height + 1;
+		if (rcTexture.top < 0)
+			pOut->top += info->m_height + 1;
 	}
 }
 
@@ -90,33 +79,12 @@ void GUITextureElement::SetElement(TextureEntity* pTexture, const RECT* prcTextu
 
 	if (pTexture == NULL)
 	{
-		pTexture = &::emptyTexture;
-		rcTexture.left = 0;
-		rcTexture.top = 0;
-		rcTexture.right = 64;
-		rcTexture.bottom = 64;
-
+		SetRect(&rcTexture, 0, 0, 64, 64);
 	}
+	else if (prcTexture)
+		rcTexture = *prcTexture;
 	else
-	{
-		if (prcTexture)
-			rcTexture = *prcTexture;
-		else
-		{
-			rcTexture.left = 0; rcTexture.top = 0;
-			const TextureEntity::TextureInfo* pTexInfo = pTexture->GetTextureInfo();
-			if (pTexInfo)
-			{
-				rcTexture.right = pTexInfo->m_width;
-				rcTexture.bottom = pTexInfo->m_height;
-			}
-			else
-			{
-				rcTexture.right = 64;
-				rcTexture.bottom = 64;
-			}
-		}
-	}
+		SetRect(&rcTexture, 0, 0, -1, -1);
 }
 
 ParaEngine::GUITextureElement::GUITextureElement()

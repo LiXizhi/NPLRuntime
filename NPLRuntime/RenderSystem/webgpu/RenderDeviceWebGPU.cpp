@@ -3287,10 +3287,10 @@ namespace ParaEngine
 		const uint32_t addrU = m_state.GetSamplerState(stage, ESamplerStateType::ADDRESSU);
 		const uint32_t addrV = m_state.GetSamplerState(stage, ESamplerStateType::ADDRESSV);
 		const uint32_t addrW = m_state.GetSamplerState(stage, ESamplerStateType::ADDRESSW);
-		const uint32_t magF  = m_state.GetSamplerState(stage, ESamplerStateType::MAGFILTER);
-		const uint32_t minF  = m_state.GetSamplerState(stage, ESamplerStateType::MINFILTER);
+		const uint32_t magF  = m_state.GetEffectiveSamplerState(stage, ESamplerStateType::MAGFILTER);
+		const uint32_t minF  = m_state.GetEffectiveSamplerState(stage, ESamplerStateType::MINFILTER);
 		const uint32_t mipF  = m_state.GetSamplerState(stage, ESamplerStateType::MIPFILTER);
-		const uint32_t aniso = m_state.GetSamplerState(stage, ESamplerStateType::MAXANISOTROPY);
+		const uint32_t aniso = m_state.GetEffectiveSamplerState(stage, ESamplerStateType::MAXANISOTROPY);
 
 		return
 			(static_cast<uint64_t>(addrU & 0xF)) |
@@ -3315,10 +3315,10 @@ namespace ParaEngine
 		const uint32_t addrU = m_state.GetSamplerState(stage, ESamplerStateType::ADDRESSU);
 		const uint32_t addrV = m_state.GetSamplerState(stage, ESamplerStateType::ADDRESSV);
 		const uint32_t addrW = m_state.GetSamplerState(stage, ESamplerStateType::ADDRESSW);
-		const uint32_t magF  = m_state.GetSamplerState(stage, ESamplerStateType::MAGFILTER);
-		const uint32_t minF  = m_state.GetSamplerState(stage, ESamplerStateType::MINFILTER);
+		const uint32_t magF  = m_state.GetEffectiveSamplerState(stage, ESamplerStateType::MAGFILTER);
+		const uint32_t minF  = m_state.GetEffectiveSamplerState(stage, ESamplerStateType::MINFILTER);
 		const uint32_t mipF  = m_state.GetSamplerState(stage, ESamplerStateType::MIPFILTER);
-		const uint32_t aniso = m_state.GetSamplerState(stage, ESamplerStateType::MAXANISOTROPY);
+		const uint32_t aniso = m_state.GetEffectiveSamplerState(stage, ESamplerStateType::MAXANISOTROPY);
 
 		WGPUSamplerDescriptor sd = {};
 		sd.addressModeU = MapAddressMode(addrU);
@@ -4247,6 +4247,7 @@ namespace ParaEngine
 	{
 		if (stage >= RHIStateTracker::MAX_SAMPLER_STAGES)
 			return false;
+		m_state.SetSamplerTexture(stage, texture);
 		m_boundTextures[stage] = texture ? static_cast<WebGPUTexture*>(texture->GetNativeHandle()) : nullptr;
 		return true;
 	}

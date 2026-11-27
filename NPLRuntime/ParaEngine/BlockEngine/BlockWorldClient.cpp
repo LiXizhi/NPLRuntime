@@ -2114,6 +2114,9 @@ namespace ParaEngine
 
 	void BlockWorldClient::SetBlockRenderMethod(BlockRenderMethod method)
 	{
+		if (method == BLOCK_RENDER_FANCY_SHADER && !CanUseAdvancedShading())
+			method = BLOCK_RENDER_FAST_SHADER;
+
 		if (m_dwBlockRenderMethod != method)
 		{
 			if (method == BLOCK_RENDER_FANCY_SHADER)
@@ -2123,20 +2126,11 @@ namespace ParaEngine
 					OUTPUT_LOG("BLOCK_RENDER_FANCY_SHADER can not be set with AA\n");
 					return;
 				}
-				// check for device capabilities via ParaRHI
-				if (CanUseAdvancedShading())
+				if (CGlobals::GetSettings().GetGameEffectSet() >= 1024)
 				{
-					if (CGlobals::GetSettings().GetGameEffectSet() >= 1024)
-					{
-						CGlobals::GetSettings().LoadGameEffectSet(0);
-					}
-					CGlobals::GetScene()->EnableFullScreenGlow(false);
+					CGlobals::GetSettings().LoadGameEffectSet(0);
 				}
-				else
-				{
-					OUTPUT_LOG("warning: your device is too low to use deferred shading. \n");
-					return;
-				}
+				CGlobals::GetScene()->EnableFullScreenGlow(false);
 
 				CShadowMap* pShadowMap = CGlobals::GetEffectManager()->GetShadowMap();
 				if (pShadowMap != NULL)

@@ -8,6 +8,7 @@
 //-----------------------------------------------------------------------------
 #include "ParaEngine.h"
 #include "ParaScriptingNetwork.h"
+#include "WebSocket/ParaWebSocketClient.h"
 #include "NPLRuntime.h"
 #include <string>
 #include <map>
@@ -46,6 +47,56 @@ namespace ParaScripting
 	void ParaNetwork::SetNerveReceptorAddress( const char* pAddress )
 	{
 		APP_LOG("OBSOLETED API");
+	}
+
+	int ParaNetwork::ConnectWebSocket(const std::string& url)
+	{
+		return ParaWebSocketClientManager::GetSingleton().Connect(url);
+	}
+
+	int ParaNetwork::ConnectWebSocketEx(const std::string& url, const std::string& extraHeaders)
+	{
+		return ParaWebSocketClientManager::GetSingleton().Connect(url, extraHeaders);
+	}
+
+	bool ParaNetwork::SendWebSocketText(int handle, const std::string& text)
+	{
+		return ParaWebSocketClientManager::GetSingleton().SendText(handle, text);
+	}
+
+	bool ParaNetwork::SendWebSocketBinary(int handle, const std::string& binaryData)
+	{
+		return ParaWebSocketClientManager::GetSingleton().SendBinary(handle, binaryData);
+	}
+
+	int ParaNetwork::GetWebSocketState(int handle)
+	{
+		return ParaWebSocketClientManager::GetSingleton().GetState(handle);
+	}
+
+	bool ParaNetwork::PollWebSocketEvent(int handle, const object& outEvent)
+	{
+		if (type(outEvent) != LUA_TTABLE)
+			return false;
+
+		WebSocketEvent ev;
+		if (!ParaWebSocketClientManager::GetSingleton().PollEvent(handle, ev))
+			return false;
+
+		outEvent["type"] = ev.type;
+		outEvent["data"] = ev.data;
+		outEvent["code"] = ev.code;
+		return true;
+	}
+
+	void ParaNetwork::CloseWebSocket(int handle)
+	{
+		ParaWebSocketClientManager::GetSingleton().Close(handle);
+	}
+
+	void ParaNetwork::CloseWebSocketEx(int handle, int code, const std::string& reason)
+	{
+		ParaWebSocketClientManager::GetSingleton().Close(handle, code, reason);
 	}
 
 #ifdef _OBSOLETED

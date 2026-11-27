@@ -698,8 +698,10 @@ namespace ParaScripting
 		}
 		string filename;
 		RECT rect;
-		memset(&rect, 0, sizeof(RECT));
-		ParaEngine::StringHelper::GetImageAndRect(TextFilename, filename, &rect);
+		if (!ParaEngine::StringHelper::GetImageAndRect(TextFilename, filename, &rect))
+			SetRect(&rect, 0, 0, -1, -1);
+		else if (rect.right == 0) // legacy nine-slice spelling for the full extent
+			rect.right = rect.bottom = -1;
 		//if(m_pObj->m_objResource->getac)
 		if (!filename.empty())
 		{
@@ -728,16 +730,6 @@ namespace ParaScripting
 				else if (nObjType == Type_GUIScrollBar)
 					textureOffset = 4; // the "thumb" texture
 				TextureEntity* pTexture = CGlobals::GetAssetManager()->LoadTexture("", filename, TextureEntity::StaticTexture);
-				if (rect.right == 0)
-				{
-					const TextureEntity::TextureInfo* pTextureInfo = pTexture->GetTextureInfo();
-					if (pTextureInfo)
-					{
-						// please note, right and bottom may be (-1,-1) if texture is not available. the GUIElement will automatically recover to correct value when texture is available. 
-						rect.right = pTextureInfo->m_width;
-						rect.bottom = pTextureInfo->m_height;
-					}
-				}
 
 				RECT rcInner;
 				rcInner.left = rect.left + left;
@@ -1039,17 +1031,19 @@ namespace ParaScripting
 		element = m_pObj->m_objResource->GetTextureElement(index);
 		TextureEntity* pTextureEntity = element->GetTexture();
 		strkey = ParaEngine::StringHelper::StrReplace(pTextureEntity->GetKey().c_str(), '\\', '/');
+		RECT bounds;
+		element->GetRect(&bounds);
 		strkey += ";";
-		ParaEngine::StringHelper::fast_itoa(element->rcTexture.left, temp, 30);
+		ParaEngine::StringHelper::fast_itoa(bounds.left, temp, 30);
 		strkey += temp;
 		strkey += " ";
-		ParaEngine::StringHelper::fast_itoa(element->rcTexture.top, temp, 30);
+		ParaEngine::StringHelper::fast_itoa(bounds.top, temp, 30);
 		strkey += temp;
 		strkey += " ";
-		ParaEngine::StringHelper::fast_itoa(element->rcTexture.right - element->rcTexture.left, temp, 30);
+		ParaEngine::StringHelper::fast_itoa(bounds.right - bounds.left, temp, 30);
 		strkey += temp;
 		strkey += " ";
-		ParaEngine::StringHelper::fast_itoa(element->rcTexture.bottom - element->rcTexture.top, temp, 30);
+		ParaEngine::StringHelper::fast_itoa(bounds.bottom - bounds.top, temp, 30);
 		strkey += temp;
 		return strkey;
 	}

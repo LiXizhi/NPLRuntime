@@ -9,6 +9,7 @@
 #include "ParaEngine.h"
 #include "ParaScriptingAudio.h"
 #include "AudioEngine2.h"
+#include "AudioCaptureResampler.h"
 #include "util/MidiMsg.h"
 #include "MCIController.h"
 #include <boost/algorithm/string/predicate.hpp>
@@ -132,8 +133,13 @@ void ParaScripting::ParaAudio::SetDistanceModel(int eDistModel)
 	return CAudioEngine2::GetInstance()->SetDistanceModel((ParaAudioDistanceModelEnum)eDistModel);
 }
 
+namespace {
+	AudioCaptureResampler g_captureResampler;
+}
+
 bool ParaScripting::ParaAudio::StartRecording()
 {
+	g_captureResampler.Reset();
 	auto pAutoCapture = CAudioEngine2::GetInstance()->CreateGetAudioCapture();
 	if (pAutoCapture)
 	{
@@ -148,17 +154,127 @@ const std::string& ParaScripting::ParaAudio::GetCapturedAudio(int nMaxSize)
 	auto pAutoCapture = CAudioEngine2::GetInstance()->CreateGetAudioCapture();
 	if (pAutoCapture)
 	{
-		auto nSize = pAutoCapture->getCurrentCapturedAudioSize();
+		if (!pAutoCapture->isUpdateThreadRunning())
+		{
+			pAutoCapture->updateCaptureBuffer(true);
+		}
+		int nSize = static_cast<int>(pAutoCapture->getCurrentCapturedAudioSize());
 		if (nSize > 0)
 		{
-			nSize = (nMaxSize > 0 && nSize > nMaxSize) ? nMaxSize : nSize;
-			data.resize(nSize);
-			int nReadSize = pAutoCapture->getCapturedAudio(&(data[0]), nSize);
-			return data;
+			const int frameBytes = (std::max)(1, static_cast<int>(pAutoCapture->getSampleSize()));
+			if (nMaxSize > 0 && nSize > nMaxSize)
+			{
+				nSize = (nMaxSize / frameBytes) * frameBytes;
+				if (nSize <= 0)
+					nSize = frameBytes;
+			}
+			else
+			{
+				nSize = (nSize / frameBytes) * frameBytes;
+			}
+			if (nSize > 0)
+			{
+				data.resize(static_cast<size_t>(nSize));
+				const unsigned int nReadSize = pAutoCapture->getCapturedAudio(&(data[0]), static_cast<unsigned int>(nSize));
+				data.resize(static_cast<size_t>(nReadSize));
+				return data;
+			}
 		}
 	}
 	data.clear();
 	return data;
+}
+
+const std::string& ParaScripting::ParaAudio::GetCapturedAudioPCM16(int nTargetFrequency, int nMaxSamples)
+{
+	static std::string pcmOut;
+	static std::string rawScratch;
+	pcmOut.clear();
+
+	auto pAutoCapture = CAudioEngine2::GetInstance()->CreateGetAudioCapture();
+	if (!pAutoCapture)
+	{
+		return pcmOut;
+	}
+
+	if (!pAutoCapture->isUpdateThreadRunning())
+	{
+		pAutoCapture->updateCaptureBuffer(true);
+	}
+
+	const ParaAudioFormats format = pAutoCapture->getFormat();
+	const int srcRate = static_cast<int>(pAutoCapture->getFrequency());
+	const int dstRate = (nTargetFrequency > 0) ? nTargetFrequency : 16000;
+	const size_t frameBytes = AudioCaptureResampler::BytesPerFrame(format);
+
+	size_t availBytes = static_cast<size_t>(pAutoCapture->getCurrentCapturedAudioSize());
+	availBytes = (availBytes / frameBytes) * frameBytes;
+	if (nMaxSamples > 0)
+	{
+		const size_t maxBytes = static_cast<size_t>(nMaxSamples) * frameBytes;
+		if (availBytes > maxBytes)
+		{
+			availBytes = maxBytes;
+		}
+	}
+
+	if (availBytes == 0U || srcRate <= 0)
+	{
+		return pcmOut;
+	}
+
+	rawScratch.resize(availBytes);
+	const unsigned int nRead = pAutoCapture->getCapturedAudio(&rawScratch[0], static_cast<unsigned int>(availBytes));
+	if (nRead == 0U)
+	{
+		return pcmOut;
+	}
+
+	g_captureResampler.ProcessRawBytes(
+		rawScratch.data(),
+		static_cast<size_t>(nRead),
+		format,
+		srcRate,
+		dstRate,
+		pcmOut);
+	return pcmOut;
+}
+
+const std::string& ParaScripting::ParaAudio::GetCapturedAudioPCM16_1(int nTargetFrequency)
+{
+	return GetCapturedAudioPCM16(nTargetFrequency, -1);
+}
+
+int ParaScripting::ParaAudio::GetCaptureFrequency()
+{
+	auto pAutoCapture = CAudioEngine2::GetInstance()->CreateGetAudioCapture();
+	if (pAutoCapture)
+	{
+		const int freq = static_cast<int>(pAutoCapture->getFrequency());
+		if (freq > 0)
+			return freq;
+	}
+	return CAudioEngine2::GetInstance()->GetCaptureFrequency();
+}
+
+int ParaScripting::ParaAudio::GetCaptureChannels()
+{
+	auto pAutoCapture = CAudioEngine2::GetInstance()->CreateGetAudioCapture();
+	if (pAutoCapture)
+	{
+		return AudioCaptureResampler::ChannelsForFormat(pAutoCapture->getFormat());
+	}
+	return 1;
+}
+
+int ParaScripting::ParaAudio::GetCaptureBitsPerSample()
+{
+	auto pAutoCapture = CAudioEngine2::GetInstance()->CreateGetAudioCapture();
+	if (pAutoCapture)
+	{
+		return AudioCaptureResampler::BitsPerSampleForFormat(pAutoCapture->getFormat());
+	}
+	return 16;
 }
 
 void ParaScripting::ParaAudio::StopRecording()

@@ -2294,10 +2294,10 @@ namespace ParaEngine
 		uint32_t addrU = m_state.GetSamplerState(stage, ESamplerStateType::ADDRESSU);
 		uint32_t addrV = m_state.GetSamplerState(stage, ESamplerStateType::ADDRESSV);
 		uint32_t addrW = m_state.GetSamplerState(stage, ESamplerStateType::ADDRESSW);
-		uint32_t minF = forceNearestNoMip ? 1u : m_state.GetSamplerState(stage, ESamplerStateType::MINFILTER);
-		uint32_t magF = forceNearestNoMip ? 1u : m_state.GetSamplerState(stage, ESamplerStateType::MAGFILTER);
+		uint32_t minF = forceNearestNoMip ? 1u : m_state.GetEffectiveSamplerState(stage, ESamplerStateType::MINFILTER);
+		uint32_t magF = forceNearestNoMip ? 1u : m_state.GetEffectiveSamplerState(stage, ESamplerStateType::MAGFILTER);
 		uint32_t mipF = forceNearestNoMip ? 0u : m_state.GetSamplerState(stage, ESamplerStateType::MIPFILTER);
-		uint32_t maxAniso = forceNearestNoMip ? 1u : m_state.GetSamplerState(stage, ESamplerStateType::MAXANISOTROPY);
+		uint32_t maxAniso = forceNearestNoMip ? 1u : m_state.GetEffectiveSamplerState(stage, ESamplerStateType::MAXANISOTROPY);
 
 		uint64_t key = (static_cast<uint64_t>(addrU) & 0xFu)
 			| ((static_cast<uint64_t>(addrV) & 0xFu) << 4)
@@ -2983,6 +2983,7 @@ namespace ParaEngine
 	{
 		if (stage >= 16)
 			return false;
+		m_state.SetSamplerTexture(stage, texture);
 		m_boundTextures[stage] = texture ? static_cast<MetalTexture*>(texture->GetNativeHandle()) : nullptr;
 		return true;
 	}

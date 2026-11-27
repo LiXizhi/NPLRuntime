@@ -125,21 +125,8 @@ namespace ParaEngine
 		}
 
 		WGPUSurface surface = nullptr;
-#if defined(__EMSCRIPTEN__)
-#if defined(WGPUINTERNAL_HAVE_EMDAWNWEBGPU_HEADER)
-		WGPUEmscriptenSurfaceSourceCanvasHTMLSelector canvasDesc = {};
-		canvasDesc.chain.sType = WGPUSType_EmscriptenSurfaceSourceCanvasHTMLSelector;
-		canvasDesc.selector = ParaWgpuLabel("#canvas");
-#else
-		WGPUSurfaceDescriptorFromCanvasHTMLSelector canvasDesc = {};
-		canvasDesc.chain.sType = WGPUSType_SurfaceDescriptorFromCanvasHTMLSelector;
-		canvasDesc.selector = "#canvas";
-#endif
-		WGPUSurfaceDescriptor surfDesc = {};
-		surfDesc.nextInChain = &canvasDesc.chain;
-		surfDesc.label = ParaWgpuLabel("ParaEngineCanvasSurface");
-		surface = PARA_WGPU_CALL(wgpu, wgpuInstanceCreateSurface, instance, &surfDesc);
-#elif defined(_WIN32)
+#if !defined(__EMSCRIPTEN__)
+#if defined(_WIN32)
 		void* hwnd = reinterpret_cast<void*>(cfg.renderWindow->GetNativeHandle());
 		if (!hwnd)
 		{
@@ -165,6 +152,7 @@ namespace ParaEngine
 			wgpu.Unload();
 			return nullptr;
 		}
+#endif
 
 		WGPURequestAdapterOptions adapterOpts = {};
 		adapterOpts.compatibleSurface = surface;
@@ -188,7 +176,8 @@ namespace ParaEngine
 		if (!adapterReq.done || adapterReq.status != WGPURequestAdapterStatus_Success || !adapterReq.adapter)
 		{
 			OUTPUT_LOG("[ParaRHI-WebGPU] wgpuInstanceRequestAdapter failed: %s\n", adapterReq.message.c_str());
-			PARA_WGPU_CALL(wgpu, wgpuSurfaceRelease, surface);
+			if (surface)
+				PARA_WGPU_CALL(wgpu, wgpuSurfaceRelease, surface);
 			PARA_WGPU_CALL(wgpu, wgpuInstanceRelease, instance);
 			wgpu.Unload();
 			return nullptr;
@@ -252,7 +241,8 @@ namespace ParaEngine
 		{
 			OUTPUT_LOG("[ParaRHI-WebGPU] wgpuAdapterRequestDevice failed: %s\n", devReq.message.c_str());
 			PARA_WGPU_CALL(wgpu, wgpuAdapterRelease, adapter);
-			PARA_WGPU_CALL(wgpu, wgpuSurfaceRelease, surface);
+			if (surface)
+				PARA_WGPU_CALL(wgpu, wgpuSurfaceRelease, surface);
 			PARA_WGPU_CALL(wgpu, wgpuInstanceRelease, instance);
 			wgpu.Unload();
 			return nullptr;
@@ -272,11 +262,40 @@ namespace ParaEngine
 			OUTPUT_LOG("[ParaRHI-WebGPU] wgpuDeviceGetQueue returned null.\n");
 			PARA_WGPU_CALL(wgpu, wgpuDeviceRelease, device);
 			PARA_WGPU_CALL(wgpu, wgpuAdapterRelease, adapter);
-			PARA_WGPU_CALL(wgpu, wgpuSurfaceRelease, surface);
+			if (surface)
+				PARA_WGPU_CALL(wgpu, wgpuSurfaceRelease, surface);
 			PARA_WGPU_CALL(wgpu, wgpuInstanceRelease, instance);
 			wgpu.Unload();
 			return nullptr;
 		}
+
+#if defined(__EMSCRIPTEN__)
+		// A WebGPU context permanently binds the canvas. Keep it available to WebGL
+		// until the browser has supplied a usable adapter, device and queue.
+#if defined(WGPUINTERNAL_HAVE_EMDAWNWEBGPU_HEADER)
+		WGPUEmscriptenSurfaceSourceCanvasHTMLSelector canvasDesc = {};
+		canvasDesc.chain.sType = WGPUSType_EmscriptenSurfaceSourceCanvasHTMLSelector;
+		canvasDesc.selector = ParaWgpuLabel("#canvas");
+#else
+		WGPUSurfaceDescriptorFromCanvasHTMLSelector canvasDesc = {};
+		canvasDesc.chain.sType = WGPUSType_SurfaceDescriptorFromCanvasHTMLSelector;
+		canvasDesc.selector = "#canvas";
+#endif
+		WGPUSurfaceDescriptor surfDesc = {};
+		surfDesc.nextInChain = &canvasDesc.chain;
+		surfDesc.label = ParaWgpuLabel("ParaEngineCanvasSurface");
+		surface = PARA_WGPU_CALL(wgpu, wgpuInstanceCreateSurface, instance, &surfDesc);
+		if (!surface)
+		{
+			OUTPUT_LOG("[ParaRHI-WebGPU] Failed to create WGPUSurface.\n");
+			PARA_WGPU_CALL(wgpu, wgpuQueueRelease, queue);
+			PARA_WGPU_CALL(wgpu, wgpuDeviceRelease, device);
+			PARA_WGPU_CALL(wgpu, wgpuAdapterRelease, adapter);
+			PARA_WGPU_CALL(wgpu, wgpuInstanceRelease, instance);
+			wgpu.Unload();
+			return nullptr;
+		}
+#endif
 
 		WGPUTextureFormat surfFmt = WGPUTextureFormat_BGRA8Unorm;
 #if defined(WGPUINTERNAL_HAVE_EMDAWNWEBGPU_HEADER)

@@ -528,6 +528,24 @@ namespace ParaEngine
 			}
 		}
 
+		void AttachDepthStencilRenderbuffer(GLuint renderbuffer, uint32_t featureLevel)
+		{
+#ifdef __EMSCRIPTEN__
+			// WebGL 1 and 2 both expose the combined attachment point.
+			glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, renderbuffer);
+#else
+#ifdef GL_DEPTH_STENCIL_ATTACHMENT
+			if (featureLevel >= 300)
+			{
+				glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, renderbuffer);
+				return;
+			}
+#endif
+			glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, renderbuffer);
+			glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER, renderbuffer);
+#endif
+		}
+
 		class GLRenderTarget : public IRHIRenderTarget
 		{
 		public:
@@ -654,18 +672,13 @@ namespace ParaEngine
 						}
 						else
 						{
-							glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8_DEFAULT, static_cast<GLsizei>(width), static_cast<GLsizei>(height));
-#ifdef GL_DEPTH_STENCIL_ATTACHMENT
-							if (fl >= 300)
-							{
-								glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, m_depthRbo);
-							}
-							else
+							GLenum packedFormat = GL_DEPTH24_STENCIL8_DEFAULT;
+#ifdef __EMSCRIPTEN__
+							if (fl < 300)
+								packedFormat = GL_DEPTH_STENCIL;
 #endif
-							{
-								glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, m_depthRbo);
-								glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER, m_depthRbo);
-							}
+							glRenderbufferStorage(GL_RENDERBUFFER, packedFormat, static_cast<GLsizei>(width), static_cast<GLsizei>(height));
+							AttachDepthStencilRenderbuffer(m_depthRbo, fl);
 							m_depthHasStencil = true;
 						}
 						glBindRenderbuffer(GL_RENDERBUFFER, 0);
@@ -720,17 +733,7 @@ namespace ParaEngine
 					return;
 
 				glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, 0, 0);
-#ifdef GL_DEPTH_STENCIL_ATTACHMENT
-				if (fl >= 300)
-				{
-					glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, 0);
-				}
-				else
-#endif
-				{
-					glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, 0);
-					glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER, 0);
-				}
+				AttachDepthStencilRenderbuffer(0, fl);
 
 				if (effective->m_depthTexture != nullptr)
 				{
@@ -745,17 +748,7 @@ namespace ParaEngine
 					}
 					else
 					{
-#ifdef GL_DEPTH_STENCIL_ATTACHMENT
-						if (fl >= 300)
-						{
-							glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, effective->m_depthRbo);
-						}
-						else
-#endif
-						{
-							glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, effective->m_depthRbo);
-							glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER, effective->m_depthRbo);
-						}
+						AttachDepthStencilRenderbuffer(effective->m_depthRbo, fl);
 					}
 				}
 				m_attachedDepthOwnerId = effective->m_selfId;

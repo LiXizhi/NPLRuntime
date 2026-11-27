@@ -100,6 +100,7 @@ namespace ParaEngine
 		GLuint getName() const;
 		void setTexParameters(const TexParams& texParams);
 		void setAliasTexParameters();
+		void setPointMagnification(bool enabled);
 		void setAntiAliasTexParameters();
 
 		static const PixelFormatInfoMap& getPixelFormatInfoMap();

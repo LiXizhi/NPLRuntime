@@ -221,6 +221,8 @@ namespace ParaEngine
 					return TryReadParaFile(":IDR_SHADER_INC_COMMON_SHADER_DATA", outContent);
 				if (incLower == "light_scattering_constants.h")
 					return TryReadParaFile(":IDR_SHADER_INC_LIGHT_SCATTERING_CONSTANTS", outContent);
+				if (incLower == "mesh_local_lights.h")
+					return TryReadParaFile(":IDR_SHADER_INC_MESH_LOCAL_LIGHTS", outContent);
 				if (incLower == "patch_deform.h")
 					return TryReadParaFile(":IDR_SHADER_INC_PATCH_DEFORM", outContent);
 				if (incLower == "simple_mesh_normal_vegetation.h")
@@ -1642,7 +1644,7 @@ namespace ParaEngine
 					glActiveTexture(GL_TEXTURE0 + static_cast<GLenum>(index));
 					glBindTexture(GL_TEXTURE_2D, glTexId);
 					glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, (pTex->GetMipLevels() > 1) ? GL_LINEAR_MIPMAP_NEAREST : GL_LINEAR);
-					glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+					glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, pTex->pointMagnification ? GL_NEAREST : GL_LINEAR);
 					data->SetSamplerStateBlocky(false);
 				}
 			}

@@ -3449,10 +3449,10 @@ namespace ParaEngine
 		const uint32_t addrU = m_stateTracker.GetSamplerState(stage, ESamplerStateType::ADDRESSU);
 		const uint32_t addrV = m_stateTracker.GetSamplerState(stage, ESamplerStateType::ADDRESSV);
 		const uint32_t addrW = m_stateTracker.GetSamplerState(stage, ESamplerStateType::ADDRESSW);
-		const uint32_t minF  = m_stateTracker.GetSamplerState(stage, ESamplerStateType::MINFILTER);
-		const uint32_t magF  = m_stateTracker.GetSamplerState(stage, ESamplerStateType::MAGFILTER);
+		const uint32_t minF  = m_stateTracker.GetEffectiveSamplerState(stage, ESamplerStateType::MINFILTER);
+		const uint32_t magF  = m_stateTracker.GetEffectiveSamplerState(stage, ESamplerStateType::MAGFILTER);
 		const uint32_t mipF  = m_stateTracker.GetSamplerState(stage, ESamplerStateType::MIPFILTER);
-		const uint32_t aniso = m_stateTracker.GetSamplerState(stage, ESamplerStateType::MAXANISOTROPY);
+		const uint32_t aniso = m_stateTracker.GetEffectiveSamplerState(stage, ESamplerStateType::MAXANISOTROPY);
 		const uint32_t border = m_stateTracker.GetSamplerState(stage, ESamplerStateType::BORDERCOLOR);
 		const uint32_t biasBits = m_stateTracker.GetSamplerState(stage, ESamplerStateType::MIPMAPLODBIAS);
 
@@ -4230,6 +4230,7 @@ namespace ParaEngine
 	{
 		if (stage >= RHIStateTracker::MAX_SAMPLER_STAGES)
 			return false;
+		m_stateTracker.SetSamplerTexture(stage, texture);
 		auto* d3dTex = texture ? static_cast<D3D12Texture*>(texture->GetNativeHandle()) : nullptr;
 		if (m_boundTextures[stage] != d3dTex)
 		{

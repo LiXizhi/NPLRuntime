@@ -123,8 +123,11 @@ namespace cAudio
 		if(!Capturing)
 		{
 #ifdef __EMSCRIPTEN__
-			shutdownOpenALDevice();
-			initOpenALDevice();
+			if (!CaptureDevice || !Ready || checkError())
+			{
+				shutdownOpenALDevice();
+				initOpenALDevice();
+			}
 #endif
 			CaptureBuffer.clear();
 			if(CaptureDevice && Ready)
@@ -165,6 +168,15 @@ namespace cAudio
 			signalEvent(ON_ENDCAPTURE);
 		}
 		Capturing = false;
+#ifdef __EMSCRIPTEN__
+		// Release browser MediaStream tracks so the tab recording indicator turns off on release.
+		if (CaptureDevice)
+		{
+			alcCaptureCloseDevice(CaptureDevice);
+			CaptureDevice = NULL;
+			Ready = false;
+		}
+#endif
 	}
 
 	AudioCaptureBuffer* cAudioCapture::getCapturedAudioBuffer()

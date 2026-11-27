@@ -108,6 +108,11 @@ void CNPLScriptingState::LoadHAPI_Audio()
 						def("StartRecording", &ParaAudio::StartRecording),
 						def("StopRecording", &ParaAudio::StopRecording),
 						def("GetCapturedAudio", &ParaAudio::GetCapturedAudio),
+						def("GetCapturedAudioPCM16", &ParaAudio::GetCapturedAudioPCM16),
+						def("GetCapturedAudioPCM16", &ParaAudio::GetCapturedAudioPCM16_1),
+						def("GetCaptureFrequency", &ParaAudio::GetCaptureFrequency),
+						def("GetCaptureChannels", &ParaAudio::GetCaptureChannels),
+						def("GetCaptureBitsPerSample", &ParaAudio::GetCaptureBitsPerSample),
 						def("SaveRecording", &ParaAudio::SaveRecording),
 						def("SaveRecording", &ParaAudio::SaveRecording2)
 				]
@@ -126,7 +131,15 @@ void CNPLScriptingState::LoadHAPI_Network()
 					def("IsNetworkLayerRunning", &ParaNetwork::IsNetworkLayerRunning),
 						def("SetNerveCenterAddress", &ParaNetwork::SetNerveCenterAddress),
 						def("SetNerveReceptorAddress", &ParaNetwork::SetNerveReceptorAddress),
-						def("EnableNetwork", &ParaNetwork::EnableNetwork)
+						def("EnableNetwork", &ParaNetwork::EnableNetwork),
+						def("ConnectWebSocket", &ParaNetwork::ConnectWebSocket),
+						def("ConnectWebSocket", &ParaNetwork::ConnectWebSocketEx),
+						def("SendWebSocketText", &ParaNetwork::SendWebSocketText),
+						def("SendWebSocketBinary", &ParaNetwork::SendWebSocketBinary),
+						def("GetWebSocketState", &ParaNetwork::GetWebSocketState),
+						def("PollWebSocketEvent", &ParaNetwork::PollWebSocketEvent),
+						def("CloseWebSocket", &ParaNetwork::CloseWebSocket),
+						def("CloseWebSocket", &ParaNetwork::CloseWebSocketEx)
 				]
 
 		];

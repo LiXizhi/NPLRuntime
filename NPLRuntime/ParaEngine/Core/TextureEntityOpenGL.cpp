@@ -31,7 +31,7 @@ namespace
 	bool IsGuiAtlasCandidate(TextureEntity& texture)
 	{
 #ifdef EMSCRIPTEN_SINGLE_THREAD
-		if (!texture.m_usedByGui || texture.GetSurfaceType() != TextureEntity::StaticTexture)
+		if (!texture.m_usedByGui || texture.m_pointMagnification || texture.GetSurfaceType() != TextureEntity::StaticTexture)
 			return false;
 		static const bool enabled = strcmp(CGlobals::GetApp()->GetAppCommandLineByParam("guiatlas", "true"), "false") != 0;
 		return enabled;
@@ -602,12 +602,16 @@ DeviceTexturePtr_type ParaEngine::TextureEntityOpenGL::GetTexture()
 					}
 				}
 				auto tex = m_pTextureSequence[pInfo->m_nCurrentFrameIndex];
+				if (tex && tex->pointMagnification != m_pointMagnification)
+					tex->setPointMagnification(m_pointMagnification);
 				return tex;
 			}
 			break;
 		}
 		default:
 		{
+			if (m_texture && m_texture->pointMagnification != m_pointMagnification)
+				m_texture->setPointMagnification(m_pointMagnification);
 			return m_texture;
 			break;
 		}
@@ -800,6 +804,9 @@ TextureEntity* TextureEntityOpenGL::LoadUint8Buffer(const uint8 * pTexels, int w
 		m_pTextureInfo->m_height = -1;
 	}
 
+#ifdef PARA_ENABLE_OPENGL
+	const bool creatingTexture = !m_texture;
+#endif
 	int dataLen = width * height * bytesPerPixel;
 	if (bytesPerPixel == 4)
 	{
@@ -884,6 +891,15 @@ TextureEntity* TextureEntityOpenGL::LoadUint8Buffer(const uint8 * pTexels, int w
 			nSupportA8PixelFormat = 1;
 	}
 	
+#ifdef PARA_ENABLE_OPENGL
+	// Model UVs can extend outside the first tile. Match the addressing of a
+	// disk-backed power-of-two texture when its pixels are edited in memory.
+	if (creatingTexture && m_texture && width == GLTexture2D::ccNextPOT(width) && height == GLTexture2D::ccNextPOT(height))
+	{
+		const GLTexture2D::TexParams sampling = { GL_LINEAR, GL_LINEAR, GL_REPEAT, GL_REPEAT };
+		m_texture->setTexParameters(sampling);
+	}
+#endif
 	m_bIsInitialized = true;
 	m_bIsValid = true;
 	SetState(AssetEntity::ASSET_STATE_NORMAL);
@@ -943,52 +959,32 @@ bool ParaEngine::TextureEntityOpenGL::LoadImageOfFormat(const std::string& sText
 	width = (int)img.getWidth();
 	height = (int)img.getHeight();
 	
-	unsigned char* pPixels = img.getData();
-
-	// force using 32 bit texture
-	int nBytesPerPixel = 4;
 	if (pBytesPerPixel)
-		*pBytesPerPixel = nBytesPerPixel;
-	PixelFormat		pixelFormat = PixelFormat::A8R8G8B8;
-	PixelFormat     renderFormat = img.getRenderFormat();
-	
-	unsigned char* outTempData = nullptr;
-	size_t outTempDataLen = 0;
+		*pBytesPerPixel = 4;
 
-	auto format = ParaImage::convertDataToFormat(img.getData(), img.getDataLen(), renderFormat, pixelFormat, &outTempData, &outTempDataLen);
-	if(format == pixelFormat)
+	unsigned char* rgba = nullptr;
+	size_t length = 0;
+	const auto format = ParaImage::convertDataToFormat(img.getData(), img.getDataLen(),
+		img.getRenderFormat(), PixelFormat::A8R8G8B8, &rgba, &length);
+	const size_t pixelBytes = static_cast<size_t>(width) * height * 4;
+	if (format != PixelFormat::A8R8G8B8 || !rgba || length < pixelBytes)
 	{
-		if (outTempData == img.getData())
-		{
-			outTempData = new unsigned char[img.getDataLen()];
-			if (nFormat == -2)
-			{
-				// do nothing to the data
-				memcpy(outTempData, img.getData(), img.getDataLen());
-			}
-			else // if (nFormat == -1)
-			{
-				// convert from 0xAABBGGRR to 0xAARRGGBB
-				int nSize = img.getDataLen() / 4;
-				DWORD* pData = (DWORD*)img.getData();
-				DWORD* pOutData = (DWORD*)outTempData;
-				for (int i = 0; i < nSize; ++i)
-				{
-					DWORD color = *pData;
-					*pOutData = (color & 0xff00ff00) | ((color & 0x00ff0000) >> 16) | ((color & 0x000000ff) << 16);
-					pData++;
-					pOutData++;
-				}
-			}
-			
-		}
-
-		*ppBuffer = outTempData;
-
-		// caller needs to release the buffer
-		return true;
+		if (rgba != img.getData()) free(rgba);
+		return false;
 	}
-	return false;
+
+	// Convert native RGBA to the BGRA layout of ParaIO.open("image"), also
+	// when RGB or grayscale input needed an intermediate conversion buffer.
+	auto* result = new unsigned char[pixelBytes];
+	memcpy(result, rgba, pixelBytes);
+	if (rgba != img.getData()) free(rgba);
+	if (nFormat != -2)
+	{
+		for (size_t i = 0; i < pixelBytes; i += 4)
+			std::swap(result[i], result[i + 2]);
+	}
+	*ppBuffer = result;
+	return true;
 }
 
 bool ParaEngine::TextureEntityOpenGL::SaveToFile(const char* filename, PixelFormat dwFormat, int width, int height, UINT MipLevels /*= 1*/, DWORD Filter /*= D3DX_DEFAULT*/, Color ColorKey /*= 0*/)

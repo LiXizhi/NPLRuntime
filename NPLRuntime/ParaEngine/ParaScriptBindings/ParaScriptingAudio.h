@@ -339,6 +339,19 @@ namespace ParaScripting
 		*/
 		static const std::string& GetCapturedAudio(int nMaxSize);
 
+		/**
+		 * Drains captured microphone audio converted/resampled into mono signed 16-bit
+		 * little-endian PCM (PCM16LE) at nTargetFrequency (defaults to 16000 Hz when <= 0).
+		 * @param nTargetFrequency: desired output sample rate in Hz (e.g. 16000)
+		 * @param nMaxSamples: max source frames to read, or -1 to read all available
+		 */
+		static const std::string& GetCapturedAudioPCM16(int nTargetFrequency, int nMaxSamples);
+		static const std::string& GetCapturedAudioPCM16_1(int nTargetFrequency);
+
+		static int GetCaptureFrequency();
+		static int GetCaptureChannels();
+		static int GetCaptureBitsPerSample();
+
 		static void StopRecording();
 
 		static bool SaveRecording(const char* szWavePath);

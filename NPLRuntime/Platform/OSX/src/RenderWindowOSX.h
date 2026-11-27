@@ -40,6 +40,7 @@ namespace ParaEngine
         void OnMouseMove(NSEvent* event);
         void OnKey(EKeyState state, NSEvent* event);
         void OnFlagsChanged(NSEvent* event);
+        void SyncShortcutModifiers(NSEventModifierFlags flags);
         void OnScrollWheel(NSEvent* event);
         void OnMagnify(NSEvent* event);
         void CancelScrollGesture();
@@ -75,5 +76,6 @@ namespace ParaEngine
         uint32_t m_lastPhysicalHeight = 0;
         int m_startupLuaSyncFrames = 8;
         EVirtualKey m_curPressKey = ParaEngine::EVirtualKey::KEY_UNKNOWN;
+        NSEventModifierFlags m_shortcutModifiers = 0;
     };
 }

@@ -375,6 +375,20 @@ if (NPLRUNTIME_BUILD_TESTS AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tests/rhi_tes
 		add_executable(CapePhysicsTest tests/CapePhysicsTest.cpp)
 		target_include_directories(CapePhysicsTest PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/ParaEngine)
 		add_test(NAME cape_physics_unit COMMAND CapePhysicsTest)
+		add_executable(WebSocketAndAudioResampleTest
+			tests/WebSocketAndAudioResampleTest.cpp
+			ParaEngine/WebSocket/ParaWebSocketClient.cpp)
+		target_include_directories(WebSocketAndAudioResampleTest PRIVATE
+			${CMAKE_CURRENT_SOURCE_DIR}/ParaEngine
+			${CMAKE_CURRENT_SOURCE_DIR}/ParaEngine/Framework/Interface
+			${CMAKE_CURRENT_SOURCE_DIR}/ParaEngine/Core)
+		target_link_libraries(WebSocketAndAudioResampleTest PRIVATE libcurl)
+		if (WIN32)
+			target_link_libraries(WebSocketAndAudioResampleTest PRIVATE Ws2_32 Crypt32 Secur32 Wldap32 Normaliz)
+		elseif (UNIX AND NOT APPLE)
+			target_link_libraries(WebSocketAndAudioResampleTest PRIVATE pthread)
+		endif()
+		add_test(NAME websocket_and_audio_resample_unit COMMAND WebSocketAndAudioResampleTest)
 	endif()
 	if (APPLE AND NOT IOS AND NOT NPLRUNTIME_SERVER)
 		# This file utility uses Foundation only, so its real implementation can

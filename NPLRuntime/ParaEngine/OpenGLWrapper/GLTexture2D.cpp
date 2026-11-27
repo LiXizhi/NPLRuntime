@@ -668,7 +668,7 @@ bool GLTexture2D::initWithMipmaps(const MipmapInfo* mipmaps, int mipmapsNum, Pix
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST);
 	}
 
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, _antialiasEnabled ? GL_LINEAR : GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, _antialiasEnabled && !pointMagnification ? GL_LINEAR : GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 #if defined(__APPLE__) && !defined(PARAENGINE_MOBILE)
@@ -868,6 +868,23 @@ void GLTexture2D::setTexParameters(const TexParams& texParams)
 #endif
 #else
 	(void)texParams;
+#endif
+}
+
+void GLTexture2D::setPointMagnification(bool enabled)
+{
+	if (pointMagnification == enabled) return;
+	pointMagnification = enabled;
+#ifdef EMSCRIPTEN_SINGLE_THREAD
+	if (enabled) _guiPage.reset(); // Atlas pages share one sampler across unrelated sprites.
+#endif
+#ifdef PARA_ENABLE_OPENGL
+	if (_name && CGlobals::GetRenderDevice()->GetBackendType() == ERHIBackend::OpenGL)
+	{
+		const GLuint previous = GL::bindTexture2DN(0, _name);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, enabled || !_antialiasEnabled ? GL_NEAREST : GL_LINEAR);
+		GL::bindTexture2DN(0, previous);
+	}
 #endif
 }
 

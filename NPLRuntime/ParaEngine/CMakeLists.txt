@@ -28,8 +28,10 @@ set(NPLRUNTIME_INCLUDES)
 # Libraries 
 set(NPLRUNTIME_LIBS)
 
-# Pick up new block renderer sources in existing incremental build trees.
-set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/BlockEngine")
+# Pick up new block renderer and WebSocket sources in existing incremental build trees.
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS
+    "${CMAKE_CURRENT_SOURCE_DIR}/BlockEngine"
+    "${CMAKE_CURRENT_SOURCE_DIR}/WebSocket")
 
 ucm_add_dirs(
     Framework

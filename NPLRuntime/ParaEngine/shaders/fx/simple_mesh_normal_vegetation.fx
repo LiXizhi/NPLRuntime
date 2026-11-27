@@ -14,7 +14,6 @@
 #define ANIMATE_SHADOW
 
 #define ALPHA_TESTING_REF  0.5
-#define MAX_LIGHTS_NUM	4
 ////////////////////////////////////////////////////////////////////////////////
 //  Per frame parameters
 float4x4 mWorldViewProj: worldviewprojection;
@@ -27,10 +26,7 @@ float3 sun_vec: sunvector;
 float3	colorDiffuse:materialdiffuse;
 float3	colorAmbient:ambientlight;
 
-int		g_locallightnum:locallightnum;
-float3	g_lightcolor[MAX_LIGHTS_NUM]	:	LightColors;
-float3	g_lightparam[MAX_LIGHTS_NUM]	:	LightParams;
-float4	g_lightpos[MAX_LIGHTS_NUM]		:	LightPositions;
+#include "mesh_local_lights.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 // per technique parameters
@@ -121,19 +117,7 @@ Interpolants vertexShader(	float4	Pos			: POSITION,
 		o.colorDiffuse = difCol;
 	}
 
-	// compute local lights
-	for( int LightIndex = 0; LightIndex < g_locallightnum; ++LightIndex )
-	{
-		float3 toLight = g_lightpos[LightIndex].xyz - worldPos;
-		float lightDist = length( toLight );
-		// this dynamic braching helps for bigge br models
-		if(g_lightpos[LightIndex].w > lightDist)
-		{
-			float fAtten = 1 / dot(g_lightparam[LightIndex], float3(1,lightDist,lightDist*lightDist));
-			float3 lightDir = normalize( toLight );
-			o.colorDiffuse += max(0,dot( lightDir, worldNormal ) * g_lightcolor[LightIndex].xyz * fAtten);
-		}
-	}
+	o.colorDiffuse = ApplyLocalLights(o.colorDiffuse, worldPos, worldNormal);
 	
 	o.tex.xy = Tex;
 	//save the fog distance

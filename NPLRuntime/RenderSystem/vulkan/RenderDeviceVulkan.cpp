@@ -2907,10 +2907,10 @@ namespace ParaEngine
 		const uint32_t addrU = m_stateTracker.GetSamplerState(stage, ESamplerStateType::ADDRESSU);
 		const uint32_t addrV = m_stateTracker.GetSamplerState(stage, ESamplerStateType::ADDRESSV);
 		const uint32_t addrW = m_stateTracker.GetSamplerState(stage, ESamplerStateType::ADDRESSW);
-		const uint32_t minF  = m_stateTracker.GetSamplerState(stage, ESamplerStateType::MINFILTER);
-		const uint32_t magF  = m_stateTracker.GetSamplerState(stage, ESamplerStateType::MAGFILTER);
+		const uint32_t minF  = m_stateTracker.GetEffectiveSamplerState(stage, ESamplerStateType::MINFILTER);
+		const uint32_t magF  = m_stateTracker.GetEffectiveSamplerState(stage, ESamplerStateType::MAGFILTER);
 		const uint32_t mipF  = m_stateTracker.GetSamplerState(stage, ESamplerStateType::MIPFILTER);
-		const uint32_t aniso = m_stateTracker.GetSamplerState(stage, ESamplerStateType::MAXANISOTROPY);
+		const uint32_t aniso = m_stateTracker.GetEffectiveSamplerState(stage, ESamplerStateType::MAXANISOTROPY);
 		const uint32_t border = m_stateTracker.GetSamplerState(stage, ESamplerStateType::BORDERCOLOR);
 		const uint32_t biasBits = m_stateTracker.GetSamplerState(stage, ESamplerStateType::MIPMAPLODBIAS);
 
@@ -4646,6 +4646,8 @@ namespace ParaEngine
 	{
 		if (stage >= RHIStateTracker::MAX_SAMPLER_STAGES)
 			return false;
+		if (m_stateTracker.SetSamplerTexture(stage, texture))
+			m_descriptorsDirty = true;
 		auto* vkTex = texture ? static_cast<VulkanTexture*>(texture->GetNativeHandle()) : nullptr;
 		if (m_boundTextures[stage] != vkTex)
 		{

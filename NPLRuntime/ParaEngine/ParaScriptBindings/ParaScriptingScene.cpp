@@ -48,6 +48,8 @@
 #include "PortalNode.h"
 #include "SelectionManager.h"
 #include "ParaXAnimInstance.h"
+#include "CustomCharModelInstance.h"
+#include "Framework/Interface/Render/IBlockSkyRayTracer.h"
 #include "ParaXModel/GltfModel.h"
 #include "PhysicsWorld.h"
 #include <time.h>
@@ -3090,6 +3092,69 @@ void ParaMiniSceneGraph::EnableActiveRendering( bool bEnable )
 bool ParaMiniSceneGraph::IsActiveRenderingEnabled()
 {
 	return (IsValid()?m_pSceneGraph->IsActiveRenderingEnabled():false);
+}
+
+int ParaMiniSceneGraph::GetSkinProjection(const char* name, int textureSlot, const object& output)
+{
+	if (!IsValid() || !IsCameraEnabled() || type(output) != LUA_TTABLE || textureSlot < 0)
+		return 0;
+	auto* actor = dynamic_cast<CBipedObject*>(m_pSceneGraph->GetObject(name));
+	auto* anim = actor ? actor->GetParaXAnimInstance() : nullptr;
+	auto* texture = actor ? actor->GetReplaceableTexture(textureSlot) : nullptr;
+	if (!anim || !anim->GetCharModel() || !texture || !texture->GetTexture())
+		return 0;
+
+	// Use the same posed vertices, transforms and LOD selection as the character
+	// renderer. Only snapshot on pen-down, independent of pointer sampling rate.
+	auto* camera = m_pSceneGraph->GetCamera();
+	auto* state = m_pSceneGraph->GetSceneState();
+	auto* previousObject = state->GetCurrentSceneObject();
+	const float previousDistance = state->GetCameraToCurObjectDistance();
+	state->SetCurrentSceneObject(actor);
+	state->SetCameraToCurObjectDistance((actor->GetPosition() - camera->GetEyePosition()).length());
+	PlayerReflectionMesh mesh;
+	if (anim->UpdateModel(state))
+	{
+		Matrix4 world;
+		actor->GetLocalWorldTransform(world);
+		const Vector3 offset = actor->GetPosition() - m_pSceneGraph->GetRenderOrigin();
+		world._41 += offset.x;
+		world._42 += offset.y;
+		world._43 += offset.z;
+		CGlobals::GetWorldMatrixStack().push(world);
+		anim->GetCharModel()->Draw(state, nullptr, &mesh);
+		CGlobals::GetWorldMatrixStack().pop();
+	}
+	state->SetCurrentSceneObject(previousObject);
+	state->SetCameraToCurObjectDistance(previousDistance);
+
+	const auto skin = std::find(mesh.textures.begin(), mesh.textures.end(), texture->GetTexture());
+	if (skin == mesh.textures.end()) return 0;
+	const auto material = static_cast<uint32_t>(skin - mesh.textures.begin());
+	const Matrix4 viewProjection = (*camera->GetViewMatrix()) * (*camera->GetProjMatrix());
+	int index = 0;
+	for (size_t i = 0; i < mesh.materials.size(); ++i)
+	{
+		if ((mesh.materials[i] & 0x7fffffffu) != material) continue;
+		Vector4 clip[3];
+		for (int j = 0; j < 3; ++j)
+		{
+			const auto& v = mesh.vertices[mesh.indices[i*3+j]];
+			clip[j] = Vector4(v.x, v.y, v.z, 1.f) * viewProjection;
+		}
+		if (clip[0].w <= 0.f || clip[1].w <= 0.f || clip[2].w <= 0.f) continue;
+		for (int j = 0; j < 3; ++j)
+		{
+			const auto& v = mesh.vertices[mesh.indices[i*3+j]];
+			const float q = 1.f / clip[j].w;
+			output[++index] = (1.f + clip[j].x*q)*0.5f;
+			output[++index] = (1.f - clip[j].y*q)*0.5f;
+			output[++index] = q;
+			output[++index] = v.u*q;
+			output[++index] = v.v*q;
+		}
+	}
+	return index / 15;
 }
 
 ParaScripting::ParaObject ParaMiniSceneGraph::MousePick( float x, float y, float fMaxDistance, const char* sFilterFunc )

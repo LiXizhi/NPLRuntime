@@ -10,6 +10,9 @@
 #include <boost/gil/extension/numeric/sampler.hpp>
 #include <boost/gil/extension/numeric/resample.hpp>
 
+#include <boost/gil/extension/io/bmp.hpp>
+#include <boost/iostreams/device/array.hpp>
+#include <boost/iostreams/stream.hpp>
 #include <boost/gil/image.hpp>
 #include <boost/gil/image_view.hpp>
 #include <boost/gil/image_view_factory.hpp>
@@ -338,6 +341,28 @@ namespace ParaEngine
 			case Format::PNG:
 				ret = initWithPngData(unpackedData, unpackedLen);
 				break;
+			case Format::BMP:
+				try
+				{
+					boost::iostreams::stream<boost::iostreams::array_source> stream(
+						reinterpret_cast<const char*>(unpackedData), unpackedLen);
+					auto info = boost::gil::read_image_info(stream, boost::gil::bmp_tag());
+					const auto w = info._info._width;
+					const auto h = info._info._height;
+					if (w <= 0 || h <= 0 || w > MaxTextureSize || h > MaxTextureSize) break;
+					stream.clear();
+					stream.seekg(0);
+					boost::gil::rgba8_image_t bitmap;
+					boost::gil::read_and_convert_image(stream, bitmap, boost::gil::bmp_tag());
+					auto pixels = boost::gil::const_view(bitmap);
+					ret = initWithRawData(reinterpret_cast<const unsigned char*>(&pixels(0,0)),
+						static_cast<size_t>(w) * h * 4, w, h, 32);
+				}
+				catch (const std::exception&)
+				{
+					ret = false;
+				}
+				break;
 			case Format::JPG:
 				ret = initWithJpgData(unpackedData, unpackedLen);
 				break;
@@ -431,6 +456,8 @@ namespace ParaEngine
 
 	ParaImage::Format ParaImage::detectFormat(const unsigned char * data, size_t dataLen)
 	{
+		if (dataLen >= 14 && data[0] == 'B' && data[1] == 'M')
+			return Format::BMP;
 		if (isPng(data, dataLen))
 		{
 			return Format::PNG;
@@ -988,6 +1015,34 @@ namespace ParaEngine
 		else if (fileExtension == ".jpg" || fileExtension == ".jpeg")
 		{
 			return saveImageToJPG(filename);
+		}
+		else if (fileExtension == ".dds")
+		{
+			const uint32_t width = static_cast<uint32_t>(_width);
+			const uint32_t height = static_cast<uint32_t>(_height);
+			std::vector<uint8_t> blocks;
+			if (!RHISoftwareS3TC::EncodeFromPixels(PixelFormat::DXT5, _renderFormat, _data,
+				_dataLen, width, height, blocks, true))
+				return false;
+
+			S3TCTexHeader header = {};
+			memcpy(header.fileCode, "DDS ", 4);
+			auto& desc = header.ddsd;
+			desc.size = sizeof(desc);
+			desc.flags = 0x81007; // CAPS | HEIGHT | WIDTH | PIXELFORMAT | LINEARSIZE
+			desc.width = width;
+			desc.height = height;
+			desc.DUMMYUNIONNAMEN1.linearSize = static_cast<uint32_t>(blocks.size());
+			auto& pixel = desc.DUMMYUNIONNAMEN4.ddpfPixelFormat;
+			pixel.size = sizeof(pixel);
+			pixel.flags = 4; // DDPF_FOURCC
+			pixel.fourCC = makeFourCC('D', 'X', 'T', '5');
+			desc.ddsCaps.caps = 0x1000; // DDSCAPS_TEXTURE
+
+			CParaFile file;
+			return file.CreateNewFile(filename.c_str()) &&
+				file.write(&header, sizeof(header)) == sizeof(header) &&
+				file.write(blocks.data(), static_cast<int>(blocks.size())) == static_cast<int>(blocks.size());
 		}
 		else if (fileExtension == ".bmp")
 		{

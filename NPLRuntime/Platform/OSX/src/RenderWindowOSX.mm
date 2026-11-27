@@ -477,6 +477,7 @@ NSPoint RenderWindowOSX::GetMousePosition(NSEvent* event) const
 
 void RenderWindowOSX::OnMouseMove(NSEvent* event)
 {
+    SyncShortcutModifiers(event.modifierFlags);
     if (m_trackpadDrag != TrackpadDrag::Active)
     {
         NSPoint point = GetMousePosition(event);
@@ -486,6 +487,7 @@ void RenderWindowOSX::OnMouseMove(NSEvent* event)
 
 void RenderWindowOSX::OnMouseEvent(EMouseButton button, EKeyState state, NSEvent* event)
 {
+    SyncShortcutModifiers(event.modifierFlags);
     NSPoint point = GetMousePosition(event);
     OnMouseButton(button, state, point.x, point.y);
 }
@@ -495,6 +497,7 @@ void RenderWindowOSX::OnKey(EKeyState state, NSEvent* event)
     uint32_t keycode = (uint32_t)[event keyCode];
     EVirtualKey vk = toVirtualKey(keycode);
     uint32_t flags = (uint32_t)[event modifierFlags];
+    SyncShortcutModifiers(flags);
 
     bool pressed = state == EKeyState::PRESS ? true : false;
 
@@ -510,6 +513,25 @@ void RenderWindowOSX::OnKey(EKeyState state, NSEvent* event)
     }
 
     OnKey(vk,state);
+}
+
+void RenderWindowOSX::SyncShortcutModifiers(NSEventModifierFlags flags)
+{
+    // Either native modifier holds the same engine Ctrl key. Mouse events carry
+    // this snapshot even if AppKit delivered the flagsChanged release elsewhere.
+    const auto held = flags & (NSEventModifierFlagControl | NSEventModifierFlagCommand);
+    if (held == m_shortcutModifiers || !CGlobals::GetApp() || CGlobals::GetApp()->GetAppState() != PEAppState_Ready)
+        return;
+
+    if ((m_shortcutModifiers & NSEventModifierFlagCommand) && !(held & NSEventModifierFlagCommand)
+        && m_curPressKey != EVirtualKey::KEY_UNKNOWN)
+    {
+        OnKey(m_curPressKey, EKeyState::RELEASE);
+        m_curPressKey = EVirtualKey::KEY_UNKNOWN;
+    }
+    if ((m_shortcutModifiers != 0) != (held != 0))
+        OnKey(EVirtualKey::KEY_LCONTROL, held ? EKeyState::PRESS : EKeyState::RELEASE);
+    m_shortcutModifiers = held;
 }
 
 void RenderWindowOSX::OnFlagsChanged(NSEvent* event)
@@ -559,31 +581,7 @@ void RenderWindowOSX::OnFlagsChanged(NSEvent* event)
         OnKey(EVirtualKey::KEY_LMENU, EKeyState::RELEASE);
     }
 
-    /////////
-    if((flags & NSEventModifierFlagControl) && !(last_flags & NSEventModifierFlagControl))
-    {
-        OnKey(EVirtualKey::KEY_LCONTROL,EKeyState::PRESS);
-    }
-
-    if(!(flags & NSEventModifierFlagControl) && (last_flags & NSEventModifierFlagControl))
-    {
-        OnKey(EVirtualKey::KEY_LCONTROL, EKeyState::RELEASE);
-    }
-
-    ////////////
-    if((flags & NSEventModifierFlagCommand) && !(last_flags & NSEventModifierFlagCommand))
-    {
-        OnKey(EVirtualKey::KEY_LCONTROL, EKeyState::PRESS);
-    }
-    
-    if(!(flags & NSEventModifierFlagCommand) && (last_flags & NSEventModifierFlagCommand))
-    {
-        if (m_curPressKey != EVirtualKey::KEY_UNKNOWN) {
-            CGUIRoot::GetInstance()->SendKeyUpEvent(m_curPressKey);
-            m_curPressKey = EVirtualKey::KEY_UNKNOWN;
-        }
-        OnKey(EVirtualKey::KEY_LCONTROL, EKeyState::RELEASE);
-    }
+    SyncShortcutModifiers(flags);
     
     ///////////////
     if((flags & NSEventModifierFlagFunction) && !(last_flags & NSEventModifierFlagFunction))
@@ -611,6 +609,7 @@ void RenderWindowOSX::OnFlagsChanged(NSEvent* event)
 
 void RenderWindowOSX::OnScrollWheel(NSEvent* event)
 {
+    SyncShortcutModifiers(event.modifierFlags);
     NSEventPhase phase = [event phase];
     NSEventPhase momentumPhase = [event momentumPhase];
     
