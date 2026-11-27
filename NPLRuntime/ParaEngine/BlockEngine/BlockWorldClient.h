@@ -2,6 +2,7 @@
 #include "BlockWorld.h"
 #include "Framework/Interface/Render/IBlockSkyRayTracer.h"
 #include <chrono>
+#include <deque>
 #include <unordered_map>
 #include "effect_file.h"
 #include "3dengine/SoftwareOcclusionBuffer.h"
@@ -216,6 +217,15 @@ namespace ParaEngine
 		bool CanUseAdvancedShading();
 		bool CanTraceBlockSky();
 		Vector4 UpdateWaterView();
+		Vector4 UpdateRainHeightMap();
+		bool WaterRipplesEnabled() const { return m_waterRipplesEnabled; }
+		void SetWaterRipplesEnabled(bool enabled);
+		bool RecordRainImpact(float x, float y, float z);
+		Vector4 UpdateWaterRipples();
+		ATTRIBUTE_METHOD1(BlockWorldClient, SetWaterRipplesEnabled_s, bool) { cls->SetWaterRipplesEnabled(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(BlockWorldClient, GetWaterRipplesEnabled_s, bool*) { *p1 = cls->m_waterRipplesEnabled; return S_OK; }
+		ATTRIBUTE_METHOD1(BlockWorldClient, UpdateWaterRipples_s, Vector4*) { *p1 = cls->UpdateWaterRipples(); return S_OK; }
+		ATTRIBUTE_METHOD1(BlockWorldClient, UpdateRainHeightMap_s, Vector4*) { *p1 = cls->UpdateRainHeightMap(); return S_OK; }
 		bool HasDeferredUnderwaterFog() const { return m_deferredUnderwaterFog && m_dwBlockRenderMethod == BLOCK_RENDER_FANCY_SHADER; }
 		ATTRIBUTE_METHOD1(BlockWorldClient, SetWaterDepthEnabled_s, bool) { cls->m_waterDepthEnabled = p1; return S_OK; }
 		ATTRIBUTE_METHOD1(BlockWorldClient, HasWaterSceneDepth_s, bool*) { *p1 = cls->m_hasWaterSceneDepth; return S_OK; }
@@ -383,6 +393,22 @@ namespace ParaEngine
 		std::vector<BlockSkySpan> m_skySpans;
 		bool m_terrainZigZagEnabled = false;
 		bool m_blockBevelEnabled = false;
+		using RippleClock = std::chrono::steady_clock;
+		struct RippleImpact { float x, z; int y; float heading; RippleClock::time_point time; };
+		std::deque<RippleImpact> m_rainImpacts, m_playerWaves;
+		bool m_waterRipplesEnabled = false;
+		bool m_playerTracked = false, m_playerTouchingWater = false;
+		Vector3 m_lastPlayerPos = Vector3(0, 0, 0);
+		float m_wakeTravel = 0.f;
+		RippleClock::time_point m_lastPlayerSample, m_lastWake, m_lastRippleUpload;
+		asset_ptr<TextureEntity> m_rippleMap;
+		Uint16x3 m_rippleOrigin;
+		void UpdatePlayerWake(RippleClock::time_point now);
+		void ClearWaterRipples();
+		asset_ptr<TextureEntity> m_rainHeights;
+		std::vector<uint32_t> m_rainColumns;
+		Uint16x3 m_rainOrigin;
+		std::chrono::steady_clock::time_point m_nextRainScan;
 		asset_ptr<TextureEntity> m_terrainZigZagTex;
 		std::vector<uint8_t> m_terrainZigZagPixels;
 		std::unordered_map<uint32_t, uint8_t> m_zigzagTileSlotCache;

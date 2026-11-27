@@ -26,7 +26,7 @@ namespace ParaEngine
 
 		virtual WeatherType GetType() = 0;
 		virtual void Init(float x, float y, float z);
-		virtual bool IsPointTexture() { return true; }
+		virtual bool IsPointTexture() { return !detailed; }
 		virtual void Reset();
 
 		virtual TextureEntity* GetTexture() { return m_pTexture; }
@@ -72,6 +72,10 @@ namespace ParaEngine
 		bool m_isDead;
 		Vector3 m_vRenderOffset;
 		float gravity;
+		bool detailed = false;
+		float opacity = 1.f;
+		float phase = 0.f;
+		float flutter = 0.f;
 		WeatherParticleSpawner* m_pWeatherSpawner;
 		TextureEntity* m_pTexture;
 	};
@@ -84,6 +88,9 @@ namespace ParaEngine
 		virtual WeatherType GetType() { return WeatherType_Rain; };
 		virtual void Init(float x, float y, float z);
 		virtual void SetDead();
+		virtual void SetFallOnGround();
+	private:
+		void SpawnSplash();
 	};
 
 	class RainSplashParticle : public WeatherParticle
@@ -92,6 +99,7 @@ namespace ParaEngine
 		RainSplashParticle(WeatherParticleSpawner* pParent) : WeatherParticle(pParent) {};
 		virtual ~RainSplashParticle(){};
 		virtual WeatherType GetType() { return WeatherType_RainSplash; };
+		void SetSprayVelocity(float angle, float energy);
 		virtual void Init(float x, float y, float z);
 		virtual void FrameMove(float deltaTime);
 	};

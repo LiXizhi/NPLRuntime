@@ -7,6 +7,7 @@
 #include "ParaEngine.h"
 #include "BaseCamera.h"
 #include "SceneState.h"
+#include "SceneObject.h"
 #include "WeatherParticleSpawner.h"
 #include "BatchedElementDraw.h"
 #include "BlockEngine/BlockWorldClient.h"
@@ -42,6 +43,8 @@ void ParaEngine::WeatherParticle::Init(float x_, float y_, float z_)
 	auto pSpawner = GetWeatherSpawner();
 	
 	m_isDead = false;
+	detailed = pSpawner->GetWeatherEffect()->IsDetailedPrecipitation();
+	opacity = 1.f;
 	x = x_;
 	y = y_;
 	z = z_;
@@ -74,7 +77,7 @@ void ParaEngine::WeatherParticle::SetDead()
 
 void ParaEngine::WeatherParticle::SetFallOnGround()
 {
-	if (GetWeatherSpawner()->GetSpeedRand().randomBoolean())
+	if (detailed || GetWeatherSpawner()->GetSpeedRand().randomBoolean())
 	{
 		SetDead();
 	}
@@ -82,6 +85,38 @@ void ParaEngine::WeatherParticle::SetFallOnGround()
 
 void ParaEngine::WeatherParticle::FrameMove(float deltaTime)
 {
+	if (detailed)
+	{
+		const float nextX = x + speed_x * deltaTime;
+		const float nextZ = z + speed_z * deltaTime;
+		uint16 bx, bz, nextBx, nextBz;
+		int16_t by;
+		BlockCommon::ConvertToBlockIndex(x, y, z, bx, by, bz);
+		BlockCommon::ConvertToBlockIndex(nextX, y, nextZ, nextBx, by, nextBz);
+		if (bx != nextBx || bz != nextBz)
+		{
+			minY = CWeatherEffect::GetPrecipitationSurface(nextBx, nextBz);
+			// Wind can carry a particle into the side of an awning below its roof.
+			if (y < minY)
+			{
+				SetDead();
+				return;
+			}
+		}
+		x = nextX;
+		z = nextZ;
+		speed_y -= gravity * deltaTime;
+		y += speed_y * deltaTime;
+		lifetime -= deltaTime;
+		if (y <= minY)
+		{
+			y = minY;
+			SetFallOnGround();
+		}
+		else if (lifetime <= 0.f)
+			SetDead();
+		return;
+	}
 	speed_y = speed_y - gravity * deltaTime;
 	y = y + speed_y * deltaTime;
 
@@ -154,25 +189,33 @@ int ParaEngine::WeatherParticle::RenderParticle(SPRITEVERTEX** ppVertexBuffer, S
 		BlockCommon::ConvertToBlockIndex(x, y + height + 0.01f, z, blockPos.x, blockPos.y, blockPos.z);
 		BlockWorldClient::GetInstance()->GetBlockBrightness(blockPos, &brightness, 1, -1);
 		brightness *= 16;
-		DWORD color = Color(brightness, brightness, brightness, 255);
+		const float fade = detailed ? Math::Min(1.f, Math::Max(0.f, lifetime) * 5.f) : 1.f;
+		DWORD color = Color(brightness, brightness, brightness, (uint8)(255.f * opacity * fade));
 
 		SPRITEVERTEX* pVertexBuffer = *ppVertexBuffer;
 		// 2 triangle list with 6 vertices
-		Vector3 v;
-
-		BillBoardViewInfo& bbInfo = pSceneState->BillBoardInfo();
-		v.x = -width; v.y = -height; v.z = 0;
-		v = bbInfo.TransformVertexWithoutY(v);
-		SetParticleVertex(pVertexBuffer[0], vX + v.x, vY + v.y, vZ + v.z, uv.tc[0].x, uv.tc[0].y, color);
-		v.x = -width; v.y = height; v.z = 0;
-		v = bbInfo.TransformVertexWithoutY(v);
-		SetParticleVertex(pVertexBuffer[1], vX + v.x, vY + v.y, vZ + v.z, uv.tc[1].x, uv.tc[1].y, color);
-		v.x = width; v.y = height; v.z = 0;
-		v = bbInfo.TransformVertexWithoutY(v);
-		SetParticleVertex(pVertexBuffer[2], vX + v.x, vY + v.y, vZ + v.z, uv.tc[2].x, uv.tc[2].y, color);
-		v.x = width; v.y = -height; v.z = 0;
-		v = bbInfo.TransformVertexWithoutY(v);
-		SetParticleVertex(pVertexBuffer[3], vX + v.x, vY + v.y, vZ + v.z, uv.tc[3].x, uv.tc[3].y, color);
+		auto& bb = pSceneState->BillBoardInfo();
+		Vector3 right = bb.TransformVertexWithoutY(Vector3(width, 0.f, 0.f));
+		Vector3 up(0.f, height, 0.f);
+		if (detailed && GetType() == WeatherType_Rain)
+		{
+			// The top of the streak trails behind the falling drop.
+			up.x = height * speed_x / speed_y;
+			up.z = height * speed_z / speed_y;
+		}
+		else if (detailed && GetType() == WeatherType_Snow)
+		{
+			auto* camera = pSceneState->GetScene()->GetCurrentCamera();
+			const Vector3 across = camera->GetWorldRight();
+			const Vector3 vertical = camera->GetWorldUp();
+			const float tilt = 0.7f * sinf(phase);
+			const float c = cosf(tilt), s = sinf(tilt);
+			right = (across * c + vertical * s) * (width * (0.55f + 0.45f * fabsf(cosf(phase))));
+			up = (vertical * c - across * s) * height;
+		}
+		const Vector3 corners[] = {-right - up, up - right, right + up, right - up};
+		for (int i = 0; i < 4; ++i)
+			SetParticleVertex(pVertexBuffer[i], vX + corners[i].x, vY + corners[i].y, vZ + corners[i].z, uv.tc[i].x, uv.tc[i].y, color);
 
 		pVertexBuffer[4] = pVertexBuffer[0];
 		pVertexBuffer[5] = pVertexBuffer[2];
@@ -189,11 +232,30 @@ void ParaEngine::SnowParticle::Init(float x, float y, float z)
 	gravity = 9.81f*0.03f * GetWeatherSpawner()->GetSpeed();
 	WeatherParticle::Init(x, y, z);
 	height = width = 0.03f;
+	if (detailed)
+	{
+		auto& rand = GetWeatherSpawner()->GetSpeedRand();
+		const float size = rand.random();
+		height = width = 0.018f + size * size * 0.075f;
+		speed_y = -(0.55f + 0.85f * size) * Math::Max(0.f, GetWeatherSpawner()->GetSpeed());
+		gravity = 0.f;
+		phase = rand.random() * 2.f * MATH_PI;
+		flutter = 1.4f + rand.random() * 2.0f;
+		lifetime = 4.f + rand.random() * 2.f;
+		opacity = 0.6f + 0.35f * size;
+	}
 }
 
 void ParaEngine::SnowParticle::FrameMove(float deltaTime)
 {
-	if (isFloating)
+	if (detailed)
+	{
+		phase += flutter * deltaTime;
+		const float wind = GetWeatherSpawner()->GetWeatherEffect()->GetWind();
+		speed_x = 0.72f * wind + 0.43f * sinf(phase);
+		speed_z = 0.24f * wind + 0.38f * cosf(phase * 0.86f);
+	}
+	else if (isFloating)
 	{
 		x = x + float_speed*deltaTime;
 		z = z + float_speed*deltaTime;
@@ -205,15 +267,63 @@ void ParaEngine::RainParticle::Init(float x, float y, float z)
 {
 	WeatherParticle::Init(x, y, z);
 	height = 0.16f;	width = 0.04f;
+	if (detailed)
+	{
+		auto& rand = GetWeatherSpawner()->GetSpeedRand();
+		const float size = rand.random();
+		height = 0.10f + 0.20f * size;
+		width = 0.018f + 0.020f * size;
+		speed_y = -(6.f + size * 4.f);
+		const float wind = GetWeatherSpawner()->GetWeatherEffect()->GetWind();
+		speed_x = wind * (1.6f + 0.12f * GetWeatherSpawner()->GetStrength());
+		speed_z = 0.45f * wind;
+		gravity = 0.f;
+		opacity = 0.42f + 0.34f * size;
+	}
 }
 
 void ParaEngine::RainParticle::SetDead()
 {
 	WeatherParticle::SetDead();
-	WeatherParticle* entity = GetWeatherSpawner()->GetWeatherEffect()->AddParticle(x, GetMinY(), z, WeatherType_RainSplash);
+	if (!detailed)
+		SpawnSplash();
+}
+
+void ParaEngine::RainParticle::SetFallOnGround()
+{
+	if (detailed)
+	{
+		SpawnSplash();
+		SetDead();
+	}
+	else
+		WeatherParticle::SetFallOnGround();
+}
+
+void ParaEngine::RainParticle::SpawnSplash()
+{
+	auto* effect = GetWeatherSpawner()->GetWeatherEffect();
+	auto* world = BlockWorldClient::GetInstance();
+	if (detailed && world->WaterRipplesEnabled())
+	{
+		const bool water = world->RecordRainImpact(x, GetMinY(), z);
+		auto& rand = GetWeatherSpawner()->GetSpeedRand();
+		const int drops = height > 0.21f ? 3 : 2;
+		const float angle = rand.random() * 2.f * MATH_PI;
+		for (int i = 0; i < drops; ++i)
+		{
+			auto* spray = static_cast<RainSplashParticle*>(effect->AddParticle(x, GetMinY(), z, WeatherType_RainSplash));
+			if (!spray) break;
+			spray->SetMinY(GetMinY());
+			spray->SetSprayVelocity(angle + (i + 0.25f * rand.random()) * (2.f * MATH_PI / drops),
+				(water ? 0.80f : 1.f) * (0.65f + 0.65f * rand.random()));
+		}
+		return;
+	}
+	WeatherParticle* entity = effect->AddParticle(x, GetMinY(), z, WeatherType_RainSplash);
 	if (entity)
 	{
-		entity->SetMinY(GetMinY() - height);
+		entity->SetMinY(detailed ? GetMinY() : GetMinY() - height);
 	}
 }
 
@@ -225,11 +335,35 @@ void ParaEngine::RainSplashParticle::Init(float x, float y, float z)
 	speed_x = (float)(GetWeatherSpawner()->GetSpeedRand().randomDouble() - 0.5);
 	speed_z = (float)(GetWeatherSpawner()->GetSpeedRand().randomDouble() - 0.5);
 	gravity = 9.18f*2.0f;
+	if (detailed)
+	{
+		auto& rand = GetWeatherSpawner()->GetSpeedRand();
+		width = height = 0.024f + 0.040f * rand.random();
+		speed_x *= 2.6f;
+		speed_z *= 2.6f;
+		speed_y = 0.9f + rand.random() * 1.4f;
+		opacity = 0.68f;
+		lifetime = 2.f * speed_y / gravity;
+	}
+}
+
+void ParaEngine::RainSplashParticle::SetSprayVelocity(float angle, float energy)
+{
+	speed_x = cosf(angle) * energy;
+	speed_z = sinf(angle) * energy;
+	speed_y = 2.25f * energy;
+	width = 0.022f + 0.014f * energy;
+	height = width * 1.35f;
+	opacity = 0.88f;
+	lifetime = 2.f * speed_y / gravity;
 }
 
 void ParaEngine::RainSplashParticle::FrameMove(float deltaTime)
 {
-	x = x + speed_x*deltaTime;
-	z = z + speed_z*deltaTime;
+	if (!detailed)
+	{
+		x = x + speed_x*deltaTime;
+		z = z + speed_z*deltaTime;
+	}
 	WeatherParticle::FrameMove(deltaTime);
 }

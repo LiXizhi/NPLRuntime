@@ -187,6 +187,9 @@ namespace ParaEngine
 				if (slash != std::string::npos)
 					incLower = incLower.substr(slash + 1);
 
+				if (incLower == "screen_space_reflection.h" && TryReadParaFile(":IDR_SHADER_INC_SCREEN_SPACE_REFLECTION", outContent))
+					return true;
+
 				if (incLower == "composite.fx" && TryReadParaFile(":IDR_FX_COMPOSITE", outContent))
 					return true;
 

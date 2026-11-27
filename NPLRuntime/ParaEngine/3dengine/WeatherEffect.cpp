@@ -6,11 +6,13 @@
 //-----------------------------------------------------------------------------
 #include "ParaEngine.h"
 #include "BlockEngine/BlockWorldClient.h"
+#include "BlockEngine/ChunkMaxHeight.h"
 #include "AutoCamera.h"
 #include "SceneObject.h"
 #include "BatchedElementDraw.h"
 #include "WeatherParticleSpawner.h"
 #include "WeatherEffect.h"
+#include <limits>
 
 using namespace ParaEngine;
 
@@ -70,14 +72,16 @@ void ParaEngine::CWeatherEffect::EnableWeatherItem(WeatherType weather_type, boo
 	GetParticleSpawner(weather_type).SetEnabled(bEnabled);
 }
 
-void ParaEngine::CWeatherEffect::Cleanup()
+void ParaEngine::CWeatherEffect::ClearParticles()
 {
 	for (WeatherParticle* particle : m_particles)
-	{
 		particle->RecollectMe();
-	}
 	m_particles.clear();
+}
 
+void ParaEngine::CWeatherEffect::Cleanup()
+{
+	ClearParticles();
 	for (auto spawner_info : m_particle_spawners)
 	{
 		spawner_info->SetEnabled(false);
@@ -105,16 +109,48 @@ int32 ParaEngine::CWeatherEffect::GetTerrainHighestBlock(int32 x, int32 z, int32
 }
 
 
+float ParaEngine::CWeatherEffect::GetPrecipitationSurface(uint16 bx, uint16 bz)
+{
+	const auto* column = BlockWorldClient::GetInstance()->GetHighestBlock(bx, bz);
+	const int y = column ? column->GetMaxHeight() : BlockConfig::MinBlockY - 1;
+	if (!BlockConfig::IsBlockY(y))
+		return (std::numeric_limits<float>::lowest)();
+	auto* block = BlockWorldClient::GetInstance()->GetBlockTemplate(bx, y, bz);
+	const bool water = block && block->GetCategoryID() == 8 && block->IsMatchAttribute(BlockTemplate::batt_liquid);
+	return BlockCommon::ConvertToRealY(y) + (water ? 0.8f : 1.f) * BlockConfig::g_blockSize;
+}
+
+void ParaEngine::CWeatherEffect::SetDetailedPrecipitation(bool enabled)
+{
+	if (m_detailedPrecipitation == enabled)
+		return;
+	m_detailedPrecipitation = enabled;
+	ClearParticles();
+}
+
 void ParaEngine::CWeatherEffect::Animate(double dTimeDelta, int nRenderNumber /*= 0*/)
 {
-	if (m_updateTick.IsTick((float)dTimeDelta) && HasActiveSpawners())
+	const bool spawnTick = m_updateTick.IsTick((float)dTimeDelta);
+	if (!HasActiveSpawners())
 	{
-		SpawnAllParticles();
-
+		if (m_detailedPrecipitation && !m_particles.empty())
+			ClearParticles();
+		return;
+	}
+	if (spawnTick || m_detailedPrecipitation)
+	{
+		const float dt = m_detailedPrecipitation ? Math::Min((float)dTimeDelta, 0.1f) : m_updateTick.GetInverval();
+		if (m_detailedPrecipitation)
+		{
+			m_windPhase = fmodf(m_windPhase + dt * 0.65f, 2.f * MATH_PI);
+			m_wind = 1.f + 0.35f * sinf(m_windPhase);
+		}
+		if (spawnTick)
+			SpawnAllParticles();
 		for (int i = 0; i < (int)m_particles.size();)
 		{
 			WeatherParticle* particle = m_particles[i];
-			particle->FrameMove(m_updateTick.GetInverval());
+			particle->FrameMove(dt);
 			if (particle->IsDead())
 			{
 				particle->RecollectMe();
@@ -180,6 +216,18 @@ void ParaEngine::CWeatherEffect::SpawnParticles(WeatherParticleSpawner& weather_
 		uint16 particle_pos_bx, particle_pos_by, particle_pos_bz;
 		BlockCommon::ConvertToBlockIndex(particle_pos_x, particle_pos_y, particle_pos_z, particle_pos_bx, particle_pos_by, particle_pos_bz);
 
+		if (m_detailedPrecipitation)
+		{
+			const float surface = GetPrecipitationSurface(particle_pos_bx, particle_pos_bz);
+			if (particle_pos_y > surface)
+			{
+				auto* particle = AddParticle(particle_pos_x, particle_pos_y, particle_pos_z, weather_type.GetWeatherType());
+				if (particle)
+					particle->SetMinY(surface);
+			}
+			continue;
+		}
+
 		int32 terrainHeight = 0;
 		int terrainBlockID = GetTerrainHighestBlock(particle_pos_bx, particle_pos_bz, terrainHeight);
 		if (terrainBlockID > 0 && terrainHeight >= particle_pos_by){
@@ -240,6 +288,7 @@ int ParaEngine::CWeatherEffect::InstallFields(CAttributeClass* pClass, bool bOve
 {
 	CBaseObject::InstallFields(pClass, bOverride);
 
+	pClass->AddField("DetailedPrecipitation", FieldType_Bool, (void*)SetDetailedPrecipitation_s, (void*)GetDetailedPrecipitation_s, NULL, NULL, bOverride);
 	pClass->AddField("EnableSnow", FieldType_Bool, (void*)EnableSnow_s, NULL, NULL, NULL, bOverride);
 	pClass->AddField("EnableRain", FieldType_Bool, (void*)EnableRain_s, NULL, NULL, NULL, bOverride);
 	pClass->AddField("RainStrength", FieldType_Float, (void*)SetRainStrength_s, NULL, NULL, NULL, bOverride);

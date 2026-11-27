@@ -65,6 +65,9 @@ float BevelEnabled = 0.0f;
 float ZigZagEnabled = 0.0f;
 float4 BlockGridOrigin = float4(0.0f, 0.0f, 0.0f, 0.0f);
 #endif
+// Slot 6 carries the column height map during the reflection pass.
+float4 RainGridOrigin = float4(0, 0, 0, 0);
+float2 RainSurfaceStrength = float2(0, 0);
 float BounceEnabled = 0.0f;
 float MaxDOFBlur = 0.00045f;
 float ViewAspect;
@@ -296,89 +299,19 @@ void DoNightEye(inout float3 color, float amount)
 	color = lerp(color, rodColor*colorDesat, amount);
 }
 
-float2 convertCameraSpaceToScreenSpace(float3 cameraSpace)
+#include "screen_space_reflection.h"
+
+float4 ComputeRayTraceReflection(float3 viewPos, float3 normalVS, bool fromWater)
 {
-	float4 clipSpace = mul(float4(cameraSpace, 1.0), matProjection);
-	float2 NDCSpace = clipSpace.xy / clipSpace.w;
-	float2 ScreenPos = 0.5 * NDCSpace + 0.5;
-	return float2(ScreenPos.x, 1 - ScreenPos.y) * viewportScale + viewportOffset;
-}
-
-
-// compute water reflection by sampling along the reflected eye ray until a pixel is found. 
-float4 	ComputeRayTraceReflection(float3 cameraSpacePosition, float3 cameraSpaceNormal, bool fromWater)
-{
-	float initialStepAmount = QualityLevel >= 9 ? 0.25 : 1.0;
-	//float stepRefinementAmount = 0.1;
-	//int maxRefinements = 0;
-
-	float3 cameraSpaceViewDir = normalize(cameraSpacePosition);
-	float3 cameraSpaceVector = normalize(reflect(cameraSpaceViewDir, cameraSpaceNormal)) * initialStepAmount;
-	float3 oldPosition = cameraSpacePosition;
-	float3 cameraSpaceVectorPosition = oldPosition + cameraSpaceVector;
-	float2 currentPosition = convertCameraSpaceToScreenSpace(cameraSpaceVectorPosition);
-	float4 color = float4(0, 0, 0, 0);
-	float2 finalSamplePos = float2(0, 0);
-	float ray_length = initialStepAmount;
-	int numSteps = 0;
-	int max_step = QualityLevel >= 9 ? 64 : (QualityLevel >= 6 ? 48 : (QualityLevel >= 5 ? 24 : 12));
-	float growth = QualityLevel >= 5 ? 1.15 : 1.5;
-	while (numSteps < max_step &&
-		cameraSpaceVectorPosition.z > 0.01 &&
-		all(currentPosition > viewportOffset) && all(currentPosition < viewportOffset + viewportScale))
-	{
-		float2 samplePos = currentPosition.xy;
-		float sampleDepth = tex2Dlod(depthSampler, float4(samplePos, 0, 0)).r;
-
-		float currentDepth = cameraSpaceVectorPosition.z;
-		float diff = currentDepth - sampleDepth;
-
-		if (diff >= 0 && sampleDepth > 0 && diff <= ray_length)
-		{
-			// found it, exit the loop
-			finalSamplePos.xy = samplePos;
-			if (QualityLevel >= 5) {
-				float3 lowerPosition = cameraSpaceVectorPosition - cameraSpaceVector;
-				float3 upperPosition = cameraSpaceVectorPosition;
-				int refinements = QualityLevel >= 9 ? 6 : (QualityLevel >= 6 ? 4 : 2);
-				[loop] for (int refinement = 0; refinement < refinements; refinement++) {
-					float3 midpoint = (lowerPosition + upperPosition) * 0.5;
-					float2 coord = convertCameraSpaceToScreenSpace(midpoint);
-					if (any(coord <= viewportOffset) || any(coord >= viewportOffset + viewportScale)) break;
-					float depth = tex2Dlod(depthSampler, float4(coord, 0, 0)).r;
-					if (depth > 0.01 && midpoint.z >= depth) upperPosition = midpoint;
-					else lowerPosition = midpoint;
-				}
-				finalSamplePos = convertCameraSpaceToScreenSpace(upperPosition);
-				float hitDepth = tex2Dlod(depthSampler, float4(finalSamplePos, 0, 0)).r;
-				if (hitDepth <= 0.01 || upperPosition.z - hitDepth > max(0.15, hitDepth * 0.01)) finalSamplePos = 0;
-			}
-			numSteps = max_step;
-		}
-		else
-		{
-			ray_length *= growth;
-			cameraSpaceVector *= growth;
-			cameraSpaceVectorPosition += cameraSpaceVector;
-
-			currentPosition = convertCameraSpaceToScreenSpace(cameraSpaceVectorPosition);
-		}
-		numSteps++;
-	}
-
-	if (finalSamplePos.x != 0 && finalSamplePos.y != 0)
-	{
-		// compute point color
-		float2 texCoord = finalSamplePos.xy;
-		// A hit on the lake itself contains the unattenuated bottom in the input color.
-		// Treat it as a miss so that it cannot reintroduce the lakebed through a reflection.
-		if (fromWater && (int)(tex2Dlod(matInfoSampler, float4(texCoord, 0, 0)).r * 255.0f + 0.4f) == 8)
-			return color;
-		color.rgb = GetAlbedoLinear(texCoord);
-		float2 localUV = (finalSamplePos - viewportOffset) / viewportScale;
-		color.a = clamp(1 - pow(distance(float2(0.5, 0.5), localUV)*2.0, 2.0), 0.0, 1.0);
-	}
-	return color;
+	int steps = QualityLevel >= 9 ? 64 : (QualityLevel >= 6 ? 48 : (QualityLevel >= 5 ? 32 : 24));
+	float2 uv;
+	if (!TraceScreenReflection(viewPos, normalVS, steps, QualityLevel >= 5 ? 1.14f : 1.26f, 7, uv))
+		return 0;
+	// Water already contains the transmitted lakebed. Reflecting it would add the bottom twice.
+	if (fromWater && (int)(tex2Dlod(matInfoSampler, float4(uv, 0, 0)).r * 255.0f + 0.4f) == 8)
+		return 0;
+	float2 offset = (uv - viewportOffset) / viewportScale - 0.5f;
+	return float4(GetAlbedoLinear(uv), saturate(1.0f - 4.0f * dot(offset, offset)));
 }
 
 float CalculateSkylight(in SurfaceStruct surface)
@@ -1478,6 +1411,17 @@ float ApplyRoundedBlockBorders(inout SurfaceStruct surface, inout float sun_ligh
 
 #endif
 
+// Fixed golden-angle disk shared by AO, indirect light and depth of field.
+// Literal indices let the shader compiler evaluate the trigonometry once.
+#define DISK_TAP(i) (float2(cos((i) * 2.399963f), sin((i) * 2.399963f)) * sqrt(((i) + 0.5f) / 32.0f))
+static const float2 Disk32[32] = {
+	DISK_TAP(0), DISK_TAP(1), DISK_TAP(2), DISK_TAP(3), DISK_TAP(4), DISK_TAP(5), DISK_TAP(6), DISK_TAP(7),
+	DISK_TAP(8), DISK_TAP(9), DISK_TAP(10), DISK_TAP(11), DISK_TAP(12), DISK_TAP(13), DISK_TAP(14), DISK_TAP(15),
+	DISK_TAP(16), DISK_TAP(17), DISK_TAP(18), DISK_TAP(19), DISK_TAP(20), DISK_TAP(21), DISK_TAP(22), DISK_TAP(23),
+	DISK_TAP(24), DISK_TAP(25), DISK_TAP(26), DISK_TAP(27), DISK_TAP(28), DISK_TAP(29), DISK_TAP(30), DISK_TAP(31)
+};
+#undef DISK_TAP
+
 float AmbientVisibility(SurfaceStruct surface)
 {
 	if (QualityLevel < 5 || LightingStrength.x <= 0 || surface.mask_sky || surface.mask_water) return 1.0;
@@ -1488,8 +1432,7 @@ float AmbientVisibility(SurfaceStruct surface)
 	[loop] for (int sampleIndex = 0; sampleIndex < 16; sampleIndex++)
 	{
 		if (sampleIndex >= count) break;
-		float angle = sampleIndex * 2.399963;
-		float2 coord = ClampViewUV(surface.texCoord + float2(cos(angle), sin(angle)) * radius * sqrt((sampleIndex + 0.5) / count));
+		float2 coord = ClampViewUV(surface.texCoord + Disk32[sampleIndex] * radius * sqrt(32.0f / count));
 		float depth = tex2Dlod(depthSampler, float4(coord, 0, 0)).r;
 		float3 delta = ViewPosition(coord, depth) - surface.cameraSpacePos;
 		float distanceToSample = length(delta);
@@ -1692,6 +1635,57 @@ float4 ComputeFakeSkyReflection(inout SurfaceStruct2 surface)
 	return float4(skyTint, 1.0f);
 }
 
+void ApplyRainSurface(inout SurfaceStruct2 surface)
+{
+	if (RainGridOrigin.w <= 0 || surface.depth <= 0.01f || surface.normal.y < 0.7f ||
+		surface.category_id == 255 || surface.category_id == 31 || surface.category_id == 18 ||
+		surface.category_id == 5 || surface.category_id == 8 || surface.category_id == 9)
+		return;
+
+	float3 viewPos = ViewPosition(surface.texCoord, surface.depth);
+	float3 renderPos = mul(float4(viewPos, 1.0f), matViewInverse).xyz;
+	float3 grid = (renderPos - RainGridOrigin.xyz) * RainGridOrigin.w;
+	float2 column = floor(grid.xz);
+	if (any(column < 0.0f) || any(column >= 64.0f)) return;
+	float2 bytes = floor(tex2Dlod(blockSkySampler, float4((column + 0.5f) / 64.0f, 0, 0)).rg * 255.0f + 0.5f);
+	// Top faces sit on the boundary of the air cell. Step just inside the solid.
+	if (floor(grid.y - 0.02f) != bytes.x + bytes.y * 256.0f) return;
+
+	float distanceFade = 1.0f - smoothstep(20.0f, 27.0f, length(viewPos) * RainGridOrigin.w);
+	float wet = RainSurfaceStrength.x * distanceFade;
+	surface.color *= 1.0f - wet * (0.34f - 0.16f * surface.specularity);
+	if (RainSurfaceStrength.y * distanceFade <= 0.001f || surface.normal.y < 0.97f) return;
+
+	// World-locked irregular pools. The waterline expands as rain strengthens.
+	float2 p = (WaterView.zw + mul(viewPos, (float3x3)matViewInverse).xz) * RainGridOrigin.w;
+	float basin = sin(p.x * 1.27f + sin(p.y * 1.72f)) + cos(p.y * 1.38f + p.x * 0.47f)
+		+ 0.36f * sin(p.x * 3.05f - p.y * 2.41f);
+	basin += 0.12f * sin(p.x * 6.7f + sin(p.y * 8.3f)) + 0.06f * cos(p.y * 11.2f);
+	float pool = smoothstep(1.5f, 2.0f, basin + 1.15f * RainSurfaceStrength.y)
+		* RainSurfaceStrength.y * distanceFade;
+	if (pool <= 0.001f) return;
+	// Trace the flat water surface. A high-frequency normal bends adjacent rays
+	// across different parts of the same reflected silhouette.
+	float3 normalVS = normalize(mul(float3(0, 1, 0), (float3x3)matView));
+	// Limit the sky fallback in the HDR pass so the stone texture stays visible.
+	float3 sky = ComputeFakeSkyReflection(surface).rgb;
+	float luminance = dot(surface.color, float3(0.2126f, 0.7152f, 0.0722f));
+	float skyLuminance = max(dot(sky, float3(0.2126f, 0.7152f, 0.0722f)), 0.0001f);
+	float3 reflected = sky * min(1.0f, (3.2f * luminance + 0.002f) / skyLuminance);
+	if (RenderOptions.y > 0.5f)
+	{
+		float4 hit = ComputeRayTraceReflection(viewPos, normalVS, false);
+		reflected = lerp(reflected, hit.rgb, hit.a);
+	}
+	// Ripples modulate the glint while the reflected silhouette stays anchored.
+	float t = WaterView.y;
+	float2 ripple = float2(sin(p.x * 8.0f + p.y * 3.0f + t * 4.0f), cos(p.y * 7.0f - t * 3.4f));
+	float3 rippleVS = mul(float3(ripple.x, 0, ripple.y), (float3x3)matView);
+	float grazing = 1.0f - saturate(dot(-normalize(viewPos), normalize(normalVS + rippleVS * (0.018f * rainStrength))));
+	surface.color = lerp(surface.color * (1.0f - 0.28f * pool), reflected,
+		pool * (0.08f + 0.56f * grazing * grazing));
+}
+
 void CalculateSpecularReflections(inout SurfaceStruct2 surface)
 {
 	int category_id = surface.category_id;
@@ -1845,8 +1839,7 @@ float3 DiffuseBounce(SurfaceStruct2 surface)
 	float3 irradiance = 0;
 	[loop] for (int i = 0; i < count; ++i)
 	{
-		float angle = i * 2.399963;
-		float2 uv = surface.texCoord + radius * float2(cos(angle), sin(angle)) * sqrt((i + 0.5) / count);
+		float2 uv = surface.texCoord + radius * Disk32[i] * sqrt(32.0f / count);
 		if (any(uv != ClampViewUV(uv))) continue;
 		float depth = tex2Dlod(depthSampler, float4(uv, 0, 0)).r;
 		float3 delta = ViewPosition(uv, depth) - surface.cameraSpacePos;
@@ -1915,6 +1908,94 @@ void ShadeSubmergedView(inout SurfaceStruct2 surface, float skyLight)
 		* (1.0f - exp(-0.4f * waterPath)) * (0.3f + 0.7f * saturate(dot(ray, sunDirection)));
 }
 
+// The impact atlas is anchored to block coordinates. Sample texel centers so that
+// banks, separate water levels and neighboring events keep independent waves.
+float4 RippleGrid;
+texture rippleTexture;
+sampler rippleSampler:register(s8) = sampler_state
+{
+	Texture = <rippleTexture>;
+	MinFilter = Point;
+	MagFilter = Point;
+	AddressU = clamp;
+	AddressV = clamp;
+};
+
+float4 ReadImpact(float2 cell)
+{
+	return floor(tex2Dlod(rippleSampler, float4((cell + 0.5f) / float2(32, 33), 0, 0)) * 255.0f + 0.5f);
+}
+
+float2 ImpactOffset(float subcell)
+{
+	return (float2(fmod(subcell, 16.0f), floor(subcell / 16.0f)) + 0.5f) / 16.0f;
+}
+
+float3 WaveCrest(float2 offset, float remaining, float reach, float width)
+{
+	float d = length(offset);
+	float age = 1.0f - remaining;
+	float front = (d - (0.045f + reach * age)) / width;
+	float first = saturate(1.0f - abs(front));
+	float second = saturate(1.0f - abs(front + 2.5f));
+	float slope = first * clamp(front * 2.5f, -1.0f, 1.0f) + 0.35f * second * clamp((front + 2.5f) * 2.5f, -1.0f, 1.0f);
+	float envelope = remaining * smoothstep(0.0f, 0.09f, age);
+	return float3(offset / max(d, 0.001f) * slope, first * first + second * second * 0.35f) * envelope;
+}
+
+void ApplyWaterRipples(inout SurfaceStruct2 surface)
+{
+	if (RippleGrid.w <= 0 || surface.category_id != 8 || surface.normal.y < 0.55f) return;
+	float3 renderPos = mul(float4(surface.cameraSpacePos, 1), matViewInverse).xyz;
+	float3 p = (renderPos - RippleGrid.xyz) * RippleGrid.w;
+	if (any(p.xz < 0) || any(p.xz >= 32)) return;
+	float2 cell = floor(p.xz);
+	float layer = floor(p.y - 0.02f);
+	float3 wave = 0;
+	// A raindrop never travels half a block, so only the four nearest columns can contribute.
+	float2 side = step(0.5f, frac(p.xz)) * 2.0f - 1.0f;
+	[unroll] for (int z = 0; z < 2; ++z)
+	{
+		[unroll] for (int x = 0; x < 2; ++x)
+		{
+			float2 c = cell + float2(x, z) * side;
+			float4 hit = ReadImpact(c);
+			if (all(c >= 0) && all(c < 32) && hit.a > 0 && hit.g == layer)
+				wave += WaveCrest(p.xz - c - ImpactOffset(hit.r), hit.a / 255.0f, 0.42f, 0.046f);
+		}
+	}
+	[loop] for (int i = 0; i < 6; ++i)
+	{
+		float4 hit = ReadImpact(float2(i * 2, 32));
+		if (hit.a <= 0) continue;
+		float4 detail = ReadImpact(float2(i * 2 + 1, 32));
+		if (detail.g != layer) continue;
+		float2 offset = p.xz - hit.rg - ImpactOffset(detail.r);
+		float3 crest = WaveCrest(offset, hit.a / 255.0f, detail.a > 0 ? 1.8f : 1.2f, detail.a > 0 ? 0.10f : 0.065f);
+		if (detail.a > 0)
+		{
+			float angle = ((detail.a - 1.0f) / 254.0f - 0.5f) * 6.2831853f;
+			float facing = dot(offset / max(length(offset), 0.001f), float2(cos(angle), sin(angle)));
+			// Paired oblique crests spread behind the swimmer's shoulders.
+			crest *= 0.15f + 0.85f * saturate(1.0f - abs(facing + 0.25f) * 1.35f);
+		}
+		wave += crest;
+	}
+	// Perturb local glints after tracing the reflection so a passing crest preserves the silhouette.
+	if (wave.z <= 0.0001f) return;
+	float2 slopeVS = mul(float3(wave.x, 0, wave.y), (float3x3)matView).xy;
+	float2 warped = ClampViewUV(surface.texCoord + slopeVS * float2(3, -3) / screenParam);
+	if ((int)(tex2Dlod(matInfoSampler, float4(warped, 0, 0)).r * 255.0f + 0.4f) == 8)
+	{
+		float3 bedDelta = GetAlbedoLinear(warped) - GetAlbedoLinear(surface.texCoord);
+		surface.color = max(0.0f, surface.color + bedDelta * 0.45f);
+	}
+	surface.normal = normalize(surface.normal + float3(wave.x, 0, wave.y) * 0.23f);
+	float light = 0.25f + 0.75f * saturate(surface.sunlightVisibility + surface.torch_light_strength);
+	surface.color *= 1.0f + clamp(dot(wave.xy, float2(0.65f, 0.45f)), -0.8f, 0.8f) * 0.32f;
+	surface.color += float3(0.085f, 0.135f, 0.15f) * min(wave.z, 1.4f) * light;
+}
+
 // do water reflection, specular & crepuscular shafts here
 float4 CompositePS1(VSOutput input) :COLOR
 {
@@ -1945,6 +2026,8 @@ float4 CompositePS1(VSOutput input) :COLOR
 		surface.color = WaterTransmission(surface.color, min(path, 80.0f), block_info.g * (1.0f - timeMidnight));
 	}
 	CalculateSpecularReflections(surface);
+	ApplyWaterRipples(surface);
+	ApplyRainSurface(surface);
 	surface.color += DiffuseBounce(surface) * sqrt(saturate(surface.color));
 	CalculateSpecularHighlight(surface);
 	if (QualityLevel >= 3 && WaterView.x > 0.0f)
@@ -1954,6 +2037,21 @@ float4 CompositePS1(VSOutput input) :COLOR
 
 	return float4(surface.color.rgb, 1.0);
 }
+
+// Original radial kernel: square(1 - cos((1 - distance(position, center) / 3.5) * pi / 2)).
+// The first 16 entries are the 4x4 kernel, followed by the 6x6 kernel.
+static const float BloomWeights[52] = {
+	1.61637423e-08f, 0.00553138833f, 0.00553139718f, 1.61637423e-08f,
+	0.00553138833f, 0.24542661f, 0.24542667f, 0.00553138833f,
+	0.00553139718f, 0.24542667f, 0.24542667f, 0.00553139718f,
+	1.61637423e-08f, 0.00553138833f, 0.00553139718f, 1.61637423e-08f,
+	1.61637423e-08f, 0.00117051345f, 0.00803065393f, 0.00803065393f, 0.00117051345f, 1.61637423e-08f,
+	0.00117051345f, 0.034371946f, 0.12142501f, 0.12142501f, 0.034371946f, 0.00117051345f,
+	0.00803065393f, 0.12142501f, 0.47328046f, 0.47328046f, 0.12142501f, 0.00803065393f,
+	0.00803065393f, 0.12142501f, 0.47328046f, 0.47328046f, 0.12142501f, 0.00803065393f,
+	0.00117051345f, 0.034371946f, 0.12142501f, 0.12142501f, 0.034371946f, 0.00117051345f,
+	1.61637423e-08f, 0.00117051345f, 0.00803065393f, 0.00803065393f, 0.00117051345f, 1.61637423e-08f
+};
 
 // calculate bloom at given level of detail and write it to a given offset position
 float3 CalculateBloom(float2 texcoord, int LOD, float2 offset)
@@ -1970,15 +2068,14 @@ float3 CalculateBloom(float2 texcoord, int LOD, float2 offset)
 		float3 bloom = float1(0.0f).xxx;
 		float allWeights = 0.0f;
 		const float3 glowThreshold = float3(1.0, 1.0, 1.0);
-		float kernelSize = QualityLevel == 3 ? 4.0 : 6.0;
+		int kernelSize = QualityLevel == 3 ? 4 : 6;
+		int weightBase = kernelSize == 4 ? 0 : 16;
 		[loop] for (int i = 0; i < 6; i++) {
 			if (i >= kernelSize) break;
 			[loop] for (int j = 0; j < 6; j++) {
 				if (j >= kernelSize) break;
 				float2 kernelPosition = float2(i, j) * (5.0 / (kernelSize - 1.0));
-				float weight = 1.0f - distance(kernelPosition, float2(2.5f, 2.5f)) / 3.5;
-				weight = 1.0f - cos(weight * 3.1416f / 2.0f);
-				weight = pow(weight, 2.0f);
+				float weight = BloomWeights[weightBase + i * kernelSize + j];
 				float2 coord = kernelPosition - 2.5;
 				coord /= screenParam;
 
@@ -2088,8 +2185,7 @@ float3 DepthOfField(float2 pos)
 		float3 accumulated = GetColorTexture(pos);
 		float totalWeight = 1.0;
 		[loop] for (int sampleIndex = 0; sampleIndex < 32; sampleIndex++) {
-			float angle = sampleIndex * 2.399963;
-			float2 offset = float2(cos(angle), sin(angle)) * sqrt((sampleIndex + 0.5) / 32.0);
+			float2 offset = Disk32[sampleIndex];
 			float2 coord = ClampViewUV(pos + offset * aspectcorrect * blur * viewportScale);
 			float neighborDepth = tex2Dlod(depthSampler, float4(coord, 0, 0)).r;
 			if (neighborDepth < 0.01) neighborDepth = cameraFarPlane;

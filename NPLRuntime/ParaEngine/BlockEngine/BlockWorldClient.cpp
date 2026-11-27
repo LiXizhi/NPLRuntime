@@ -36,6 +36,7 @@
 #include "util/ParaTime.h"
 #include "util/os_calls.h"
 #include "ChunkVertexBuilderManager.h"
+#include "BipedObject.h"
 #include "MultiFrameBlockWorldRenderer.h"
 #include "BlockWorldClient.h"
 
@@ -206,6 +207,9 @@ namespace ParaEngine
 		m_skyAtlas.reset();
 		m_reflectionTexture.reset();
 		m_skySpans.clear();
+		ClearWaterRipples();
+		m_rainHeights.reset();
+		m_rainColumns.clear();
 		m_terrainZigZagTex.reset();
 		m_terrainZigZagPixels.clear();
 		m_zigzagTileSlotCache.clear();
@@ -2250,6 +2254,9 @@ namespace ParaEngine
 		m_lastSkyTexture = nullptr;
 		m_skyAtlas.reset();
 		m_reflectionTexture.reset();
+		ClearWaterRipples();
+		m_rainHeights.reset();
+		m_rainColumns.clear();
 		m_terrainZigZagTex.reset();
 		m_bHasZigZagOrigin = false;
 		m_bAutoBoundColorRT0 = false;
@@ -2751,6 +2758,201 @@ namespace ParaEngine
 			const float cornerZ = (float)((int32_t)origin.z - (int32_t)renderBlockOfsZ) * fBlockSize - remainZ;
 			return Vector4(cornerX, cornerY, cornerZ, 1.0f / fBlockSize);
 		}
+	}
+
+	void BlockWorldClient::ClearWaterRipples()
+	{
+		m_rainImpacts.clear();
+		m_playerWaves.clear();
+		m_rippleMap.reset();
+		m_playerTracked = m_playerTouchingWater = false;
+		m_wakeTravel = 0.f;
+		m_lastRippleUpload = {};
+	}
+
+	void BlockWorldClient::SetWaterRipplesEnabled(bool enabled)
+	{
+		if (enabled != m_waterRipplesEnabled)
+		{
+			ClearWaterRipples();
+			m_waterRipplesEnabled = enabled;
+		}
+	}
+
+	static bool IsRippleWater(BlockTemplate* block)
+	{
+		return block && block->GetCategoryID() == 8 && block->IsMatchAttribute(BlockTemplate::batt_liquid);
+	}
+
+	bool BlockWorldClient::RecordRainImpact(float x, float y, float z)
+	{
+		if (!m_waterRipplesEnabled || !IsInBlockWorld()) return false;
+		uint16_t bx, bz;
+		int16_t by;
+		BlockCommon::ConvertToBlockIndex(x, y - 0.05f * BlockConfig::g_blockSize, z, bx, by, bz);
+		if (!IsRippleWater(GetBlockTemplate(bx, by, bz))) return false;
+		if (m_rainImpacts.size() >= 512) m_rainImpacts.pop_front();
+		m_rainImpacts.push_back({x, z, by, -1.f, RippleClock::now()});
+		return true;
+	}
+
+	void BlockWorldClient::UpdatePlayerWake(RippleClock::time_point now)
+	{
+		auto* player = CGlobals::GetScene()->GetCurrentPlayer();
+		if (!player)
+		{
+			m_playerTracked = false;
+			return;
+		}
+		const auto pos = player->GetPosition();
+		const Vector3 feet((float)pos.x, (float)pos.y, (float)pos.z);
+		const float block = BlockConfig::g_blockSize;
+		const float bodyHeight = (std::max)(0.5f * block, player->GetPhysicsHeight());
+		uint16_t bx, bz;
+		int16_t by;
+		BlockCommon::ConvertToBlockIndex(feet.x, feet.y - 0.15f * block, feet.z, bx, by, bz);
+		const int maxY = (std::min)(int(BlockConfig::MaxBlockY), int(by + ceilf(bodyHeight / block) + 1));
+		int top = by;
+		if (!IsRippleWater(GetBlockTemplate(bx, top, bz))) ++top;
+		const int first = top;
+		while (top <= maxY && IsRippleWater(GetBlockTemplate(bx, top, bz))) ++top;
+		const float depth = BlockCommon::ConvertToRealY(top) - 0.2f * block - feet.y;
+		const bool touching = top > first && top <= maxY && depth >= -0.14f * block && depth <= bodyHeight
+			&& !GetBlockTemplate(bx, top, bz);
+		const Vector3 delta = feet - m_lastPlayerPos;
+		const bool continuous = m_playerTracked && now - m_lastPlayerSample < std::chrono::milliseconds(500)
+			&& delta.squaredLength() < 6.25f * block * block;
+		if (!continuous) m_playerWaves.clear();
+		if (continuous && touching)
+		{
+			const bool swimming = depth > 0.55f * bodyHeight;
+			m_wakeTravel += sqrtf(delta.x * delta.x + delta.z * delta.z);
+			if ((!m_playerTouchingWater || m_wakeTravel > (swimming ? 0.48f : 0.36f) * block)
+				&& now - m_lastWake > std::chrono::milliseconds(160))
+			{
+				if (m_playerWaves.size() >= 6) m_playerWaves.pop_front();
+				// A negative heading is a circular footfall. Swimmers leave two trailing wave arms.
+				const float heading = swimming ? atan2f(delta.z, delta.x) / (2.f * MATH_PI) + 0.5f : -1.f;
+				m_playerWaves.push_back({feet.x, feet.z, top - 1, heading, now});
+				m_wakeTravel = 0;
+				m_lastWake = now;
+			}
+		}
+		else m_wakeTravel = 0;
+		m_lastPlayerPos = feet;
+		m_lastPlayerSample = now;
+		m_playerTouchingWater = touching;
+		m_playerTracked = true;
+	}
+
+	Vector4 BlockWorldClient::UpdateWaterRipples()
+	{
+		const Vector4 inactive(0, 0, 0, 0);
+		if (!m_waterRipplesEnabled || !IsInBlockWorld()) return inactive;
+		const auto now = RippleClock::now();
+		UpdatePlayerWake(now);
+		while (!m_rainImpacts.empty() && now - m_rainImpacts.front().time >= std::chrono::milliseconds(650))
+			m_rainImpacts.pop_front();
+		while (!m_playerWaves.empty() && now - m_playerWaves.front().time >= std::chrono::milliseconds(1450))
+			m_playerWaves.pop_front();
+		if (m_rainImpacts.empty() && m_playerWaves.empty()) return inactive;
+		const auto& eye = GetEyeBlockId();
+		constexpr int side = 32;
+		const Uint16x3 origin((std::max)(0, int(eye.x) - side / 2), int16_t(eye.y) - 120, (std::max)(0, int(eye.z) - side / 2));
+		if (!m_rippleMap)
+		{
+			m_rippleMap = CGlobals::GetAssetManager()->LoadTexture("_WaterRipples_32bits", "_WaterRipples_32bits", TextureEntity::StaticTexture);
+			if (!m_rippleMap) return inactive;
+			m_rippleMap->SetState(AssetEntity::ASSET_STATE_CACHE);
+			m_rippleMap->SetLocalFileName("");
+		}
+		if (origin != m_rippleOrigin || now - m_lastRippleUpload >= std::chrono::milliseconds(24))
+		{
+			// Rows 0..31 store real rain contacts. The last row holds independent wake events.
+			uint32_t pixels[side * (side + 1)] = {};
+			const float block = BlockConfig::g_blockSize;
+			auto pack = [](unsigned r, unsigned g, unsigned a) { return (a << 24) | (r << 16) | (g << 8) | r; };
+			auto write = [&](const RippleImpact& hit, int wake) {
+				const float x = hit.x / block - origin.x, z = hit.z / block - origin.z;
+				const int y = hit.y - (int16_t)origin.y;
+				if (x < 0 || z < 0 || x >= side || z >= side || y < 0 || y > 255) return;
+				const float age = std::chrono::duration<float>(now - hit.time).count();
+				const unsigned remaining = 255 - (unsigned)(254.f * age / (wake >= 0 ? 1.45f : 0.65f));
+				const unsigned subcell = (unsigned)((x - floorf(x)) * 16) + 16 * (unsigned)((z - floorf(z)) * 16);
+				if (wake >= 0)
+				{
+					auto* pair = pixels + side * side + 2 * wake;
+					pair[0] = pack((unsigned)x, (unsigned)z, remaining);
+					pair[1] = pack(subcell, y, hit.heading >= 0.f ? 1u + (unsigned)(hit.heading * 254.f) : 0u);
+				}
+				else pixels[(int)z * side + (int)x] = pack(subcell, y, remaining);
+			};
+			for (const auto& hit : m_rainImpacts) write(hit, -1);
+			for (int i = 0; i < (int)m_playerWaves.size(); ++i) write(m_playerWaves[i], i);
+			ParaImage img;
+			if (!img.initWithRawData(reinterpret_cast<const uint8_t*>(pixels), sizeof(pixels), side, side + 1, 32, false)
+				|| !m_rippleMap->LoadFromImage(&img, 1, PixelFormat::A8R8G8B8)) return inactive;
+			m_rippleMap->SetSamplerStateBlocky(true);
+			m_rippleOrigin = origin;
+			m_lastRippleUpload = now;
+		}
+		return BlockOriginToRenderSpaceVec4(origin, GetVerticalOffset());
+	}
+
+	// One texel per XZ column. The height map includes transparent roofs and
+	// geometry above the camera or outside the view frustum.
+	Vector4 BlockWorldClient::UpdateRainHeightMap()
+	{
+		const Vector4 unavailable(0, 0, 0, 0);
+		if (!IsInBlockWorld() || !CGlobals::GetScene() || BlockConfig::g_blockSize <= 0.f)
+			return unavailable;
+		constexpr int side = 64;
+		const auto& eye = GetEyeBlockId();
+		auto anchor = [side](int coord) { return (std::max)(0, (std::min)(65536 - side, ((coord + 4) / 8) * 8 - side / 2)); };
+		const Uint16x3 origin(anchor(eye.x), static_cast<uint16_t>(BlockConfig::MinBlockY), anchor(eye.z));
+		const auto now = std::chrono::steady_clock::now();
+		if (!m_rainHeights)
+		{
+			m_rainHeights = CGlobals::GetAssetManager()->LoadTexture("_RainHeights_32bits", "_RainHeights_32bits", TextureEntity::StaticTexture);
+			if (!m_rainHeights)
+				return unavailable;
+			m_rainHeights->SetState(AssetEntity::ASSET_STATE_CACHE);
+			m_rainHeights->SetLocalFileName("");
+		}
+		if (m_rainColumns.empty() || origin != m_rainOrigin || now >= m_nextRainScan)
+		{
+			const bool first = m_rainColumns.empty();
+			m_rainColumns.resize(side * side);
+			bool changed = first;
+			for (int z = 0; z < side; ++z)
+			{
+				for (int x = 0; x < side; ++x)
+				{
+					const auto* column = GetHighestBlock(origin.x + x, origin.z + z);
+					const int y = column ? column->GetMaxHeight() : BlockConfig::MinBlockY - 1;
+					const unsigned height = BlockConfig::IsBlockY(y) ? y - BlockConfig::MinBlockY : 65535u;
+					// Duplicate the low byte in R and B for both RGBA and BGRA uploads.
+					uint32_t pixel = 0xff000000u | ((height & 255u) << 16) | height;
+					auto& saved = m_rainColumns[z * side + x];
+					changed |= saved != pixel;
+					saved = pixel;
+				}
+			}
+			if (changed)
+			{
+				ParaImage image;
+				if (!image.initWithRawData(reinterpret_cast<const uint8_t*>(m_rainColumns.data()), side * side * 4, side, side, 32, false) ||
+					!m_rainHeights->LoadFromImage(&image, 1, PixelFormat::A8R8G8B8))
+				{
+					m_rainColumns.clear();
+					return unavailable;
+				}
+				m_rainHeights->SetSamplerStateBlocky(true);
+			}
+			m_rainOrigin = origin;
+			m_nextRainScan = now + std::chrono::milliseconds(150);
+		}
+		return BlockOriginToRenderSpaceVec4(origin, GetVerticalOffset());
 	}
 
 	Vector4 BlockWorldClient::GetNearBlockGridOrigin()
@@ -4290,6 +4492,9 @@ namespace ParaEngine
 		pClass->AddField("UpdateRayTracedReflections", FieldType_Bool, NULL, (void*)UpdateRayTracedReflections_s, NULL, NULL, bOverride);
 		pClass->AddField("WaterDepthEnabled", FieldType_Bool, (void*)SetWaterDepthEnabled_s, NULL, NULL, NULL, bOverride);
 		pClass->AddField("HasWaterSceneDepth", FieldType_Bool, NULL, (void*)HasWaterSceneDepth_s, NULL, NULL, bOverride);
+		pClass->AddField("WaterRipplesEnabled", FieldType_Bool, (void*)SetWaterRipplesEnabled_s, (void*)GetWaterRipplesEnabled_s, NULL, NULL, bOverride);
+		pClass->AddField("UpdateWaterRipples", FieldType_Vector4, NULL, (void*)UpdateWaterRipples_s, NULL, NULL, bOverride);
+		pClass->AddField("UpdateRainHeightMap", FieldType_Vector4, NULL, (void*)UpdateRainHeightMap_s, NULL, NULL, bOverride);
 		pClass->AddField("UpdateWaterView", FieldType_Vector4, NULL, (void*)UpdateWaterView_s, NULL, NULL, bOverride);
 		pClass->AddField("UpdateRayTracedSky", FieldType_Vector4, NULL, (void*)UpdateRayTracedSky_s, NULL, NULL, bOverride);
 		pClass->AddField("NearBlockGridOrigin", FieldType_Vector4, NULL, (void*)GetNearBlockGridOrigin_s, NULL, NULL, bOverride);

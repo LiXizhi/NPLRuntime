@@ -30,6 +30,7 @@ CStaticInitRes::CStaticInitRes()
 	ADD_RESOURCE(":IDR_SHADER_INC_SIMPLE_MESH_NORMAL_VEGETATION", simple_mesh_normal_vegetation_h);
 	ADD_RESOURCE(":IDR_SHADER_INC_COMMON_DEFINE", CommonDefine_h);
 	ADD_RESOURCE(":IDR_SHADER_INC_COMMON_FUNCTION", CommonFunction_h);
+	ADD_RESOURCE(":IDR_SHADER_INC_SCREEN_SPACE_REFLECTION", screen_space_reflection_h);
 	ADD_RESOURCE(":IDR_SHADER_INC_FXAA", FXAA_h);
 
 	// Unified ParaRHI .fx shaders (core, GPU-skinned, instanced, Fancy MRT & post-processing)

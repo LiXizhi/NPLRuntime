@@ -29,7 +29,14 @@ namespace ParaEngine
 		ATTRIBUTE_METHOD1(CWeatherEffect, SetRainStrength_s, float)	{ cls->SetRainStrength(p1); return S_OK; }
 		ATTRIBUTE_METHOD1(CWeatherEffect, SetSnowStrength_s, float)	{ cls->SetSnowStrength(p1); return S_OK; }
 
+		ATTRIBUTE_METHOD1(CWeatherEffect, SetDetailedPrecipitation_s, bool) { cls->SetDetailedPrecipitation(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(CWeatherEffect, GetDetailedPrecipitation_s, bool*) { *p1 = cls->IsDetailedPrecipitation(); return S_OK; }
+
 	public:
+		bool IsDetailedPrecipitation() const { return m_detailedPrecipitation; }
+		void SetDetailedPrecipitation(bool enabled);
+		float GetWind() const { return m_wind; }
+		static float GetPrecipitationSurface(uint16 bx, uint16 bz);
 		WeatherParticle* AddParticle(float x, float y, float z, WeatherType weather_type);
 
 		void SpawnAllParticles();
@@ -79,6 +86,7 @@ namespace ParaEngine
 		void SetSnowStrength(float fStrength);
 
 	protected:
+		void ClearParticles();
 		// keep a weak reference for fast access
 		WeatherParticleSpawner* m_particle_spawners[WeatherType_Last];
 	
@@ -88,5 +96,8 @@ namespace ParaEngine
 		
 		unordered_array<WeatherParticle*> m_particles;
 		Tick m_updateTick;
+		bool m_detailedPrecipitation = false;
+		float m_windPhase = 0.f;
+		float m_wind = 1.f;
 	};
 }

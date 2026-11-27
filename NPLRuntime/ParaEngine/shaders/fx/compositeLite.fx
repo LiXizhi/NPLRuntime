@@ -184,104 +184,23 @@ VSOutput CompositeQuadVS(float3 iPosition:POSITION,
 }
 
 
-float2 convertCameraSpaceToScreenSpace(float3 cameraSpace) 
+#include "screen_space_reflection.h"
+
+float4 ComputeRayTraceWaterReflection(float3 cameraSpacePosition, float3 cameraSpaceNormal)
 {
-	float4 clipSpace = mul(float4(cameraSpace, 1.0), matProjection);
-	float2 NDCSpace = clipSpace.xy / clipSpace.w;
-	float2 ScreenPos = 0.5 * NDCSpace + 0.5;
-	return float2(ScreenPos.x, 1-ScreenPos.y) * viewportScale + viewportOffset;
-}
-
-
-// compute water reflection by sampling along the reflected eye ray until a pixel is found. 
-float4 	ComputeRayTraceWaterReflection(float3 cameraSpacePosition, float3 cameraSpaceNormal) 
-{
-	float initialStepAmount = 1;
-	//float stepRefinementAmount = 0.1;
-	//int maxRefinements = 0;
-		 
-    float3 cameraSpaceViewDir = normalize(cameraSpacePosition);
-    float3 cameraSpaceVector = normalize(reflect(cameraSpaceViewDir,cameraSpaceNormal)) * initialStepAmount;
-	float3 oldPosition = cameraSpacePosition;
-    float3 cameraSpaceVectorPosition = oldPosition + cameraSpaceVector;
-    float2 currentPosition = convertCameraSpaceToScreenSpace(cameraSpaceVectorPosition);
-    float4 color = float4(0,0,0,0);
-	float2 finalSamplePos = float2(0, 0);
-	float ray_length = initialStepAmount;
-	int numSteps = 0;
-	int max_step = 12; // cameraFarPlane/initialStepAmount; 4 * (1.5^10) = 230
-    while(numSteps < max_step && 
-		cameraSpaceVectorPosition.z > 0.01 &&
-		all(currentPosition > viewportOffset) && all(currentPosition < viewportOffset + viewportScale))
-    {
-        float2 samplePos = currentPosition.xy;
-        float sampleDepth = tex2Dlod(depthSampler, float4(samplePos,0,0)).r;
-
-        float currentDepth = cameraSpaceVectorPosition.z;
-		float diff = currentDepth - sampleDepth;
-		
-        if(diff >= 0 && sampleDepth > 0 && diff <= ray_length)
-		{
-			// found it, exit the loop
-			finalSamplePos.xy = samplePos;
-			numSteps = max_step;
-		}
-		else
-		{
-			ray_length *= 1.5;
-			cameraSpaceVector *= 1.5;	//Each step gets bigger
-			cameraSpaceVectorPosition += cameraSpaceVector;
-
-			currentPosition = convertCameraSpaceToScreenSpace(cameraSpaceVectorPosition);
-		}
-		numSteps++;
-    }
-	
-	if (finalSamplePos.x != 0 && finalSamplePos.y != 0) 
-	{
-		// compute point color
-		float2 texCoord = finalSamplePos.xy;
-		color = tex2D(colorSampler, texCoord);
-		color.a = 1;
-		// r:category id,  g: sun light value, b: torch light value
-		float4 block_info = tex2D(matInfoSampler, texCoord);
-		int category_id = (int)(block_info.r * 255.0 + 0.4);
-		float sun_light_strength = block_info.g*sunIntensity;
-		float torch_light_strength = block_info.b;
-		
-		
-		// use a simple way to render lighting for reflection to avoid another water rendering pass. 
-		float shadow = 1;
-		if(sun_light_strength > 0)
-		{
-			// get world space normal
-			float3 normal = GetNormal(texCoord);
-			float NdotL = dot( sunDirection, normal);
-
-			float directSunLight = max(0, NdotL);
-			if(directSunLight > 0)
-				shadow = directSunLight;
-			else
-				shadow = 0;
-		}
-
-		//if(category_id == 255)
-		//{
-		//	// mesh object
-		//	color.xyz *= shadow * g_shadowFactor.x + g_shadowFactor.y;
-		//}
-		//else
-		{
-			// other blocks
-			float3 sun_light = color.xyz * SunColor.rgb * sun_light_strength;
-			sun_light *= shadow * g_shadowFactor.x + g_shadowFactor.y;
-			float3 torch_light = color.xyz * TorchLightColor.rgb * torch_light_strength;
-			// compose and interpolate so that the strength of light is almost linear 
-			color.xyz = lerp(torch_light.xyz+sun_light.xyz, sun_light.xyz, sun_light_strength / (torch_light_strength + sun_light_strength+0.001));
-		}
-		color.a *= clamp(1 - pow(distance(float2(0.5, 0.5), finalSamplePos.xy)*2.0, 2.0), 0.0, 1.0);
-	}
-    return color;
+	float2 texCoord;
+	if (!TraceScreenReflection(cameraSpacePosition, cameraSpaceNormal, 16, 1.44f, 5, texCoord))
+		return 0;
+	float3 base = tex2D(colorSampler, texCoord).rgb;
+	float2 lights = tex2D(matInfoSampler, texCoord).gb;
+	float sun = lights.x * sunIntensity;
+	float torch = lights.y;
+	float diffuse = max(0, dot(sunDirection, GetNormal(texCoord)));
+	float3 sunlight = base * SunColor.rgb * sun * (diffuse * g_shadowFactor.x + g_shadowFactor.y);
+	float3 torchlight = base * TorchLightColor.rgb * torch;
+	float3 lit = lerp(torchlight + sunlight, sunlight, sun / (torch + sun + 0.001f));
+	float2 offset = (texCoord - viewportOffset) / viewportScale - 0.5f;
+	return float4(lit, saturate(1.0f - 4.0f * dot(offset, offset)));
 }
 
 //Calculates direct sunlight without visibility check. mainly depends on surface normal. 
@@ -371,6 +290,9 @@ float4 Composite1PS(VSOutput input):COLOR
 	color.rgb = HSVtoRGB(hsv);
 #endif
 
+	float depth = tex2D(depthSampler, texCoord).x;
+	[branch] if (depth <= 0.01f) return float4(color.rgb, 1.0f);
+
 	// r:category id,  g: sun light value, b: torch light value
 	float4 block_info = tex2D(matInfoSampler, texCoord);
 	int category_id = (int)(block_info.r * 255.0 + 0.4);
@@ -382,8 +304,6 @@ float4 Composite1PS(VSOutput input):COLOR
 	float4 normal_ = GetNormal(texCoord);
 	float3 normal = normal_.xyz;
 	float specular = 1.0-normal_.w;
-	// screen space depth value. 
-	float depth = tex2D(depthSampler, texCoord).x;
 
 	// Calculates direct sunlight without visibility check
 	float directSunLight = CalculateDirectLighting(normal, category_id);
@@ -391,7 +311,6 @@ float4 Composite1PS(VSOutput input):COLOR
 	if (category_id == 255)
 		torch_light_strength *= (directSunLight*0.3 + 0.7);
 	
-	if(depth > 0.01) 
 	{
 		// reconstruct world space vector from depth
 		float3 cameraSpacePosition = input.CameraEye * depth;
@@ -462,6 +381,9 @@ float4 CompositeLitePS(VSOutput input):COLOR
 	float2 texCoord = input.texCoord;
 	float4 color = tex2D(colorSampler, texCoord);
 	
+	float depth = tex2D(depthSampler, texCoord).x;
+	[branch] if (depth <= 0.01f) return color;
+
 	// r:category id,  g: sun light value, b: torch light value
 	float4 block_info = tex2D(matInfoSampler, texCoord);
 	int category_id = (int)(block_info.r * 255.0 + 0.4);
@@ -470,8 +392,6 @@ float4 CompositeLitePS(VSOutput input):COLOR
 	float torch_light_strength = block_info.b;
 	// get world space normal
 	float3 normal = GetNormal(texCoord);
-	// screen space depth value. 
-	float depth = tex2D(depthSampler, texCoord).x;
 
 	// Calculates direct sunlight without visibility check
 	float directSunLight = CalculateDirectLighting(normal, category_id);
@@ -479,7 +399,6 @@ float4 CompositeLitePS(VSOutput input):COLOR
 	if (category_id == 255)
 		torch_light_strength *= (directSunLight*0.3 + 0.7);
 	
-	if(depth > 0.01) 
 	{
 		// reconstruct world space vector from depth
 		float3 cameraSpacePosition = input.CameraEye * depth;
