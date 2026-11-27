@@ -1800,6 +1800,10 @@ namespace ParaEngine
 
 		// Shader-visible GPU Sampler heap (2048 hardware max)
 		m_gpuSamplerCapacity = 2048u;
+		m_cpuSamplerCache.clear();
+		m_gpuSamplerTableCache.clear();
+		m_samplerTableBase = UINT32_MAX;
+		m_stateTracker.MarkAllDirty();
 		m_gpuSamplerOffset = 0;
 		D3D12_DESCRIPTOR_HEAP_DESC gpuSampDesc = {};
 		gpuSampDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER;
@@ -3398,48 +3402,45 @@ namespace ParaEngine
 		return true;
 	}
 
+	bool RenderDeviceD3D12::BindDrawConstants(ID3D12GraphicsCommandList* cmd, UINT slot, const void* data, uint32_t size,
+		std::vector<uint8_t>& shadow, D3D12_GPU_VIRTUAL_ADDRESS& address)
+	{
+		if (!data || !size)
+		{
+			if (!m_cbvDirtyAfterReset || shadow.empty()) return true;
+			data = shadow.data();
+			size = static_cast<uint32_t>(shadow.size());
+		}
+		// The address belongs to this upload arena until the frame slot is reclaimed.
+		const bool same = shadow.size() == size && (shadow.data() == data || std::memcmp(shadow.data(), data, size) == 0);
+		if (!same || !address || address == m_zeroCbvGpuVA)
+		{
+			const uint32_t alignment = D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT;
+			const uint32_t aligned = static_cast<uint32_t>(AlignUpU64(size, alignment));
+			void* cpu = nullptr;
+			D3D12_GPU_VIRTUAL_ADDRESS gpu = 0;
+			ID3D12Resource* resource = nullptr;
+			uint64_t offset = 0;
+			if (!AllocateUpload(aligned, alignment, cpu, gpu, resource, offset)) return false;
+			std::memcpy(cpu, data, size);
+			if (aligned > size) std::memset(static_cast<uint8_t*>(cpu) + size, 0, aligned - size);
+			if (!same)
+			{
+				const auto* bytes = static_cast<const uint8_t*>(data);
+				shadow.assign(bytes, bytes + size);
+			}
+			address = gpu;
+		}
+		cmd->SetGraphicsRootConstantBufferView(slot, address);
+		return true;
+	}
+
 	bool RenderDeviceD3D12::SetShaderConstants(const void* vsConstants, uint32_t vsByteSize, const void* psConstants, uint32_t psByteSize)
 	{
-		ID3D12GraphicsCommandList* cmd = EnsureRecording();
-		if (!cmd)
+		auto* cmd = EnsureRecording();
+		if (!cmd || !BindDrawConstants(cmd, 0, vsConstants, vsByteSize, m_shadowVsCbv, m_currentVsCbvGpuVA)
+			|| !BindDrawConstants(cmd, 1, psConstants, psByteSize, m_shadowPsCbv, m_currentPsCbvGpuVA))
 			return false;
-
-		if (vsConstants && vsByteSize > 0)
-		{
-			m_shadowVsCbv.assign(static_cast<const uint8_t*>(vsConstants), static_cast<const uint8_t*>(vsConstants) + vsByteSize);
-			uint32_t alignedBytes = static_cast<uint32_t>(AlignUpU64(vsByteSize, D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT));
-			void* upCpu = nullptr;
-			D3D12_GPU_VIRTUAL_ADDRESS upGpu = 0;
-			ID3D12Resource* upRes = nullptr;
-			uint64_t upOff = 0;
-			if (AllocateUpload(alignedBytes, D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT, upCpu, upGpu, upRes, upOff))
-			{
-				std::memcpy(upCpu, vsConstants, vsByteSize);
-				if (alignedBytes > vsByteSize)
-					std::memset(static_cast<uint8_t*>(upCpu) + vsByteSize, 0, alignedBytes - vsByteSize);
-				m_currentVsCbvGpuVA = upGpu;
-				cmd->SetGraphicsRootConstantBufferView(0, m_currentVsCbvGpuVA);
-			}
-		}
-
-		if (psConstants && psByteSize > 0)
-		{
-			m_shadowPsCbv.assign(static_cast<const uint8_t*>(psConstants), static_cast<const uint8_t*>(psConstants) + psByteSize);
-			uint32_t alignedBytes = static_cast<uint32_t>(AlignUpU64(psByteSize, D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT));
-			void* upCpu = nullptr;
-			D3D12_GPU_VIRTUAL_ADDRESS upGpu = 0;
-			ID3D12Resource* upRes = nullptr;
-			uint64_t upOff = 0;
-			if (AllocateUpload(alignedBytes, D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT, upCpu, upGpu, upRes, upOff))
-			{
-				std::memcpy(upCpu, psConstants, psByteSize);
-				if (alignedBytes > psByteSize)
-					std::memset(static_cast<uint8_t*>(upCpu) + psByteSize, 0, alignedBytes - psByteSize);
-				m_currentPsCbvGpuVA = upGpu;
-				cmd->SetGraphicsRootConstantBufferView(1, m_currentPsCbvGpuVA);
-			}
-		}
-
 		m_cbvDirtyAfterReset = false;
 		return true;
 	}
@@ -3826,12 +3827,12 @@ namespace ParaEngine
 			D3D12_CPU_DESCRIPTOR_HANDLE dstCpu = m_gpuSrvHeap->GetCPUDescriptorHandleForHeapStart();
 			dstCpu.ptr += static_cast<SIZE_T>(baseIdx) * m_gpuSrvDescriptorSize;
 
-			for (uint32_t s = 0; s < RHIStateTracker::MAX_SAMPLER_STAGES; ++s)
-			{
-				D3D12_CPU_DESCRIPTOR_HANDLE srcCpu = m_cpuSrvAlloc.GetHandle(resolvedSrvSlots[s]);
-				m_device->CopyDescriptorsSimple(1, dstCpu, srcCpu, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-				dstCpu.ptr += m_gpuSrvDescriptorSize;
-			}
+			// Each source range is one descriptor. The destination table is contiguous.
+			constexpr UINT count = RHIStateTracker::MAX_SAMPLER_STAGES;
+			D3D12_CPU_DESCRIPTOR_HANDLE sources[count];
+			for (UINT s = 0; s < count; ++s)
+				sources[s] = m_cpuSrvAlloc.GetHandle(resolvedSrvSlots[s]);
+			m_device->CopyDescriptors(1, &dstCpu, &count, count, sources, nullptr, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
 			m_lastGpuSrvTable = m_gpuSrvHeap->GetGPUDescriptorHandleForHeapStart();
 			m_lastGpuSrvTable.ptr += static_cast<UINT64>(baseIdx) * m_gpuSrvDescriptorSize;
@@ -3840,87 +3841,57 @@ namespace ParaEngine
 		cmd->SetGraphicsRootDescriptorTable(2, m_lastGpuSrvTable);
 
 		// Populate / lookup 16-Sampler GPU descriptor table
-		uint32_t cpuSampSlots[RHIStateTracker::MAX_SAMPLER_STAGES] = {};
-		uint64_t sampComboHash = 14695981039346656037ULL;
-		for (uint32_t s = 0; s < RHIStateTracker::MAX_SAMPLER_STAGES; ++s)
+		const uint32_t dirtySamplers = m_stateTracker.GetDirtySamplerMask();
+		if (dirtySamplers || m_samplerTableBase == UINT32_MAX)
 		{
-			cpuSampSlots[s] = GetOrCreateCpuSampler(s);
-			HashCombineU32(sampComboHash, cpuSampSlots[s]);
-		}
-
-		auto sampIt = m_gpuSamplerTableCache.find(sampComboHash);
-		uint32_t gpuSampBase = 0;
-		if (sampIt != m_gpuSamplerTableCache.end())
-		{
-			gpuSampBase = sampIt->second;
-		}
-		else
-		{
-			if (m_gpuSamplerOffset + RHIStateTracker::MAX_SAMPLER_STAGES > m_gpuSamplerCapacity)
-			{
-				ExecuteAndSyncGPU();
-				cmd = EnsureRecording();
-				BindActiveRenderTargetsToCmdList();
-				cmd->SetGraphicsRootDescriptorTable(2, m_lastGpuSrvTable);
-				m_gpuSamplerTableCache.clear();
-				m_gpuSamplerOffset = 0;
-			}
-
-			gpuSampBase = m_gpuSamplerOffset;
-			m_gpuSamplerOffset += RHIStateTracker::MAX_SAMPLER_STAGES;
-			D3D12_CPU_DESCRIPTOR_HANDLE dstCpu = m_gpuSamplerHeap->GetCPUDescriptorHandleForHeapStart();
-			dstCpu.ptr += static_cast<SIZE_T>(gpuSampBase) * m_gpuSamplerDescriptorSize;
+			uint64_t sampComboHash = 14695981039346656037ULL;
 			for (uint32_t s = 0; s < RHIStateTracker::MAX_SAMPLER_STAGES; ++s)
 			{
-				D3D12_CPU_DESCRIPTOR_HANDLE srcCpu = m_cpuSamplerAlloc.GetHandle(cpuSampSlots[s]);
-				m_device->CopyDescriptorsSimple(1, dstCpu, srcCpu, D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
-				dstCpu.ptr += m_gpuSamplerDescriptorSize;
+				if (dirtySamplers & (1u << s))
+				{
+					m_samplerSlots[s] = GetOrCreateCpuSampler(s);
+					m_stateTracker.ClearSamplerDirty(s);
+				}
+				HashCombineU32(sampComboHash, m_samplerSlots[s]);
 			}
-			m_gpuSamplerTableCache[sampComboHash] = gpuSampBase;
+
+			auto sampIt = m_gpuSamplerTableCache.find(sampComboHash);
+			if (sampIt != m_gpuSamplerTableCache.end())
+			{
+				m_samplerTableBase = sampIt->second;
+			}
+			else
+			{
+				if (m_gpuSamplerOffset + RHIStateTracker::MAX_SAMPLER_STAGES > m_gpuSamplerCapacity)
+				{
+					ExecuteAndSyncGPU();
+					cmd = EnsureRecording();
+					BindActiveRenderTargetsToCmdList();
+					cmd->SetGraphicsRootDescriptorTable(2, m_lastGpuSrvTable);
+					m_gpuSamplerTableCache.clear();
+					m_gpuSamplerOffset = 0;
+				}
+
+				m_samplerTableBase = m_gpuSamplerOffset;
+				m_gpuSamplerOffset += RHIStateTracker::MAX_SAMPLER_STAGES;
+				D3D12_CPU_DESCRIPTOR_HANDLE dstCpu = m_gpuSamplerHeap->GetCPUDescriptorHandleForHeapStart();
+				dstCpu.ptr += static_cast<SIZE_T>(m_samplerTableBase) * m_gpuSamplerDescriptorSize;
+				for (uint32_t s = 0; s < RHIStateTracker::MAX_SAMPLER_STAGES; ++s)
+				{
+					D3D12_CPU_DESCRIPTOR_HANDLE srcCpu = m_cpuSamplerAlloc.GetHandle(m_samplerSlots[s]);
+					m_device->CopyDescriptorsSimple(1, dstCpu, srcCpu, D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
+					dstCpu.ptr += m_gpuSamplerDescriptorSize;
+				}
+				m_gpuSamplerTableCache[sampComboHash] = m_samplerTableBase;
+			}
 		}
 
 		D3D12_GPU_DESCRIPTOR_HANDLE gpuSampHandle = m_gpuSamplerHeap->GetGPUDescriptorHandleForHeapStart();
-		gpuSampHandle.ptr += static_cast<UINT64>(gpuSampBase) * m_gpuSamplerDescriptorSize;
+		gpuSampHandle.ptr += static_cast<UINT64>(m_samplerTableBase) * m_gpuSamplerDescriptorSize;
 		cmd->SetGraphicsRootDescriptorTable(3, gpuSampHandle);
 
-		if (m_cbvDirtyAfterReset)
-		{
-			if (!m_shadowVsCbv.empty())
-			{
-				const uint32_t vsByteSize = static_cast<uint32_t>(m_shadowVsCbv.size());
-				const uint32_t alignedBytes = static_cast<uint32_t>(AlignUpU64(vsByteSize, D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT));
-				void* upCpu = nullptr;
-				D3D12_GPU_VIRTUAL_ADDRESS upGpu = 0;
-				ID3D12Resource* upRes = nullptr;
-				uint64_t upOff = 0;
-				if (AllocateUpload(alignedBytes, D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT, upCpu, upGpu, upRes, upOff))
-				{
-					std::memcpy(upCpu, m_shadowVsCbv.data(), vsByteSize);
-					if (alignedBytes > vsByteSize)
-						std::memset(static_cast<uint8_t*>(upCpu) + vsByteSize, 0, alignedBytes - vsByteSize);
-					m_currentVsCbvGpuVA = upGpu;
-					cmd->SetGraphicsRootConstantBufferView(0, m_currentVsCbvGpuVA);
-				}
-			}
-			if (!m_shadowPsCbv.empty())
-			{
-				const uint32_t psByteSize = static_cast<uint32_t>(m_shadowPsCbv.size());
-				const uint32_t alignedBytes = static_cast<uint32_t>(AlignUpU64(psByteSize, D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT));
-				void* upCpu = nullptr;
-				D3D12_GPU_VIRTUAL_ADDRESS upGpu = 0;
-				ID3D12Resource* upRes = nullptr;
-				uint64_t upOff = 0;
-				if (AllocateUpload(alignedBytes, D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT, upCpu, upGpu, upRes, upOff))
-				{
-					std::memcpy(upCpu, m_shadowPsCbv.data(), psByteSize);
-					if (alignedBytes > psByteSize)
-						std::memset(static_cast<uint8_t*>(upCpu) + psByteSize, 0, alignedBytes - psByteSize);
-					m_currentPsCbvGpuVA = upGpu;
-					cmd->SetGraphicsRootConstantBufferView(1, m_currentPsCbvGpuVA);
-				}
-			}
-			m_cbvDirtyAfterReset = false;
-		}
+		if (m_cbvDirtyAfterReset && !SetShaderConstants(nullptr, 0, nullptr, 0))
+			return false;
 
 		cmd->SetPipelineState(pso);
 		cmd->IASetPrimitiveTopology(topo);

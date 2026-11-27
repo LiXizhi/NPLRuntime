@@ -188,6 +188,8 @@ namespace ParaEngine
 		void WaitForFenceValue(uint64_t fenceValue);
 		void ReclaimCompletedFrameResources(uint32_t frameSlot);
 		void BindActiveRenderTargetsToCmdList();
+		bool BindDrawConstants(ID3D12GraphicsCommandList* cmd, UINT slot, const void* data, uint32_t size,
+			std::vector<uint8_t>& shadow, D3D12_GPU_VIRTUAL_ADDRESS& address);
 		bool PrepareForDraw(D3D12_PRIMITIVE_TOPOLOGY topo, D3D12_PRIMITIVE_TOPOLOGY_TYPE topoType);
 		ID3D12PipelineState* GetOrCreatePSO(D3D12_PRIMITIVE_TOPOLOGY_TYPE topoType);
 		uint32_t GetOrCreateCpuSampler(uint32_t stage);
@@ -256,6 +258,8 @@ namespace ParaEngine
 		uint32_t m_gpuSamplerDescriptorSize = 0;
 		uint32_t m_gpuSamplerCapacity = 2048;
 		uint32_t m_gpuSamplerOffset = 0;
+		uint32_t m_samplerSlots[RHIStateTracker::MAX_SAMPLER_STAGES] = {};
+		uint32_t m_samplerTableBase = UINT32_MAX;
 		std::unordered_map<uint64_t, uint32_t> m_gpuSamplerTableCache; // 16-sampler combo hash -> base slot in m_gpuSamplerHeap
 		std::unordered_map<uint64_t, uint32_t> m_cpuSamplerCache;      // single sampler hash -> slot in m_cpuSamplerAlloc
 
