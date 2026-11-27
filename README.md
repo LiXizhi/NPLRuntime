@@ -217,16 +217,16 @@ Configured in [`.vscode/tasks.json`](.vscode/tasks.json) and [`.vscode/launch.js
 
 | VS Code Task Label | Purpose |
 | :--- | :--- |
-| **`Build ParaEngineClient (Debug)`** *(Default `Ctrl+Shift+B`)* | Incremental Windows `Debug` build in `build-win64` (`ParaEngineClient_d.exe`) |
-| **`Build ParaEngineClient (Release)`** | Incremental Windows `Release` build in `build-win64` (`ParaEngineClient.exe`) |
-| **`Windows: Configure ParaEngineClient (CMake)`** | Configures `build-win64` (`x64`, auto-detecting `BOOST_ROOT`) |
+| **`win64-debug: Build ParaEngineClient`** *(Default `Ctrl+Shift+B`)* | Incremental Windows `Debug` build in `build-win64` (`ParaEngineClient_d.exe`) |
+| **`win64-release: Build ParaEngineClient`** | Incremental Windows `Release` build in `build-win64` (`ParaEngineClient.exe`) |
+| **`win64: Configure ParaEngineClient (CMake)`** | Configures `build-win64` (`x64`, auto-detecting `BOOST_ROOT`) |
 | **`Build ParaEngineServer (Release)`** | Builds headless `ParaEngineServer.exe` in `build-server` |
 | **`Windows: Configure ParaEngineServer (CMake)`** | Configures `build-server` (`-DNPLRUNTIME_SERVER=ON`) |
 | **`Web: Build and Run Project 530`** | Builds WASM via WSL -> starts/reuses local server on `:8088` -> opens Project 530 |
 | **`Web: Build WASM (Emscripten)`** | Incremental C++ -> WASM build into `web/auto_generate_files/` |
 | **`Web: Run Project 530 (Local Disk)`** | Starts local server on `:8088` and opens Project 530 in browser |
 
-Press **`F5`** in VS Code with **`Debug ParaEngineClient`**, **`Release ParaEngineClient`**, or **`Web: Launch Project 530 (Chrome)`** selected to build and debug directly.
+Press **`F5`** in VS Code with **`win64-debug: Launch ParaEngineClient`**, **`win64-release: Launch ParaEngineClient`**, or **`Web: Launch Project 530 (Chrome)`** selected to build and debug directly.
 
 ---
 

@@ -132,9 +132,9 @@ See [`README.md`](README.md) for the full Host × Target build & run matrix acro
 
 ### Windows Client & Server (VS 2022 / VS 2026, Multi-Backend ParaRHI)
 - **VSCode Tasks ([`.vscode/tasks.json`](.vscode/tasks.json)):**
-  - `Build ParaEngineClient (Debug)` *(default `Ctrl+Shift+B`)* -> `build-win64/bin/ParaEngineClient_d.exe`
-  - `Build ParaEngineClient (Release)` -> `build-win64/bin/ParaEngineClient.exe`
-  - `Windows: Configure ParaEngineClient (CMake)`
+  - `win64-debug: Build ParaEngineClient` *(default `Ctrl+Shift+B`)* -> `build-win64/bin/ParaEngineClient_d.exe`
+  - `win64-release: Build ParaEngineClient` -> `build-win64/bin/ParaEngineClient.exe`
+  - `win64: Configure ParaEngineClient (CMake)`
   - `Build ParaEngineServer (Release)` -> `build-server/bin/ParaEngineServer.exe`
 - **Root Script (`build_win32.bat`) / Direct CMake:**
   ```bat

@@ -234,7 +234,28 @@
             }
         },
         {
-            "label": "Build ParaEngineClient (Debug)",
+            "label": "win64-release: Build and Run Project 530",
+            "dependsOrder": "sequence",
+            "dependsOn": [
+                "win64-release: Build ParaEngineClient",
+                "win64-release: Run Project 530"
+            ],
+            "group": "build",
+            "problemMatcher": []
+        },
+        {
+            "label": "win64-release: Run Project 530",
+            "type": "shell",
+            "command": "${workspaceFolder}\\build_win32.bat",
+            "args": [
+                "run",
+                "auto",
+                "530"
+            ],
+            "problemMatcher": []
+        },
+        {
+            "label": "win64-debug: Build ParaEngineClient",
             "type": "shell",
             "command": "cmake",
             "args": [
@@ -257,12 +278,14 @@
             }
         },
         {
-            "label": "Build ParaEngineClient (Release)",
+            "label": "win64-release: Build ParaEngineClient",
             "type": "shell",
             "command": "cmake",
             "args": [
                 "--build",
                 "${workspaceFolder}/build-win64",
+                "--target",
+                "WindowsApplication",
                 "--config",
                 "Release",
                 "--parallel",
@@ -277,7 +300,7 @@
             }
         },
         {
-            "label": "Rebuild ParaEngineClient (Debug)",
+            "label": "win64-debug: Rebuild ParaEngineClient",
             "type": "shell",
             "command": "cmake",
             "args": [
@@ -298,7 +321,7 @@
             }
         },
         {
-            "label": "Rebuild ParaEngineClient (Release)",
+            "label": "win64-release: Rebuild ParaEngineClient",
             "type": "shell",
             "command": "cmake",
             "args": [
@@ -319,7 +342,7 @@
             }
         },
         {
-            "label": "Clean ParaEngineClient",
+            "label": "win64-debug: Clean ParaEngineClient",
             "type": "shell",
             "command": "cmake",
             "args": [
@@ -337,7 +360,7 @@
             }
         },
         {
-            "label": "Windows: Configure ParaEngineClient (CMake)",
+            "label": "win64: Configure ParaEngineClient (CMake)",
             "type": "shell",
             "command": "powershell.exe",
             "args": [

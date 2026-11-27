@@ -3,7 +3,7 @@
     "configurations": [
 
         {
-            "name": "Debug ParaEngineClient",
+            "name": "win64-debug: Launch ParaEngineClient",
             "type": "cppvsdbg",
             "request": "launch",
             "program": "${workspaceFolder}/build-win64/bin/ParaEngineClient_d.exe",
@@ -11,10 +11,10 @@
             "stopAtEntry": false,
             "cwd": "C:\\lxzsrc\\ParaEngine\\ParaWorld\\",
             "environment": [],
-            "preLaunchTask": "Build ParaEngineClient (Debug)"
+            "preLaunchTask": "win64-debug: Build ParaEngineClient"
         },
         {
-            "name": "Debug ParaEngineClient (No Build)",
+            "name": "win64-debug: Launch ParaEngineClient (No Build)",
             "type": "cppvsdbg",
             "request": "launch",
             "program": "${workspaceFolder}/build-win64/bin/ParaEngineClient_d.exe",
@@ -24,7 +24,7 @@
             "environment": []
         },
         {
-            "name": "Release ParaEngineClient",
+            "name": "win64-release: Launch ParaEngineClient",
             "type": "cppvsdbg",
             "request": "launch",
             "program": "${workspaceFolder}/build-win64/bin/ParaEngineClient.exe",
@@ -32,7 +32,7 @@
             "stopAtEntry": false,
             "cwd": "C:\\lxzsrc\\ParaEngine\\ParaWorld\\",
             "environment": [],
-            "preLaunchTask": "Build ParaEngineClient (Release)"
+            "preLaunchTask": "win64-release: Build ParaEngineClient"
         },
         {
             "name": "Attach to Process",
