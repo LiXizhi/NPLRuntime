@@ -938,7 +938,7 @@ namespace ParaEngine
 			StringBuilder builder(4096);
 			builder.append("chunkV2", 7);
 			const int nChunkSizeLocation = builder.size();
-			builder.appendBinary(static_cast<uint32_t>(0));
+			builder.appendBinary(static_cast<uint32>(0));
 
 			for (int z = 0; z < 16; ++z)
 			{
@@ -955,8 +955,8 @@ namespace ParaEngine
 
 			for (const SectionData* sec : active)
 			{
-				builder.appendBinary(static_cast<uint32_t>(static_cast<int32_t>(sec->sectionY)));
-				builder.appendBinary(static_cast<uint32_t>(sec->nonAirCount));
+				builder.appendBinary(static_cast<uint32>(static_cast<int32_t>(sec->sectionY)));
+				builder.appendBinary(static_cast<uint32>(sec->nonAirCount));
 
 				idEncoder.Reset();
 				for (int i = 0; i < 4096; ++i)
